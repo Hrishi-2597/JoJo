@@ -652,26 +652,45 @@ export function cqnActualVariance(filters = {}, topN = 5, planName) {
 
 // ── Queue Performance table (2026-07-27) ──────────────────────────────────────
 // Backs the new "Queue Performance" table shown just above the Geo Map, and the
-// Geo Map's own click-a-region/sub-region breakdown — both are just this same
+// Geo Map's own hover-a-region/sub-region popup — both are just this same
 // selector, scoped by whatever's currently in `filters` (the page's normal filter
-// bar) plus an optional {region} or {subRegion} override for the map's click-through.
+// bar) plus an optional {region} or {subRegion} override for the map's hover-through.
 // `code` is a stable per-queue id (index in ACTIVE_QUEUES, not affected by filtering)
-// so the same queue always shows the same code regardless of which filters are applied.
-export function queuePerformance(filters = {}, override) {
+// — no longer displayed in either table (2026-07-27 follow-up) but kept as a stable
+// React key.
+//
+// `granularity` (2026-07-27, optional/additive) makes Forecast/Actual/Accuracy% respond
+// to the page's View By toggle, per direct request — each queue's flat offered/handled
+// value is treated as a single-FY series and divided across Quarter/Month/Week sub-
+// periods with the same small deterministic wobble expandToGranularity already uses
+// for every other volume metric in this file, then the LATEST sub-period is shown
+// (same "latest period snapshot" convention the KPI cards already use). Omitting
+// granularity (or passing 'Year'/null) keeps the original flat per-queue values.
+export function queuePerformance(filters = {}, override, granularity) {
   const overrideFilter = override?.subRegion ? { subRegion: [override.subRegion] }
     : override?.region ? { region: [override.region] }
     : {}
   const scoped = filterQueues({ ...filters, dbOsp: 'All', ...overrideFilter })
   return scoped
-    .map(q => ({
-      code: `Q-${String(ACTIVE_QUEUES.indexOf(q) + 1).padStart(3, '0')}`,
-      name: q.name,
-      region: q.region,
-      forecast: q.offered,
-      actual: q.handled,
-      accuracy: q.accuracy,
-      status: q.accuracy >= 90 ? 'Good' : q.accuracy >= 75 ? 'Fair' : 'Poor',
-    }))
+    .map(q => {
+      let forecast = q.offered, actual = q.handled
+      if (granularity && granularity !== 'Year') {
+        const expanded = expandToGranularity([{ period: 'FY27', offered: q.offered, handled: q.handled }], granularity, ['offered', 'handled'])
+        const latest = expanded[expanded.length - 1]
+        forecast = latest.offered
+        actual = latest.handled
+      }
+      const accuracy = forecast ? Math.round((actual / forecast) * 100) : 0
+      return {
+        code: `Q-${String(ACTIVE_QUEUES.indexOf(q) + 1).padStart(3, '0')}`,
+        name: q.name,
+        region: q.region,
+        forecast,
+        actual,
+        accuracy,
+        status: accuracy >= 90 ? 'Good' : accuracy >= 75 ? 'Fair' : 'Poor',
+      }
+    })
     .sort((a, b) => a.accuracy - b.accuracy)
 }
 

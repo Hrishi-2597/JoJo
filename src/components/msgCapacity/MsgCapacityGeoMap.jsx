@@ -67,7 +67,7 @@ export default function MsgCapacityGeoMap({ filters }) {
             </div>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
               Global Region Performance Overview
-              <InfoButton info="Headcount fulfillment % or SL %, mapped by region or sub-region, with a country-level table below." />
+              <InfoButton info="Headcount fulfillment % or SL %, mapped by region or sub-region — hover a region/sub-region for its exact value." />
             </p>
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
           </div>
@@ -152,37 +152,6 @@ export default function MsgCapacityGeoMap({ filters }) {
               <div style={{ width: 72, height: 5, borderRadius: 3, background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
               <span>0%</span>
             </div>
-          </div>
-
-          <div style={{ marginTop: 10, overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {[viewMode, metric === 'Headcount' ? 'Fulfillment' : 'SL%', 'Status'].map((h, i) => (
-                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
-                      fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, value: r[metricKey] })) : subRegionRows.map(r => ({ key: r.subRegion, value: r.value }))).map(r => {
-                  const col = vColor(r.value)
-                  const status = r.value >= 90 ? 'Excellent' : r.value >= 80 ? 'Good' : r.value >= 70 ? 'Fair' : 'Critical'
-                  const badgeCls = r.value >= 80 ? 'badge-good' : r.value >= 70 ? 'badge-warn' : 'badge-bad'
-                  const isSelected = selectedKey === r.key
-                  return (
-                    <tr key={r.key} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.1)' : 'transparent' }}
-                      onClick={() => setSelectedKey(prev => prev === r.key ? null : r.key)}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.04)' }}
-                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: isSelected ? 700 : 500 }}>{r.key}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.value}%</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Modal } from './Modal'
 
 // Shared chart primitives used across every page (Forecasting, TSA Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
@@ -21,31 +22,15 @@ export const C = {
 // own corner (top-left) so it never collides with cornerControls (top-right), which
 // most Region/Sub-region toggles already occupy.
 //
-// Extended 2026-07-27 with an optional `table` prop ({ title?, columns, rows }) — per
-// direct request that clicking RCA/CLCA "give details" in tabular form (contributing
-// factors, variance tiers + reasons, bucket composition, etc.), instead of a 4th popup
-// button being added per graph. When `table` is present the popup widens from 220px to
-// fit real data and gains a click-outside-to-close handler (a plain two-sentence popup
-// doesn't need one; a popup big enough to hold a table does).
-export function GraphInsightButton({ rca, clca, table, align = 'left' }) {
+// Briefly (2026-07-27) took an optional `table` prop so clicking this same button could
+// also show tabular detail — reverted the same day: the request was for the table to
+// open on clicking the GRAPH itself, not the "i" button, which stays RCA/CLCA-only. See
+// `Visual` below for where the table/click-to-open-modal behavior lives now.
+export function GraphInsightButton({ rca, clca, align = 'left' }) {
   const [open, setOpen] = useState(false)
-  const rootRef = useRef(null)
-
-  useEffect(() => {
-    if (!open || !table) return
-    const onMouseDown = e => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false) }
-    const onKey = e => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, table])
-
-  if (!rca && !clca && !table) return null
+  if (!rca && !clca) return null
   return (
-    <div ref={rootRef} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
         title="RCA / CLCA for this graph"
@@ -59,7 +44,7 @@ export function GraphInsightButton({ rca, clca, table, align = 'left' }) {
       >i</button>
       {open && (
         <div className="chart-tooltip animate-fade-in" style={{
-          position: 'absolute', top: 'calc(100% + 6px)', zIndex: 20, width: table ? 440 : 220, textAlign: 'left',
+          position: 'absolute', top: 'calc(100% + 6px)', zIndex: 20, width: 220, textAlign: 'left',
           ...(align === 'right' ? { right: 0 } : { left: 0 }),
         }}>
           {rca && (
@@ -74,21 +59,22 @@ export function GraphInsightButton({ rca, clca, table, align = 'left' }) {
               <p style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.35, marginTop: 1 }}>{clca}</p>
             </>
           )}
-          {table && <PopupTable table={table} topMargin={rca || clca ? 8 : 0} />}
         </div>
       )}
     </div>
   )
 }
 
-// Generic {columns, rows} table renderer shared by every GraphInsightButton `table`
-// payload — one implementation so every graph's detail popup looks consistent.
-export function PopupTable({ table, topMargin = 0 }) {
+// Generic {columns, rows} table renderer — used both inside Visual's detail Modal
+// (via `table`, spacious) and any smaller corner-popup context (e.g. the Queue
+// Performance table's per-row RCA/CLCA pill), so `maxHeight` is a prop rather than
+// hardcoded to the cramped-corner-popup size this component started as.
+export function PopupTable({ table, topMargin = 0, maxHeight = 380 }) {
   const { title, columns, rows } = table
   return (
     <div style={{ marginTop: topMargin }}>
       {title && <p style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.04em', marginBottom: 4 }}>{title.toUpperCase()}</p>}
-      <div style={{ maxHeight: 220, overflowY: 'auto', overflowX: 'auto' }}>
+      <div style={{ maxHeight, overflowY: 'auto', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -127,17 +113,35 @@ export function PopupTable({ table, topMargin = 0 }) {
   )
 }
 
+// `table` (2026-07-27) opens in a full Modal when the user clicks the GRAPH itself —
+// specifically the title text, the one click target that can never collide with an
+// existing interactive element (bars with their own click-to-drill, dropdowns,
+// toggles, the RCA/CLCA button). RCA/CLCA stays exactly what it was — a separate,
+// small "i" popup — per direct request that the two not be the same button.
 export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca, table, info }) {
+  const [tableOpen, setTableOpen] = useState(false)
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
-      {(rca || clca || table) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} table={table} /></div>}
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
+      <p
+        onClick={e => { if (table && !e.target.closest('button')) setTableOpen(true) }}
+        title={table ? 'Click for details' : undefined}
+        style={{
+          fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', gap: 5, cursor: table ? 'pointer' : undefined,
+        }}
+      >
         {title}{info && <InfoButton info={info} />}
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
+      {table && tableOpen && (
+        <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
+          <PopupTable table={table} />
+        </Modal>
+      )}
     </div>
   )
 }

@@ -7,7 +7,8 @@ import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } f
 import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
 } from '../data/insightFactors'
-import { GraphInsightButton, InfoButton } from './ChartKit'
+import { GraphInsightButton, InfoButton, PopupTable } from './ChartKit'
+import { Modal } from './Modal'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 // Blue/orange compare two neutral quantities (Plan A vs Plan B); violet is a neutral
@@ -46,16 +47,32 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
+// `table` opens in a Modal on clicking the title (the graph itself), not the RCA/CLCA
+// button — see ChartKit.jsx's shared Visual for the full reasoning; this local copy
+// (predates the shared ChartKit promotion) mirrors the same behavior.
 function Visual({ title, subtitle, children, controls, rca, clca, table, info }) {
+  const [tableOpen, setTableOpen] = useState(false)
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
-      {(rca || clca || table) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} table={table} /></div>}
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
+      <p
+        onClick={e => { if (table && !e.target.closest('button')) setTableOpen(true) }}
+        title={table ? 'Click for details' : undefined}
+        style={{
+          fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', gap: 5, cursor: table ? 'pointer' : undefined,
+        }}
+      >
         {title}{info && <InfoButton info={info} />}
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
+      {table && tableOpen && (
+        <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
+          <PopupTable table={table} />
+        </Modal>
+      )}
     </div>
   )
 }

@@ -24,7 +24,7 @@ const LEGEND = [
 // here so a queue's status reads the same way in both places.
 const STATUS_COLOR = { Good: '#34d399', Fair: '#fbbf24', Poor: '#f87171' }
 
-export default function Layer3GeoMap({ filters }) {
+export default function Layer3GeoMap({ filters, granularity }) {
   const [open, setOpen]         = useState(true)
   const [viewMode, setViewMode] = useState('Region')
   const [hovered, setHovered]   = useState(null)
@@ -45,14 +45,15 @@ export default function Layer3GeoMap({ filters }) {
   // is narrowing the view (showing everything).
   const subRegionIsNarrowed = filters.region?.length > 0 || filters.subRegion?.length > 0
 
-  // The table below the map defaults to the first in-scope key (2026-07-27, per direct
-  // request) without changing the MAP's own default (still no spotlight until a click) —
-  // `selectedKey` stays null until clicked so the map's existing all-regions-equal-weight
-  // look is untouched; `effectiveKey` is only for driving the queue table's content.
-  const effectiveKey = selectedKey ?? rows[0]?.region ?? rows[0]?.label
-  const queueRows = useMemo(
-    () => (effectiveKey ? queuePerformance(filters, viewMode === 'Region' ? { region: effectiveKey } : { subRegion: effectiveKey }) : []),
-    [filters, effectiveKey, viewMode]
+  // Hovering a region/sub-region shows its queues in the same floating box as the
+  // accuracy% (2026-07-27, replacing the old below-map table entirely — a popup on
+  // hover instead of a table that pushes the page down). `hovered.isRegionKey` tracks
+  // whether the hovered key is a real region (Region view, or Sub-region view's
+  // fallback-to-parent-region countries) vs a real sub-region, so the right filter
+  // override is used regardless of which view is active.
+  const hoveredQueues = useMemo(
+    () => (hovered ? queuePerformance(filters, hovered.isRegionKey ? { region: hovered.name } : { subRegion: hovered.name }, granularity) : []),
+    [filters, hovered, granularity]
   )
 
   return (
@@ -95,7 +96,7 @@ export default function Layer3GeoMap({ filters }) {
           {/* Centered title */}
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             Global Forecast Accuracy
-            <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map — click a region/sub-region to see its queues below." />
+            <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map — hover a region/sub-region to see its queues." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Forecast adherence % · {viewMode} view
@@ -131,15 +132,28 @@ export default function Layer3GeoMap({ filters }) {
               </div>
             )}
 
-            {/* Hovered tooltip */}
+            {/* Hovered popup — region/sub-region accuracy% plus its queues, replacing the
+                old below-map table entirely (2026-07-27): a popup on hover, not a table
+                that pushes the page down. */}
             {hovered && (
-              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 300 }}
                 className="chart-tooltip">
                 <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
-                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: acColor(hovered.accuracy) }}>
+                <p style={{ marginTop: 3, marginBottom: 6, fontSize: 13, fontWeight: 700, color: acColor(hovered.accuracy) }}>
                   {hovered.accuracy}%
                   <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>accuracy</span>
                 </p>
+                <div style={{ maxHeight: 180, overflowY: 'auto', borderTop: '1px solid var(--border-subtle)', paddingTop: 5 }}>
+                  {hoveredQueues.length === 0 && (
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: '6px 0' }}>No queues in scope.</p>
+                  )}
+                  {hoveredQueues.map(q => (
+                    <div key={q.code} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 10, padding: '2px 0' }}>
+                      <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.name}</span>
+                      <span style={{ fontWeight: 700, color: STATUS_COLOR[q.status], flexShrink: 0 }}>{q.accuracy}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -183,7 +197,7 @@ export default function Layer3GeoMap({ filters }) {
                     const baseOpacity = isFallback ? 0.35 : 1
                     return (
                       <Geography key={geo.rsmKey} geography={geo}
-                        onMouseEnter={() => accuracy != null && setHovered({ name: displayName, accuracy })}
+                        onMouseEnter={() => accuracy != null && setHovered({ name: displayName, accuracy, isRegionKey: viewMode === 'Region' || isFallback })}
                         onMouseLeave={() => setHovered(null)}
                         onClick={() => accuracy != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
                         style={{
@@ -204,45 +218,6 @@ export default function Layer3GeoMap({ filters }) {
               <div style={{ width: 72, height: 5, borderRadius: 3,
                 background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
               <span>0%</span>
-            </div>
-          </div>
-
-          {/* Queue breakdown for whichever region/sub-region is in effect — defaults to
-              the first in-scope one, updates on click, per direct request. Replaces the
-              old region-level summary table entirely (2026-07-27). */}
-          <div style={{ marginTop: 10 }}>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
-              Queues in <strong style={{ color: 'var(--accent)' }}>{effectiveKey ?? '—'}</strong>
-              {!selectedKey && effectiveKey && <span> (default — click a region/sub-region to change)</span>}
-            </p>
-            <div style={{ maxHeight: 220, overflowY: 'auto', overflowX: 'auto' }}>
-              <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    {['Queue', 'Name', 'Forecast', 'Actual', 'Acc%', 'Status'].map((h, i) => (
-                      <th key={h} style={{ position: 'sticky', top: 0, background: 'var(--bg-panel)', textAlign: i >= 2 ? 'right' : 'left', padding: '5px 10px 5px 0',
-                        fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {queueRows.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: '12px 0', textAlign: 'center', fontSize: 10.5, color: 'var(--text-muted)' }}>No queues in scope for this selection.</td></tr>
-                  )}
-                  {queueRows.map(q => (
-                    <tr key={q.code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', color: 'var(--text-faint)' }}>{q.code}</td>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{q.name}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', color: 'var(--text-secondary)' }}>{q.forecast.toLocaleString()}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', color: 'var(--text-secondary)' }}>{q.actual.toLocaleString()}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: STATUS_COLOR[q.status] }}>{q.accuracy}%</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right' }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[q.status] }}>{q.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>

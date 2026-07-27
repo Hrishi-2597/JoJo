@@ -49,30 +49,41 @@ function RcaClcaPill({ row }) {
       </button>
       {open && (
         <div className="chart-tooltip animate-fade-in" style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 30, width: 360, textAlign: 'left' }}>
-          <PopupTable table={table} />
+          <PopupTable table={table} maxHeight={220} />
         </div>
       )}
     </div>
   )
 }
 
+// Queue column (the synthetic Q-NNN code) removed and "Name" renamed to "CQN" per
+// direct request (2026-07-27) — CQN is this app's own real term for a queue name
+// (see mockData.js's cqnPlanVariance/cqnActualVariance, which already key rows by
+// `cqn` rather than `name`).
 const COLUMNS = [
-  { key: 'code', label: 'Queue', width: '9%' },
-  { key: 'name', label: 'Name', width: '28%' },
-  { key: 'region', label: 'Region', width: '10%' },
-  { key: 'forecast', label: 'Forecast', width: '12%', align: 'right' },
-  { key: 'actual', label: 'Actual', width: '12%', align: 'right' },
-  { key: 'accuracy', label: 'Acc%', width: '9%', align: 'right' },
+  { key: 'name', label: 'CQN', width: '32%' },
+  { key: 'region', label: 'Region', width: '12%' },
+  { key: 'forecast', label: 'Forecast', width: '14%', align: 'right' },
+  { key: 'actual', label: 'Actual', width: '14%', align: 'right' },
+  { key: 'accuracy', label: 'Acc%', width: '10%', align: 'right', sortable: true },
   { key: 'status', label: 'Status', width: '9%', align: 'center' },
   { key: 'rca', label: 'RCA/CLCA', width: '11%', align: 'center' },
 ]
 
 // Sits directly above the Geo Map, per direct request — real per-queue forecast vs
 // actual vs accuracy, filtered by whatever the page's own filter bar currently has in
-// scope (queuePerformance() just wraps filterQueues, so it's automatically live).
-export default function QueuePerformanceTable({ filters }) {
+// scope (queuePerformance() just wraps filterQueues, so it's automatically live) AND
+// by the page-wide View By granularity toggle (2026-07-27 follow-up — queuePerformance
+// now accepts it as a third argument).
+export default function QueuePerformanceTable({ filters, granularity }) {
   const [open, setOpen] = useState(true)
-  const rows = useMemo(() => queuePerformance(filters), [filters])
+  // Sort by accuracy (2026-07-27, per direct request) — 'asc' (worst first, the
+  // original default) or 'desc'; click the Acc% header to toggle.
+  const [sortDir, setSortDir] = useState('asc')
+  const rows = useMemo(() => {
+    const base = queuePerformance(filters, undefined, granularity)
+    return sortDir === 'asc' ? base : [...base].reverse()
+  }, [filters, granularity, sortDir])
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
@@ -92,13 +103,16 @@ export default function QueuePerformanceTable({ filters }) {
             <thead>
               <tr>
                 {COLUMNS.map(c => (
-                  <th key={c.key} style={{
-                    position: 'sticky', top: 0, background: 'var(--bg-panel)', width: c.width,
-                    textAlign: c.align || 'left', padding: '6px 8px', fontSize: 9.5, fontWeight: 700,
-                    color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
-                    borderBottom: '1px solid var(--border-subtle)',
-                  }}>
-                    {c.label}
+                  <th key={c.key}
+                    onClick={c.sortable ? () => setSortDir(d => d === 'asc' ? 'desc' : 'asc') : undefined}
+                    title={c.sortable ? 'Click to sort' : undefined}
+                    style={{
+                      position: 'sticky', top: 0, background: 'var(--bg-panel)', width: c.width,
+                      textAlign: c.align || 'left', padding: '6px 8px', fontSize: 9.5, fontWeight: 700,
+                      color: c.sortable ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
+                      borderBottom: '1px solid var(--border-subtle)', cursor: c.sortable ? 'pointer' : undefined, userSelect: 'none',
+                    }}>
+                    {c.label}{c.sortable && <span style={{ marginLeft: 3 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
                   </th>
                 ))}
               </tr>
@@ -109,7 +123,6 @@ export default function QueuePerformanceTable({ filters }) {
               )}
               {rows.map(r => (
                 <tr key={r.code}>
-                  <td className="num" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-faint)', borderBottom: '1px solid var(--border-subtle)' }}>{r.code}</td>
                   <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</td>
                   <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-dim)', borderBottom: '1px solid var(--border-subtle)' }}>{r.region}</td>
                   <td className="num" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right', borderBottom: '1px solid var(--border-subtle)' }}>{r.forecast.toLocaleString()}</td>

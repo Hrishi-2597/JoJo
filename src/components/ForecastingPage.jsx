@@ -47,8 +47,8 @@ export default function ForecastingPage() {
       <div className="px-4 pb-4 flex flex-col gap-3">
         <Layer1PlanOverPlan filters={filters} granularity={granularity} />
         <Layer2ActualVsPlan filters={filters} granularity={granularity} />
-        <QueuePerformanceTable filters={filters} />
-        <Layer3GeoMap filters={filters} />
+        <QueuePerformanceTable filters={filters} granularity={granularity} />
+        <Layer3GeoMap filters={filters} granularity={granularity} />
       </div>
     </>
   )

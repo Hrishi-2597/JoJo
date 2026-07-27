@@ -36,10 +36,13 @@ SPoG/
 │   ├── index.css               # Tailwind imports + theme CSS variables (:root / [data-theme='light']) +
 │   │                              global scrollbar/select/card/tooltip/etc. component classes
 │   ├── components/
-│   │   ├── QueuePerformanceTable.jsx # ESG Forecasting only (2026-07-27) — real per-queue Forecast/Actual/
-│   │   │                              Accuracy%/Status table sitting just above the Geo Map, filter-aware
-│   │   │                              (wraps mockData.js's queuePerformance()); per-row purple "RCA/CLCA" pill
-│   │   │                              opens a contributing-factors popup via ChartKit's shared PopupTable
+│   │   ├── QueuePerformanceTable.jsx # ESG Forecasting only (2026-07-27) — real per-queue CQN/Region/Forecast/
+│   │   │                              Actual/Accuracy%/Status table sitting just above the Geo Map, filter- and
+│   │   │                              granularity-aware (wraps mockData.js's queuePerformance(filters, override,
+│   │   │                              granularity)); Acc% header is clickable to toggle ascending/descending
+│   │   │                              sort; no Queue-code column shown (removed 2026-07-27 follow-up); per-row
+│   │   │                              purple "RCA/CLCA" pill opens a contributing-factors popup via ChartKit's
+│   │   │                              shared PopupTable
 │   │   ├── PlanningSidebar.jsx # Collapsible left sidebar (2026-07-27) — 46px icon rail expands to a 360px
 │   │   │                         panel (Fiscal Calendar / Planning Cycle), mounted once in App.jsx outside the
 │   │   │                         page conditionals so it's present + keeps its open/closed state on every page
@@ -67,15 +70,19 @@ SPoG/
 │   │   │                         wire the same two props into their own local Visual instead. InfoButton
 │   │   │                         (2026-07-23) is a separate "what this shows" popup (info prop, plain sentence, no
 │   │   │                         RCA/CLCA framing) — see the dedicated section below for placement rules.
-│   │   │                         GraphInsightButton gained an optional `table` prop (2026-07-27, {title?,
-│   │   │                         columns, rows}) rendered via the new shared PopupTable component — widens the
-│   │   │                         popup and shows real/illustrative tabular detail alongside rca/clca; see
-│   │   │                         src/data/insightFactors.js below for what generates that content
+│   │   │                         Visual gained an optional `table` prop (2026-07-27, {title?, columns, rows}):
+│   │   │                         clicking the chart's TITLE (not GraphInsightButton, which briefly took `table`
+│   │   │                         the same day and was reverted to RCA/CLCA-only) opens a Modal containing the
+│   │   │                         new shared PopupTable component. Title was chosen as the click target
+│   │   │                         specifically because it can't collide with a chart's own bar-click-drill
+│   │   │                         behavior or its Plan/toggle controls — see design_choice.md. See
+│   │   │                         src/data/insightFactors.js below for what generates `table`'s content
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
 │   │   ├── Layer2ActualVsPlan.jsx  # Actual vs Plan: 3 chart visuals + stacked bar
-│   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers + summary table
+│   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers; hover a region/sub-region for a popup with
+│   │   │                         its accuracy% + queues (2026-07-27 — replaced the old below-map summary table)
 │   │   ├── msgCapacity/         # MSG Capacity Plan page (all new, 2026-07-03; revised same day)
 │   │   │   ├── MsgCapacityPage.jsx        # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20, see below)
 │   │   │   ├── MsgCapacityFilterPanel.jsx # Scope/Time/People/Geography clusters + DB/OSP pill + GranularityToggle
@@ -540,7 +547,8 @@ subRegionForCountry(name) — country → one of the 24 sub-region keys, or null
   ('Global' and 'Multiple SubRegions' are never mapped — they aren't places)
 activeSubRegionKeys(filters) — filters.subRegion if set, else sub-regions whose representative
   country falls in a selected filters.region, else null (= show all)
-geoRegionData(filters) / geoSubRegionRows(filters) — table rows for the summary table under the map
+geoRegionData(filters) / geoSubRegionRows(filters) — {region/label, accuracy} rows backing the map's own
+  coloring and the hover popup (2026-07-27 — the old below-map summary table these once fed was removed)
 ```
 `Layer3GeoMap.jsx` fills each `<Geography>` by looking up its accuracy via the functions above
 (no per-country lat/lng markers). In Sub-region view, a country with no specific sub-region tag
@@ -913,11 +921,15 @@ bucketQueues(rows, bucketShares, bucketKey) / allBucketsQueues(rows, bucketShare
 BUCKET_TABLE_COLUMNS                        — {bucket, name, region, variance} column spec
 ```
 
-`mockData.js`'s new `queuePerformance(filters, override)` (2026-07-27) — real per-queue {code, name, region,
+`mockData.js`'s `queuePerformance(filters, override, granularity)` — real per-queue {code, name, region,
 forecast, actual, accuracy, status}, `code` a stable `Q-NNN` id (index in `ACTIVE_QUEUES`, unaffected by
-filtering), `status` Good (≥90%) / Fair (≥75%) / Poor (<75%), sorted worst-accuracy-first. `override` is
-`{region}` or `{subRegion}` for the Geo Map's click-through (queue-level data has no clean sub-region-only
-selector otherwise). Backs both `QueuePerformanceTable.jsx` and `Layer3GeoMap.jsx`'s click-region table.
+filtering, no longer displayed in either table as of the 2026-07-27 follow-up — kept only as a React key),
+`status` Good (≥90%) / Fair (≥75%) / Poor (<75%), sorted worst-accuracy-first. `override` is `{region}` or
+`{subRegion}` for the Geo Map's hover-through (queue-level data has no clean sub-region-only selector
+otherwise). `granularity` (2026-07-27 follow-up, optional/additive) re-derives forecast/actual per Quarter/
+Month/Week via the same `expandToGranularity` wobble every other volume metric uses — accuracy/status stay
+constant across granularity by construction (both sides of the ratio share the same wobble; see
+design_choice.md). Backs both `QueuePerformanceTable.jsx` and `Layer3GeoMap.jsx`'s hover-region popup.
 
 ---
 

@@ -154,38 +154,6 @@ export default function TsaCapacityGeoMap({ filters }) {
               <span>Low</span>
             </div>
           </div>
-
-          <div style={{ marginTop: 10, overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {[viewMode, 'Headcount', 'Status'].map((h, i) => (
-                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
-                      fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, headcount: r.headcount })) : subRegionRows.map(r => ({ key: r.subRegion, headcount: r.headcount }))).map(r => {
-                  const pct = (r.headcount / maxValue) * 100
-                  const col = hcColor(pct)
-                  const status = pct >= 75 ? 'Highest' : pct >= 50 ? 'High' : pct >= 25 ? 'Moderate' : 'Lowest'
-                  const badgeCls = pct >= 50 ? 'badge-good' : pct >= 25 ? 'badge-warn' : 'badge-bad'
-                  const isSelected = selectedKey === r.key
-                  return (
-                    <tr key={r.key} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.1)' : 'transparent' }}
-                      onClick={() => setSelectedKey(prev => prev === r.key ? null : r.key)}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.04)' }}
-                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: isSelected ? 700 : 500 }}>{r.key}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.headcount.toLocaleString()}</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
     </div>

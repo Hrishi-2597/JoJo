@@ -119,37 +119,6 @@ export default function TsaGeoMap({ filters }) {
               <span>0%</span>
             </div>
           </div>
-
-          <div style={{ marginTop: 10, overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Region', 'Adherence', 'Status'].map((h, i) => (
-                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
-                      fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(r => {
-                  const col = acColor(r.adherence)
-                  const status = r.adherence >= 90 ? 'Excellent' : r.adherence >= 80 ? 'Good' : r.adherence >= 70 ? 'Fair' : 'Critical'
-                  const badgeCls = r.adherence >= 80 ? 'badge-good' : r.adherence >= 70 ? 'badge-warn' : 'badge-bad'
-                  const isSelected = selectedKey === r.region
-                  return (
-                    <tr key={r.region} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.1)' : 'transparent' }}
-                      onClick={() => setSelectedKey(prev => prev === r.region ? null : r.region)}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.04)' }}
-                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: isSelected ? 700 : 500 }}>{r.region}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.adherence}%</td>
-                      <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
     </div>

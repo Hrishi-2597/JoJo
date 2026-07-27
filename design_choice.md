@@ -4,6 +4,26 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Table Click Target Is the Chart Title, Not the Whole Chart Body (2026-07-27)
+
+**Decision:** Clicking a graph to open its detail table means clicking the chart's TITLE text specifically — not any point on the chart body, and not the RCA/CLCA "i" button (reverted to RCA/CLCA-only, per direct correction the same day).
+
+**Why:** Directly asked for "click on the graph," but many charts already have their own click behavior on the chart body itself (bars that drill into a region's trend, e.g. Attrition/Plan-over-Plan region charts) or interactive controls (Plan dropdowns, Region/Sub-region toggles) rendered inside the same panel. Making the whole panel clickable would fire the table-open behavior on TOP of those existing interactions — clicking a bar to drill into its trend would also pop a table open, a confusing double-action. The title text is the one spot on every chart panel that never has, and structurally can't collide with, another click handler — it's clickable on every chart uniformly, with zero risk of interfering with anything that chart already does. The click handler still explicitly excludes clicks on any nested `<button>` (the inline InfoButton sits right next to the title) so that keeps working independently.
+
+## Geo Map Queue Detail Is a Hover Popup, Not a Table That Pushes the Page Down (2026-07-27)
+
+**Decision:** ESG Forecasting's Geo Map shows a region/sub-region's queues in the same floating box that already appears on hover (previously just region name + accuracy%) — not a table rendered in the page's normal flow beneath the map (which is what the first pass at this built, then was corrected the same day).
+
+**Why:** Directly requested — a table beneath the map pushes the rest of the page down every time it's visible, which reads as a layout shift rather than a lightweight detail lookup. A hover popup is transient (appears on mouseenter, disappears on mouseleave) and doesn't affect any other element's position, matching how a choropleth map is normally explored — mouse over the area you're curious about, glance at the numbers, move on.
+
+## Table Content Changes with View By, Even Though Accuracy% Structurally Can't (2026-07-27)
+
+**Decision:** `queuePerformance()`'s new `granularity` parameter genuinely re-derives Forecast and Actual volume per Quarter/Month/Week (via the same `expandToGranularity` wobble mechanism used everywhere else in this app), even knowing this makes Accuracy%/Status mathematically constant across every granularity for a given queue.
+
+**Why:** This is the same shared-wobble mechanism already used for every other volume metric in the app, and the same ratio-invariance limitation is already documented elsewhere (e.g. MSG Capacity's Staffing card) — both sides of the ratio scale by the identical per-period multiplier, so the ratio itself can't move. Building an independent-wobble variant just for this one selector, so Accuracy% could vary too, would be inventing a new, one-off illustrative mechanism inconsistent with how every other ratio in this codebase behaves — the honest choice was to reuse the established pattern and document the resulting limitation clearly, rather than quietly making this one selector behave differently from all its siblings.
+
+---
+
 ## Detail Tables Live in the Existing RCA/CLCA Button, Not a New One (2026-07-27)
 
 **Decision:** Every graph's new tabular "what contributed"/"variance breakdown"/"bucket composition" content was added as an optional `table` prop on the EXISTING `GraphInsightButton` (RCA/CLCA popup), not a fourth button per chart.
