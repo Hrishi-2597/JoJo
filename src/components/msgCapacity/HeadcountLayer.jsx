@@ -136,23 +136,40 @@ function Visual2({ filters, granularity }) {
   )
 }
 
+const DEFAULTER_TABLE_COLUMNS = [
+  { key: 'name', label: 'CQN', wrap: true },
+  { key: 'sl', label: 'SL %', align: 'right' },
+  { key: 'hc', label: 'HC Actual vs Plan', align: 'right' },
+]
+
 // Renamed from "Actual vs Plan Trend with SL%"; the Region/Country toggle is gone
-// (not requested here) and the defaulter list below now uses a stricter, more
-// actionable rule: over-plan headcount that STILL hasn't fixed SL — see
-// slDefaulterQueues in msgCapacityData.js. Own independent Plan dropdown (2026-07-23,
-// local state passed down from HeadcountLayer), separate from Visual1's Plan picker —
-// each graph in this layer keeps its own selection. Uses the same PLAN_NAMES list as
-// Visual1's own Plan dropdown (2026-07-23 follow-up — was CAPACITY_PLAN_NAMES, switched
-// for consistency across every dropdown on this layer).
+// (not requested here) and the defaulter list uses a stricter, more actionable rule:
+// over-plan headcount that STILL hasn't fixed SL — see slDefaulterQueues in
+// msgCapacityData.js. Own independent Plan dropdown (2026-07-23, local state passed
+// down from HeadcountLayer), separate from Visual1's Plan picker — each graph in this
+// layer keeps its own selection. Uses the same PLAN_NAMES list as Visual1's own Plan
+// dropdown (2026-07-23 follow-up — was CAPACITY_PLAN_NAMES, switched for consistency
+// across every dropdown on this layer).
+//
+// The defaulter list used to render permanently under the chart, extending the card's
+// height (2026-07-27 follow-up: moved into the click-the-title detail table instead,
+// replacing the generic "what contributed" factors table this chart briefly had — the
+// defaulter list IS this chart's real, concrete detail, so it belongs there rather than
+// a second, less specific table).
 function Visual3({ filters, granularity, slPlan, onSlPlanChange }) {
   const data = useMemo(() => slTrendByFY(filters, granularity, slPlan), [filters, granularity, slPlan])
-  const defaulters = useMemo(() => slDefaulterQueues(filters, 6, slPlan), [filters, slPlan])
-  // Period-based trend, same treatment as Visual1 above.
-  const table = useMemo(() => ({
-    title: 'What contributed, by period',
-    columns: FACTOR_TABLE_COLUMNS,
-    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
-  }), [data])
+  const table = useMemo(() => {
+    const defaulters = slDefaulterQueues(filters, 999, slPlan)
+    return {
+      title: 'Over-plan queues still below 90% SL',
+      columns: DEFAULTER_TABLE_COLUMNS,
+      rows: defaulters.map(q => ({
+        name: q.name,
+        sl: `${q.slActual}%`,
+        hc: `${q.actualHC} vs ${q.planHC} plan (+${q.hcDelta})`,
+      })),
+    }
+  }, [filters, slPlan])
   return (
     <Visual title="Headcount Impact on SL"
       controls={<PlanSelect label="Plan" value={slPlan} onChange={onSlPlanChange} options={PLANS} />}
@@ -173,20 +190,6 @@ function Visual3({ filters, granularity, slPlan, onSlPlanChange }) {
           <Line yAxisId="r" type="monotone" dataKey="slPct" name="SL %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
-      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', margin: '6px 0 4px', textAlign: 'center' }}>
-        Over-plan queues still below 90% SL
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {defaulters.map((q, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '2px 4px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 9.5 }}>{q.name}</span>
-            <span style={{ fontWeight: 600, color: C.behind }}>
-              SL {q.slActual}% <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>· HC {q.actualHC} vs {q.planHC} plan (+{q.hcDelta})</span>
-            </span>
-          </div>
-        ))}
-        {defaulters.length === 0 && <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>No over-plan queues currently below 90% SL.</p>}
-      </div>
     </Visual>
   )
 }

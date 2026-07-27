@@ -142,7 +142,7 @@ function Visual2({ filters }) {
     }
   }, [filters, plan])
   return (
-    <Visual title="Utilization Defaulter Queues" subtitle="Worst utilization gap first"
+    <Visual title="Utilization Gap Queues" subtitle="Worst utilization gap first"
       controls={<PlanSelect label="Plan" value={plan} onChange={setPlan} options={PLANS} />}
       info="Queues with the largest gap between actual and target utilization, worst first."
       rca="These queues share the same 2-3 Aux codes as their main driver."

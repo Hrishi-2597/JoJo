@@ -4,6 +4,20 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## A Chart's Detail Table Should Be Its Real Data, Not a Second Generic One (2026-07-27)
+
+**Decision:** "Headcount Impact on SL"'s click-table shows the actual "over-plan queues still below 90% SL" list (the chart's own real, concrete detail) instead of the generic `contributingFactors`-based "what contributed, by period" table every other time-based chart on this page got.
+
+**Why:** This chart already had a specific, concrete answer to "give me more detail" — the defaulter list — sitting permanently in the card body. Once the click-table mechanism existed, keeping BOTH (a generic illustrative factors table on click, plus the real defaulter list still hardcoded into the card) would mean two tables saying different things about the same chart, with the more useful one relegated to permanent card real estate while the less specific one got the new interactive treatment. Moving the real defaulter list into the click-table and dropping the generic one resolved that — every chart's table should be its most useful concrete detail, not whichever table happened to be templated onto it first.
+
+## Queue Performance Table Reuses This Page's Own Variance-Tier Convention (2026-07-27)
+
+**Decision:** ESG Capacity Plan's new Queue Performance table colors/ranks queues using the same `varianceTier`/`varianceReason` treatment already applied to this page's "Queues with Highest Variation" and "Utilization Gap Queues" — not the Good/Fair/Poor accuracy-based status ESG Forecasting's own Queue Performance table uses.
+
+**Why:** Directly requested ("take numbers similar to what we took for other graphs in same capacity page"). This page's other ranked-queue charts already establish "worst |variance| first, tiered High/Moderate/Low" as the page's own vocabulary for this kind of table — headcount actual-vs-plan variance fits that pattern directly, and reusing it keeps every ranked table on this page reading the same way instead of introducing ESG Forecasting's accuracy-percentage framing where it doesn't apply (headcount variance isn't an accuracy metric — over or under plan isn't inherently "good" or "bad" the way a forecast miss is).
+
+---
+
 ## Table Click Target Is the Chart Title, Not the Whole Chart Body (2026-07-27)
 
 **Decision:** Clicking a graph to open its detail table means clicking the chart's TITLE text specifically — not any point on the chart body, and not the RCA/CLCA "i" button (reverted to RCA/CLCA-only, per direct correction the same day).

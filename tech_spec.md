@@ -89,8 +89,15 @@ SPoG/
 │   │   │   ├── MsgCapacityMetricCards.jsx # 5 KPI cards (Staffing/Utilization/SL%/Cases per FTE/Attrition), Modal drill-downs
 │   │   │   ├── HeadcountLayer.jsx         # Layer 01 "Headcount and SL%" — staffing summary, attrition, actual-vs-plan+SL%+defaulters
 │   │   │   ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + queue-variance ranking
-│   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization and Outage Analysis" — actual-vs-target trend w/ 3-aux tooltip, per-queue Aux ranking, leaves ranking
-│   │   │   ├── MsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Sub-region view)
+│   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization and Outage Analysis" — actual-vs-target trend w/ 3-aux tooltip,
+│   │   │   │                                per-queue Aux ranking (renamed "Utilization Gap Queues" 2026-07-27, was "Utilization
+│   │   │   │                                Defaulter Queues"), leaves ranking
+│   │   │   ├── QueuePerformanceTable.jsx  # (2026-07-27) Real per-queue Actual vs Plan headcount + variance, own independent
+│   │   │   │                                Plan dropdown, varianceTier/varianceReason treatment (same as this page's other
+│   │   │   │                                ranked-queue charts), sits above the Geo Map — wraps msgCapacityData.js's
+│   │   │   │                                queueHeadcountPerformance()
+│   │   │   ├── MsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Sub-region view); below-map
+│   │   │   │                                summary table removed 2026-07-27, existing hover tooltip is the only detail surface now
 │   │   └── tsaCapacity/         # TSA Capacity Plan page (all new, 2026-07-03; revised same day)
 │   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
@@ -731,7 +738,13 @@ attritionTrendByDimension(filters, key,    — {period, headcount, attrition, at
 slTrendByFY(filters, granularity)          — {period, actual, plan, slPct} — HeadcountLayer Visual3 ("Headcount Impact
                                               on SL") + SL% card modal
 slDefaulterQueues(filters, count=6)        — queues where actualHC > planHC AND slActual < 90, sorted by slActual
-                                              ascending (worst SL first) — replaces the old actual>plan-only defaulterQueues
+                                              ascending (worst SL first) — replaces the old actual>plan-only defaulterQueues.
+                                              As of 2026-07-27, this list backs "Headcount Impact on SL"'s click-the-title
+                                              detail table (full roster, count=999) rather than rendering permanently under
+                                              the chart — see design_choice.md
+queueHeadcountPerformance(filters, planSelection='Actual') — {name, region, actualHC, planHC, variance} for every in-scope
+  queue, sorted by |variance| descending — backs the new QueuePerformanceTable.jsx (2026-07-27); planHC rescaled via
+  planMultiplier() same as every other independent Plan dropdown on this page
 planOverPlanByDimension(filters, dimension) — {key, plan1, plan2, variance} × regions or sub-regions — PlanOverPlanVariationLayer's
                                                MainChart default view, sized by shareByKey
 planOverPlanTrendByDimension(filters, key, — {period, plan1, plan2, variance} — FY/granularity trend for one clicked key

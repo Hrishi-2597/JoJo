@@ -226,6 +226,23 @@ export function slDefaulterQueues(filters = {}, count = 6, planSelection = 'Actu
     .map(q => ({ name: q.name, actualHC: q.actualHC, planHC: q.planHC, hcDelta: q.actualHC - q.planHC, slActual: q.slActual }))
 }
 
+// ── Queue Performance table (2026-07-27) ──────────────────────────────────────
+// Real per-queue Actual vs Plan headcount + variance, sitting just above the Geo
+// Map — same "real numbers already used by other graphs on this page" data as
+// slDefaulterQueues above (planHC/actualHC straight off CAPACITY_QUEUES), not a new
+// dataset. `planSelection` rescales planHC via the same planMultiplier() every other
+// independent Plan dropdown on this page already uses.
+export function queueHeadcountPerformance(filters = {}, planSelection = 'Actual') {
+  const mult = planMultiplier(planSelection)
+  return filterCapacityQueues(filters)
+    .map(q => {
+      const planHC = Math.round(q.planHC * mult)
+      const variance = planHC ? +((q.actualHC - planHC) / planHC * 100).toFixed(1) : 0
+      return { name: q.name, region: q.region, actualHC: q.actualHC, planHC, variance }
+    })
+    .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
+}
+
 // ── Plan over Plan headcount comparison (Layer 2) ─────────────────────────────
 // FY-level baseline that planOverPlanByDimension/planOverPlanTrendByDimension below
 // scale per region/sub-region share — this page's Plan over Plan Variation layer

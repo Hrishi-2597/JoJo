@@ -5,6 +5,7 @@ import HeadcountLayer from './HeadcountLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import UtilizationLayer from './UtilizationLayer'
 import MsgCapacityGeoMap from './MsgCapacityGeoMap'
+import QueuePerformanceTable from './QueuePerformanceTable'
 import SectionDivider from '../SectionDivider'
 
 const DEFAULT_FILTERS = {
@@ -37,6 +38,7 @@ export default function MsgCapacityPage() {
         <HeadcountLayer filters={filters} granularity={granularity} />
         <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
         <UtilizationLayer filters={filters} granularity={granularity} />
+        <QueuePerformanceTable filters={filters} />
         <MsgCapacityGeoMap filters={filters} />
       </div>
     </>
