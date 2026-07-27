@@ -1,5 +1,15 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Rebrand: TSG->ISG, MSG->ESG, TSA->HES; Full Descriptive Names Dropped (2026-07-27)
+
+Every user-facing mention of the old business-unit labels was renamed, and the descriptive full names ("Enterprise Service Group", "High End Storage") were removed entirely — the app now shows just the acronym everywhere.
+
+- **Renamed in the UI**: page title (`index.html`), header title ("ISG SPoG"), header subtitle (business label + sub-page, e.g. "ESG · ESG Forecasting"), home button aria-label/title, landing page tiles + heading, business badges ("ISG ESG"/"ISG HES"), footer, sub-page toggle labels (ESG/HES Forecasting/Capacity Plan), the HES Total Queues card's modal title and info description, and the illustrative (unused) `BUSINESS_ORGS` filter list in `mockData.js`.
+- **Full names removed, not replaced**: `BUSINESS_META`'s `fullName` field and `LandingPage.jsx`'s tile `fullName` field were deleted along with their rendering — per direct request, these are gone rather than swapped for a new full name.
+- **Deliberately NOT renamed — internal code**: component/file/folder names (`MsgCapacityPage.jsx`, `tsaCapacity/`, `TSA_ACTIVE_QUEUES`, etc.), function names, data-module exports, and code comments all still say MSG/TSA internally. Only what a user actually sees was changed — renaming every internal identifier would be a much larger, riskier refactor than what was asked, and isn't visible to anyone using the app.
+- **Deliberately NOT renamed — real supplied data**: `'High End Storage'` also happens to be a real LOB name in `tsaData.js`'s `LOB_LIST`/`LOB_QUEUES` (one specific real technology line, not the business-unit branding), and `'MSG'` appears as a substring inside several real business-supplied queue names in `mockData.js`'s `INACTIVE_QUEUE_NAMES` (e.g. "Brazil MSG CTE"). Both were left untouched — they're real reference data, not the app's own branding text, and this app's convention has always been to preserve real supplied names exactly as given.
+- **Verified**: `npm run build` clean (1180 modules); searched the built bundle directly (not just source) for every old branding string — the only "High End Storage" occurrences left are the real LOB data confirmed above, nothing else remains.
+
 ## New: Holiday Calendar, Third Sidebar Section (2026-07-27)
 
 - **Source**: `Hoilday.xlsx` (single sheet, 801 rows: Fiscal Quarter, Fiscal Month, Week no., Day of the week, Holiday Date, Holiday Name, Country, SubRegion, Region) — a real global holiday list for FY27 covering **800 holidays across 53 countries and 3 regions (AMER/APJ/EMEA)**, all real content (not illustrative). One row (a single FY28 entry — Spain's "All Saints' Day (in lieu)" on 2027-11-02) fell after FY27's own end date (Jan 29, 2027) and was excluded to keep the view scoped to FY27; verified the source's own fiscal-month labels (`2027M01`..`2027M12`) line up exactly with this app's existing `MONTH_NAMES` fiscal-month order (M01=February .. M12=January) before trusting them for grouping.

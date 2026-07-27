@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Rebrand Touches User-Facing Text Only, Not Internal Code or Real Data (2026-07-27)
+
+**Decision:** Renaming TSG->ISG, MSG->ESG, TSA->HES (and dropping "Enterprise Service Group"/"High End Storage" entirely) was scoped to strings a user actually sees — headers, titles, badges, modal titles, info descriptions. Internal code (component/file/folder names, function names, data exports, code comments) still says MSG/TSA, and two categories of real data were left untouched even though they contain the old acronyms as substrings.
+
+**Why not rename the code too:** `MsgCapacityPage.jsx`, `tsaCapacity/`, `TSA_ACTIVE_QUEUES`, and every comment referencing "MSG Forecasting" or "TSA Capacity" for context are internal identifiers invisible to anyone using the app. Renaming them would touch dozens of files and every import path for zero user-visible benefit, and would be a fundamentally different (and much riskier) task than a branding change — nothing in the request asked for an architecture rename, and conflating the two would turn a quick, safe text change into a large refactor.
+
+**Why not rename "High End Storage" inside `LOB_LIST`/`LOB_QUEUES`, or "MSG" inside `INACTIVE_QUEUE_NAMES`:** these are real, business-supplied data (a genuine LOB name, and real queue names like "Brazil MSG CTE") — not the app's own descriptive branding text, which is what the request was actually about. This app has a standing convention of reproducing real supplied names exactly as given rather than editing them to fit the app's own presentation choices (see the "real names + illustrative structure" convention throughout `design_choice.md`); a coincidental substring match against the old business-unit acronym isn't grounds for altering real reference data.
+
 ## Holiday Calendar: Filter First, Don't Dump 800 Rows (2026-07-27)
 
 **Decision:** `HolidayCalendarView.jsx` defaults to a Region pill (starting on "All") plus a searchable Country multi-select, with results grouped into collapsible per-month accordions (only the first month open by default) — never a flat unfiltered list of all 800 rows.

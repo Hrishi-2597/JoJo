@@ -8,16 +8,18 @@ import PlanningSidebar from './components/PlanningSidebar'
 
 const THEME_KEY = 'tsg-spog-theme'
 
-// Each business section (MSG/TSA) has its own internal Forecasting/Capacity Plan
+// Each business section (ESG/HES) has its own internal Forecasting/Capacity Plan
 // toggle — this is the sub-page shown inside that section, not a top-level route.
+// Internal keys/state (msg/tsa) are unchanged — only user-facing labels were
+// renamed (TSG->ISG, MSG->ESG, TSA->HES, 2026-07-27); see design_choice.md.
 const SUB_PAGES = {
   msg: [
-    { key: 'forecasting', label: 'MSG Forecasting' },
-    { key: 'capacity', label: 'MSG Capacity Plan' },
+    { key: 'forecasting', label: 'ESG Forecasting' },
+    { key: 'capacity', label: 'ESG Capacity Plan' },
   ],
   tsa: [
-    { key: 'forecasting', label: 'TSA Forecasting' },
-    { key: 'capacity', label: 'TSA Capacity Plan' },
+    { key: 'forecasting', label: 'HES Forecasting' },
+    { key: 'capacity', label: 'HES Capacity Plan' },
   ],
 }
 
@@ -34,11 +36,11 @@ function PageToggle({ options, page, setPage }) {
 }
 
 // Home button placed next to the header logo, next to a business section, to get
-// back to the TSG SPoG landing tiles — the only way back up once a business is
+// back to the ISG SPoG landing tiles — the only way back up once a business is
 // selected, since the header no longer carries a top-level page toggle.
 function HomeButton({ onClick }) {
   return (
-    <button onClick={onClick} aria-label="Back to TSG SPoG home" title="Back to TSG SPoG home" style={{
+    <button onClick={onClick} aria-label="Back to ISG SPoG home" title="Back to ISG SPoG home" style={{
       width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border-default)',
       background: 'var(--bg-inset)', color: 'var(--text-dim)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
@@ -82,9 +84,11 @@ function ThemeToggle({ theme, onToggle }) {
   )
 }
 
+// Full descriptive names (Enterprise Service Group / High End Storage) were
+// dropped entirely 2026-07-27, per direct request — just the acronym now.
 const BUSINESS_META = {
-  msg: { fullName: 'Enterprise Service Group', badge: 'TSG MSG' },
-  tsa: { fullName: 'High End Storage', badge: 'TSG TSA' },
+  msg: { label: 'ESG', badge: 'ISG ESG' },
+  tsa: { label: 'HES', badge: 'ISG HES' },
 }
 
 export default function App() {
@@ -140,10 +144,10 @@ export default function App() {
           </div>
           <div>
             <h1 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-              TSG SPoG
+              ISG SPoG
             </h1>
             <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
-              {isBusiness ? `${meta.fullName} · ${subPageLabel}` : 'Enterprise Service Group · High End Storage'}
+              {isBusiness ? `${meta.label} · ${subPageLabel}` : 'ESG · HES'}
             </p>
           </div>
         </div>
@@ -188,7 +192,7 @@ export default function App() {
             textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',
             padding: '12px 0', borderTop: '1px solid var(--border-subtle)',
           }}>
-            TSG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
+            ISG SPoG · ESG · HES · © 2026 Aligned Automation Services
           </footer>
         </div>
       </div>

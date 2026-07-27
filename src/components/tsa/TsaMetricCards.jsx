@@ -249,7 +249,7 @@ function TotalQueuesSection() {
 }
 
 const MODAL_TITLES = {
-  totalQueues: 'TSA Queue Directory',
+  totalQueues: 'HES Queue Directory',
   asu:         'Active Service Units — Trend',
   sr:          'Service Requests — DB vs OSP',
   cpasu:       'CPASU Trend',
@@ -299,7 +299,7 @@ export default function TsaMetricCards({ filters, granularity }) {
           value={`${d.totalQueues.active} / ${d.totalQueues.active + d.totalQueues.inactive}`}
           sub={`${d.totalQueues.inactive} inactive queues`}
           onClick={() => toggle('totalQueues')} active={active === 'totalQueues'}
-          info="Count of active vs inactive TSA queues by region." />
+          info="Count of active vs inactive HES queues by region." />
         <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}

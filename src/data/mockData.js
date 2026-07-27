@@ -6,9 +6,11 @@ export const PLAN_NAMES = ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Pla
 // pickers filter it out the same way Forecasting's plan dropdowns already do.
 export const CAPACITY_PLAN_NAMES = ['Actual', 'Dec Plan', 'Jan Plan', 'April Plan']
 
-// Business Org filter (MSG Capacity only) — illustrative sibling org units alongside
-// the one this page is scoped to by default.
-export const BUSINESS_ORGS = ['TSG MSG', 'TSG TSA', 'TSG Core']
+// Business Org filter (ESG Capacity only) — illustrative sibling org units alongside
+// the one this page is scoped to by default. Unused/dead code (this filter was
+// removed from the page itself, see design_choice.md) — kept in sync with the
+// TSG->ISG/MSG->ESG/TSA->HES rename anyway in case it's ever revived.
+export const BUSINESS_ORGS = ['ISG ESG', 'ISG HES', 'ISG Core']
 
 // Country filter (MSG Capacity only) — a curated, real-country list distinct from the
 // exhaustive world-atlas country groupings the geo choropleths use; COUNTRY_REGION is

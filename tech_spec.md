@@ -3,6 +3,8 @@
 ## Overview
 A React application that renders an analytics dashboard for Enterprise's TSG Business, entered through an **"TSG SPoG" landing page** with two tiles — **MSG** and **TSA**. Each business section has its own internal Forecasting/Capacity Plan toggle in the header, so there are effectively **4 pages**: **MSG Forecasting** (call volume plans, actuals vs plan adherence, geographic accuracy distribution), **MSG Capacity Plan** (staffing, utilization, attrition, SL%), **TSA Forecasting** (ASU/SR/UCR service-unit tracking, built from slides 5–6 of `SPOG_views.pptx`; briefly named "MSG Capacity Planning" before a 2026-07-02 rename), and **TSA Capacity Plan** (FTE, attrition, workload distribution incl. a Sankey diagram, SLO). A home button next to the header logo returns to the landing tiles from either business section. All data is currently mocked — no backend — but every filter on every page is fully live: each recomputes cards and charts from a shared, filterable fact table (see Data Model below).
 
+**Naming note (2026-07-27):** everything a *user sees* now reads ISG/ESG/HES instead of TSG/MSG/TSA, with the descriptive full names ("Enterprise Service Group"/"High End Storage") dropped entirely — see the design_choice.md entry for the exact scope. This document's own prose, and every internal file/folder/component/function name (`MsgCapacityPage.jsx`, `tsaCapacity/`, `TSA_ACTIVE_QUEUES`, etc.), still uses MSG/TSA throughout — none of that was renamed, only the live app's own displayed text. Read "MSG"/"TSA" below as "the code that now renders as ESG/HES in the UI," not as what's currently on screen.
+
 ---
 
 ## Tech Stack

@@ -1,18 +1,18 @@
 import React from 'react'
 
+// Full descriptive names (Enterprise Service Group / High End Storage) were
+// dropped entirely 2026-07-27, per direct request — just the acronym now.
 const TILES = [
   {
     key: 'msg',
-    label: 'MSG',
-    fullName: 'Enterprise Service Group',
-    desc: 'Forecasting and Capacity Plan for MSG queues, staffing and utilization.',
+    label: 'ESG',
+    desc: 'Forecasting and Capacity Plan for ESG queues, staffing and utilization.',
     accent: '#38bdf8',
   },
   {
     key: 'tsa',
-    label: 'TSA',
-    fullName: 'High End Storage',
-    desc: 'Forecasting and Capacity Plan for TSA lines of business and workload.',
+    label: 'HES',
+    desc: 'Forecasting and Capacity Plan for HES lines of business and workload.',
     accent: '#a78bfa',
   },
 ]
@@ -38,7 +38,6 @@ function Tile({ tile, onSelect }) {
       </div>
       <div>
         <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{tile.label}</p>
-        <p style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 1 }}>{tile.fullName}</p>
       </div>
       <p style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.5 }}>{tile.desc}</p>
       <p style={{ fontSize: 10.5, fontWeight: 600, color: tile.accent, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -55,7 +54,7 @@ export default function LandingPage({ onSelect }) {
       alignItems: 'center', justifyContent: 'center', gap: 36, padding: '40px 20px',
     }}>
       <div style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>TSG SPoG</h1>
+        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>ISG SPoG</h1>
         <p style={{ fontSize: 12.5, color: 'var(--text-dim)', marginTop: 6 }}>Select a business to open its Forecasting and Capacity Plan views</p>
       </div>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>

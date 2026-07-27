@@ -617,3 +617,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Built `HolidayCalendarView.jsx` — a third sidebar section (🌍 Holiday Calendar, alongside 📅 Fiscal Calendar and 🗓 Planning Cycle) with a Region pill filter and a searchable Country multi-select (reusing the existing `MultiSelectField.jsx` rather than building a new filter component), results grouped into collapsible per-month accordions — necessary given 800 rows would be unusable as a flat list.
 - Wired the new section into `PlanningSidebar.jsx`. Verified with `npm run build` (clean, 1180 modules, up from 1178).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 46 — 2026-07-27
+**Input:** "Now do one change - Rename TSG to ISG and MSG TO ESG and TSA to HES ..JUST remove the fullform like Enterprise service group and high end storage whereever mentioned."
+
+**Action:**
+- Grepped the whole `src/` tree for every TSG/MSG/TSA/"Enterprise Service Group"/"High End Storage" occurrence and categorized each one before touching anything: genuine user-facing text (headers, titles, badges, modal titles, tile labels) vs. code comments vs. real supplied data that happens to contain the old acronyms as a substring.
+- Renamed every user-facing occurrence: `index.html`'s `<title>`, the header title/subtitle/home-button labels, the landing page's heading + tile labels/descriptions, business badges, the footer, the sub-page toggle labels (ESG/HES Forecasting/Capacity Plan), the HES Total Queues card's modal title + info description, and the illustrative (currently unused) `BUSINESS_ORGS` filter list. `fullName` fields (`Enterprise Service Group`/`High End Storage`) were deleted entirely along with their rendering, not swapped for new full names, per direct request.
+- Deliberately left unchanged: every internal code identifier (`MsgCapacityPage.jsx`, `tsaCapacity/` folder, `TSA_ACTIVE_QUEUES`, etc.) and code comment — renaming those would be a much larger architecture refactor than a branding change, and they're invisible to anyone using the app. Also left untouched: `tsaData.js`'s `LOB_LIST`/`LOB_QUEUES['High End Storage']` (a real supplied LOB name, not branding) and `mockData.js`'s `INACTIVE_QUEUE_NAMES` entries like "Brazil MSG CTE" (real supplied queue names containing "MSG" as a coincidental substring) — both are real business-supplied data this app has always preserved exactly as given.
+- Verified with `npm run build` (clean, 1180 modules) and a direct search of the built JS bundle (not just source) for every old branding string — confirmed the only remaining "High End Storage" occurrences are the real LOB data noted above.
+- Updated `handoff.md`, `tech_spec.md` (added a naming note to the Overview clarifying the doc's own prose and internal code still say MSG/TSA), `design_choice.md`; committed and pushed to `main`.
