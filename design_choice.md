@@ -4,6 +4,26 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Fiscal Calendar Reflows to a Single Column Instead of Cramming the Source's Wide Layout (2026-07-27)
+
+**Decision:** The supplied FY27 calendar image shows all 4 quarters side by side (12 month tables across the full page width). `FiscalCalendarView.jsx` instead stacks quarters/months vertically in a single column.
+
+**Why:** This view lives inside a 360px sidebar panel (see below), not a full-width page — the source's 4-quarters-across layout would force each of the 12 month tables to be too narrow to read (7 day columns + QWKS/WKS need real width for legible digits). Reflowing to one column keeps every cell readable at the cost of a long vertical scroll, which is fine for reference content the user is looking something up in, not reading top-to-bottom in one sitting. The DATA and visual language (QWKS/WKS numbering, SCO/Holiday/Pay Date color coding) are reproduced exactly as shown — only the arrangement changed to fit the container.
+
+## Planning Cycle + Fiscal Calendar Live in One Shared Sidebar Instance, Not Per-Page (2026-07-27)
+
+**Decision:** `PlanningSidebar.jsx` is mounted exactly once, in `App.jsx`, outside the `{view === 'msg' && ...}` / `{view === 'tsa' && ...}` conditionals — not imported into each of the 4 business pages separately.
+
+**Why:** The request was to add this "to all the pages." Mounting one shared instance above the page-switching logic means its expand/collapse state (which section is open, if any) survives navigating between MSG/TSA and Forecasting/Capacity Plan — a user who opens the Fiscal Calendar, then switches pages to check something, doesn't lose their place. Duplicating the sidebar into every page component would reset that state on every navigation and risk the 4 copies drifting out of sync with each other over time.
+
+**Collapsed rail vs. expanded panel, not a modal:** directly asked the user whether this should be a slide-out/modal overlay or an inline-expanding sidebar section — they chose inline expansion (pushes page content right), so the sidebar's own box-model width (46px collapsed, 406px with a section open) is a real layout participant, not an overlay. This is also why `PlanningSidebar` uses `maxHeight: 100vh` rather than a fixed `height: 100vh` on its sticky-positioned box — a fixed height would have reserved dead scroll space below the header on every page (a `position: sticky` element's box still counts toward document height even once "stuck"), while `maxHeight` only grows to fit whatever's actually inside (a couple of icons when collapsed, a long scrollable calendar when a section is open).
+
+## DB/OSP as a Toggle, Not Side-by-Side, in the Planning Cycle View (2026-07-27)
+
+**Decision:** `PlanningCycleView.jsx`'s Full Year tab shows one track (DB or OSP) at a time via a `BinaryToggle`, rather than both tracks side by side as the source Excel itself lays them out.
+
+**Why:** Directly asked the user this exact question, given the source spreadsheet's own two-columns-side-by-side layout — they chose a toggle instead, consistent with how DB/OSP is already presented as a toggle/pill filter elsewhere in this app (e.g. the MSG Forecasting DB/OSP Split card), rather than introducing a second side-by-side pattern unique to this one view.
+
 ## TSA Capacity Geo Map: Reuse the Attrition Visual's Headcount Split, Don't Invent New Data (2026-07-23)
 
 **Decision:** When switching the Geo Map from SLO% to Headcount, the new `geoHeadcountByRegion`/`geoHeadcountBySubRegion` selectors reshape the EXISTING `tsaAttritionByDimension()` output (already computing a real region/sub-region headcount split for the Attrition visual in `HeadcountAttritionLayer.jsx`) rather than inventing a second, parallel headcount-by-region dataset.

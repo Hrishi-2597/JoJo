@@ -4,6 +4,7 @@ import ForecastingPage from './components/ForecastingPage'
 import MsgCapacityPage from './components/msgCapacity/MsgCapacityPage'
 import TsaForecastingPage from './components/tsa/TsaForecastingPage'
 import TsaCapacityPage from './components/tsaCapacity/TsaCapacityPage'
+import PlanningSidebar from './components/PlanningSidebar'
 
 const THEME_KEY = 'tsg-spog-theme'
 
@@ -172,16 +173,25 @@ export default function App() {
       {/* Accent line under header */}
       <div style={{ height: 1, background: 'linear-gradient(90deg, var(--accent) 0%, rgba(56,189,248,0.1) 40%, transparent 70%)' }} />
 
-      {view === 'landing' && <LandingPage onSelect={setView} />}
-      {view === 'msg' && (msgSubPage === 'forecasting' ? <ForecastingPage /> : <MsgCapacityPage />)}
-      {view === 'tsa' && (tsaSubPage === 'forecasting' ? <TsaForecastingPage /> : <TsaCapacityPage />)}
+      {/* PlanningSidebar is mounted once here, outside the page conditionals below,
+          so its expand/collapse state persists across every page/tab switch —
+          this is what makes the Fiscal Calendar + Planning Cycle available on
+          every page via one shared instance instead of a copy per page. */}
+      <div style={{ display: 'flex' }}>
+        <PlanningSidebar />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {view === 'landing' && <LandingPage onSelect={setView} />}
+          {view === 'msg' && (msgSubPage === 'forecasting' ? <ForecastingPage /> : <MsgCapacityPage />)}
+          {view === 'tsa' && (tsaSubPage === 'forecasting' ? <TsaForecastingPage /> : <TsaCapacityPage />)}
 
-      <footer style={{
-        textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',
-        padding: '12px 0', borderTop: '1px solid var(--border-subtle)',
-      }}>
-        TSG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
-      </footer>
+          <footer style={{
+            textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',
+            padding: '12px 0', borderTop: '1px solid var(--border-subtle)',
+          }}>
+            TSG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
+          </footer>
+        </div>
+      </div>
     </div>
   )
 }

@@ -34,6 +34,15 @@ SPoG/
 │   ├── index.css               # Tailwind imports + theme CSS variables (:root / [data-theme='light']) +
 │   │                              global scrollbar/select/card/tooltip/etc. component classes
 │   ├── components/
+│   │   ├── PlanningSidebar.jsx # Collapsible left sidebar (2026-07-27) — 46px icon rail expands to a 360px
+│   │   │                         panel (Fiscal Calendar / Planning Cycle), mounted once in App.jsx outside the
+│   │   │                         page conditionals so it's present + keeps its open/closed state on every page
+│   │   ├── FiscalCalendarView.jsx  # Renders src/data/planningCalendarData.js's FISCAL_CALENDAR as a single-
+│   │   │                             column stack of quarters/months (reflowed from the source image's wide
+│   │   │                             4-quarters-across layout to fit the 360px sidebar panel)
+│   │   ├── PlanningCycleView.jsx   # Full Year / Current Cycle tabs; Full Year has a DB/OSP BinaryToggle over
+│   │   │                             collapsible per-cycle week accordions; Current Cycle shows SR Model
+│   │   │                             (DB+OSP) and Contacts Model (DB only) from the source's second sheet
 │   │   ├── LandingPage.jsx     # "TSG SPoG" title + MSG/TSA tiles — the app's entry point (2026-07-03)
 │   │   ├── ForecastingPage.jsx # MSG Forecasting page body (filters + cards + 3 layers + RCA/CLCA sidebar)
 │   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by every page
@@ -766,14 +775,16 @@ actHrsByFY(filters, granularity)          — {period, actual, plan, adherence} 
   actual is at or under plan); rate-preserving expansion (avg case time is hours-per-case, not a summable volume)
 actHrsDefaulterLobs(filters, count=6)     — {lob, actual, plan, delta} sorted by delta DESCENDING — LOBs running above
   target ACT, backing the "top LOBs above target" list under both Workload Distribution ACT visuals
-geoSloByRegion() / TSA_GEO_SLO_BY_REGION  — {region, slo} × 4 — backs the SLO % card's region-breakdown modal + TsaCapacityGeoMap Region view
-geoSloBySubRegion() / TSA_GEO_SLO_BY_SUBREGION — {subRegion, slo} × 24 real SUB_REGIONS values — TsaCapacityGeoMap Sub-region view
-sloByFY(filters, granularity)             — {period, actual, target} — granular Global SLO trend (2026-07-20, added
-  so the card headline's comparison can be granularity-aware; both fields rate-expanded)
-tsaCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime, globalSlo}. totalFte/
-  attrition/avgCaseTime/globalSlo each carry {actual, period, prevPeriod, yoyPct} — both the headline value AND yoyPct
-  now drill with granularity (2026-07-20, superseding the prior always-FY-over-FY design); globalSlo additionally
-  carries regionsAtRisk; casesPerFte is unchanged ({actual, plan} only)
+geoHeadcountByRegion(filters) / geoHeadcountBySubRegion(filters) — {region/subRegion, headcount} — reshapes
+  tsaAttritionByDimension's own headcount split for TsaCapacityGeoMap (2026-07-23, replacing the removed SLO%
+  selectors below — see design_choice.md). Color bands relative to the current view's own peak value, not fixed
+  thresholds, since headcount is a raw count rather than a 0-100% rate.
+  (Removed 2026-07-23: geoSloByRegion/TSA_GEO_SLO_BY_REGION, geoSloBySubRegion/TSA_GEO_SLO_BY_SUBREGION, sloByFY,
+  SLO_BY_FY — the SLO % card and its Geo Map coloring were both replaced; see design_choice.md.)
+tsaCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime}. totalFte/attrition/
+  avgCaseTime each carry {actual, period, prevPeriod, yoyPct} — both the headline value AND yoyPct drill with
+  granularity (2026-07-20); casesPerFte is unchanged ({actual, plan} only). No longer returns globalSlo (2026-07-23,
+  SLO % card removed).
 tsaPlanOverPlanByDimension(filters, dimension) — {key, plan1, plan2, variance} × regions or sub-regions — Plan over
   Plan Variation layer's MainChart default view
 tsaPlanOverPlanTrendByDimension(filters, key, dimension, granularity) — {period, plan1, plan2, variance} — FY/granularity
@@ -794,12 +805,53 @@ Workload Distribution's Visual2 was repointed at the Average Case Time metric in
 workload-hours numbers anymore. The shared `capacity/PlanOverPlanLayer.jsx` this page used to import was also deleted
 once `PlanOverPlanVariationLayer.jsx` replaced it (see design_choice.md).
 
-Business logic, now YoY-based instead of vs-plan/vs-target: Staffing Summary and SLO % both flag a YoY increase as
-GOOD (green) — for Staffing Summary this preserves the page's original "more heads is the safer direction" philosophy
-(the pre-revision Total FTE card flagged understaffing, not overstaffing, as the risk — unlike MSG's Total FTE, which
-flags overstaffing). Attrition and Avg Case Time flag a YoY increase as BAD (red) — both are genuine
-higher-is-worse metrics. Cases per FTE keeps its original actual-vs-plan (not YoY) comparison, unchanged from before
-this revision pass.
+Business logic, now YoY-based instead of vs-plan/vs-target: Staffing Summary flags a YoY increase as GOOD (green) —
+this preserves the page's original "more heads is the safer direction" philosophy (the pre-revision Total FTE card
+flagged understaffing, not overstaffing, as the risk — unlike MSG's Total FTE, which flags overstaffing). Attrition
+and Avg Case Time flag a YoY increase as BAD (red) — both are genuine higher-is-worse metrics. Cases per FTE keeps
+its original actual-vs-plan (not YoY) comparison, unchanged from before this revision pass. (SLO % card removed
+2026-07-23 — see design_choice.md.)
+
+---
+
+## Data Model (`src/data/planningCalendarData.js`) — Fiscal Calendar + Planning Cycle (2026-07-27)
+
+Unlike every other data file in this app, this one is 100% real content (dates, plan names, activity text, holidays)
+supplied directly by the user — an FY27 fiscal calendar image and a planning-cycle Excel workbook (`ghgh.xlsx`,
+sheets "Overall FY27" and "Current Planning cycle"). Nothing here is illustrative/mock.
+
+```
+FY_START = Date.UTC(2026, 0, 31)          — anchor date (a Saturday); everything else is computed from this
+buildFiscalCalendar()                     — generates all 52 weeks via the standard 4-4-5 pattern (4,4,5 weeks per
+  quarter's 3 months), weeks running Sat→Fri; QWKS resets 1-13 per quarter, WKS runs 1-52 continuously
+FISCAL_CALENDAR                           — [{ label: 'Q1'..'Q4', months: [{ name, weeks: [{ qwks, wks,
+  days: [{ date, day, type }] }] }] }] — type is null | 'sco' | 'holiday' | 'payDate'
+ANNOTATIONS                               — 19 hardcoded {isoDate: type} entries transcribed from the supplied
+  image — NOT a computed rule (real SCO dates don't follow a fixed cadence); holidays double-check as real US
+  observed dates (Memorial Day, Independence Day observed, Labor Day, Thanksgiving + day after, a Dec 21-25
+  shutdown week, New Year's Day)
+FISCAL_YEAR_LABEL / FISCAL_YEAR_RANGE      — 'Fiscal Year 2027' / '(January 31, 2026 - January 29, 2027)', the
+  range string computed from FY_START, not hardcoded
+DB_WEEK_TEMPLATE                          — the 6-week Mon-Fri activity template shared by every DB-track plan
+  cycle (April/Jun/Aug/Oct/Dec Plan) — the source Excel repeats this near-verbatim per cycle, so it's defined once
+buildDbCycle(planName, startIso, overrides) — applies DB_WEEK_TEMPLATE starting at startIso, with per-cycle
+  overrides (only April Plan's week-1 wording differs, adding "(ASU, ICR, UCR)")
+OVERALL_DB_CYCLES                         — the 5 DB-track cycles across FY27 (April/Jun/Aug/Oct/Dec Plan)
+OSP_Q_TEMPLATE / buildOspQCycle()         — same idea for the OSP track's Q3/Q4-style cycles (May Plan's own
+  template is unique — only occurs once — so it's written out directly instead of templated)
+OVERALL_OSP_CYCLES                        — May Plan (OSP), FY27 Q3 Plan (OSP), FY27 Q4 Plan (OSP)
+CURRENT_CYCLE / CURRENT_CYCLE_LABEL       — the source's "Current Planning cycle" sheet, drilled into by call-
+  volume model instead of by track: srModel: {db, osp}, contactsModel: {db, osp: null} — Contacts Model has no
+  OSP counterpart in the source and runs 2 weeks longer than SR Model's own cycle
+formatWeekRange(startIso)                 — 'Mon D - Fri D' display string for a week's Monday start date
+```
+
+Reading the raw XLSX required accounting for merged cells: a cycle's "Plan Name" cell sometimes sits at the merge's
+own anchor row, sometimes in an unmerged row directly above the merge (an inconsistency in how the source workbook
+was hand-built, not a parsing choice) — the extraction script checks both. A trailing 2-row scratch table in the
+"Current Planning cycle" sheet (`Utilization/Outage/ESG/HES` percentages) didn't fit the planning-cycle narrative
+and was excluded rather than guessed at. The workbook's "Sheet4" tab and its 2 hidden sheets were excluded per
+direct request / since hidden sheets aren't part of the visible deliverable.
 
 ---
 
