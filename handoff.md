@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## ESG Forecasting: Geo Map Renamed "Global Forecast Accuracy Heatmap" (2026-07-27)
+
+- `Layer3GeoMap.jsx`'s centered title changed from "Global Adherence Heatmap" to "Global Forecast Accuracy Heatmap" — a plain rename, per direct request. The layer header's own subtitle ("— global forecast adherence"), the RCA/CLCA copy, and the info-button description all still say "adherence" (the underlying metric's real name in the data model) — only the one title line was in scope.
+- Verified with `npm run build` (clean, 1180 modules).
+
 ## Rebrand: TSG->ISG, MSG->ESG, TSA->HES; Full Descriptive Names Dropped (2026-07-27)
 
 Every user-facing mention of the old business-unit labels was renamed, and the descriptive full names ("Enterprise Service Group", "High End Storage") were removed entirely — the app now shows just the acronym everywhere.

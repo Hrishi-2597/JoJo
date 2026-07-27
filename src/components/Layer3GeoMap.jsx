@@ -80,7 +80,7 @@ export default function Layer3GeoMap({ filters }) {
 
           {/* Centered title */}
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-            Global Adherence Heatmap
+            Global Forecast Accuracy Heatmap
             <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map and listed in the table below." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>

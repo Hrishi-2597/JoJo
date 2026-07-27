@@ -629,3 +629,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Deliberately left unchanged: every internal code identifier (`MsgCapacityPage.jsx`, `tsaCapacity/` folder, `TSA_ACTIVE_QUEUES`, etc.) and code comment — renaming those would be a much larger architecture refactor than a branding change, and they're invisible to anyone using the app. Also left untouched: `tsaData.js`'s `LOB_LIST`/`LOB_QUEUES['High End Storage']` (a real supplied LOB name, not branding) and `mockData.js`'s `INACTIVE_QUEUE_NAMES` entries like "Brazil MSG CTE" (real supplied queue names containing "MSG" as a coincidental substring) — both are real business-supplied data this app has always preserved exactly as given.
 - Verified with `npm run build` (clean, 1180 modules) and a direct search of the built JS bundle (not just source) for every old branding string — confirmed the only remaining "High End Storage" occurrences are the real LOB data noted above.
 - Updated `handoff.md`, `tech_spec.md` (added a naming note to the Overview clarifying the doc's own prose and internal code still say MSG/TSA), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 47 — 2026-07-27
+**Input:** "Also in ESG Forecasting rename the geo map from Global adherence map to Global Forecast Accuracy Heatmap."
+
+**Action:**
+- `Layer3GeoMap.jsx`: renamed the centered map title from "Global Adherence Heatmap" to "Global Forecast Accuracy Heatmap" — left the layer subtitle, RCA/CLCA copy, and info-button description as-is (all still reference "adherence," the metric's real name in the data model); only the one title line was asked for.
+- Verified with `npm run build` (clean, 1180 modules).
+- Updated `handoff.md`; committed and pushed to `main`.
