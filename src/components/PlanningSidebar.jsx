@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import FiscalCalendarView from './FiscalCalendarView'
 import PlanningCycleView from './PlanningCycleView'
+import HolidayCalendarView from './HolidayCalendarView'
 
 // Mounted once in App.jsx, outside the per-page conditional rendering, so its
 // expand/collapse state survives switching between pages/tabs — this is what
@@ -9,6 +10,7 @@ import PlanningCycleView from './PlanningCycleView'
 const SECTIONS = [
   { key: 'calendar', label: 'Fiscal Calendar', icon: '📅' },
   { key: 'cycle', label: 'Planning Cycle', icon: '🗓' },
+  { key: 'holidays', label: 'Holiday Calendar', icon: '🌍' },
 ]
 
 export default function PlanningSidebar() {
@@ -65,6 +67,7 @@ export default function PlanningSidebar() {
           <div style={{ padding: 14 }}>
             {active === 'calendar' && <FiscalCalendarView />}
             {active === 'cycle' && <PlanningCycleView />}
+            {active === 'holidays' && <HolidayCalendarView />}
           </div>
         </div>
       )}

@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## New: Holiday Calendar, Third Sidebar Section (2026-07-27)
+
+- **Source**: `Hoilday.xlsx` (single sheet, 801 rows: Fiscal Quarter, Fiscal Month, Week no., Day of the week, Holiday Date, Holiday Name, Country, SubRegion, Region) — a real global holiday list for FY27 covering **800 holidays across 53 countries and 3 regions (AMER/APJ/EMEA)**, all real content (not illustrative). One row (a single FY28 entry — Spain's "All Saints' Day (in lieu)" on 2027-11-02) fell after FY27's own end date (Jan 29, 2027) and was excluded to keep the view scoped to FY27; verified the source's own fiscal-month labels (`2027M01`..`2027M12`) line up exactly with this app's existing `MONTH_NAMES` fiscal-month order (M01=February .. M12=January) before trusting them for grouping.
+- **New `src/data/holidayCalendarData.js`**: `HOLIDAYS` (800 entries), `HOLIDAY_REGIONS` (3), `HOLIDAY_COUNTRIES` (53, sorted) — generated from the parsed workbook, not hand-typed.
+- **New `HolidayCalendarView.jsx`** — third sidebar section (🌍 Holiday Calendar, alongside 📅 Fiscal Calendar and 🗓 Planning Cycle). A Region pill filter (All/AMER/APJ/EMEA) plus a searchable Country multi-select (reusing the existing `MultiSelectField.jsx` filter-bar component rather than building a new one), with results grouped into collapsible per-month accordions (first month open by default) — necessary given 800 rows would be unusable as a flat unfiltered list.
+- **Verified**: Node-parsed the raw workbook (mirroring the same OOXML-unzip approach used for the Planning Cycle Excel), spot-checked the fiscal-month boundary mapping against the already-built `FISCAL_CALENDAR` data (e.g. February's holidays run through Feb 27, matching that month's own last fiscal week), confirmed the generated data file imports cleanly under Node before wiring it into a component; `npm run build` clean (1180 modules, up from 1178).
+
 ## New: Fiscal Calendar + Planning Cycle, on Every Page (2026-07-27)
 
 Two new pieces of real (not illustrative) content, reachable from a new collapsible left sidebar mounted once in `App.jsx` (outside the page conditionals) so it's present — and keeps its expand/collapse state — across every page including the landing screen.

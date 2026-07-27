@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Holiday Calendar: Filter First, Don't Dump 800 Rows (2026-07-27)
+
+**Decision:** `HolidayCalendarView.jsx` defaults to a Region pill (starting on "All") plus a searchable Country multi-select, with results grouped into collapsible per-month accordions (only the first month open by default) — never a flat unfiltered list of all 800 rows.
+
+**Why:** The source data is comprehensive (800 holidays, 53 countries) precisely because it needs to answer "who's out on a given date" across a global operation — but that same comprehensiveness makes an unfiltered dump unusable in a 360px sidebar panel. Reused the existing `MultiSelectField.jsx` (the same searchable-checkbox-list component the filter bars already use) for the Country filter instead of building a second one, so the interaction pattern is already familiar to anyone who's used this app's other filters.
+
 ## Fiscal Calendar Reflows to a Single Column Instead of Cramming the Source's Wide Layout (2026-07-27)
 
 **Decision:** The supplied FY27 calendar image shows all 4 quarters side by side (12 month tables across the full page width). `FiscalCalendarView.jsx` instead stacks quarters/months vertically in a single column.

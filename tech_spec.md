@@ -43,6 +43,9 @@ SPoG/
 │   │   ├── PlanningCycleView.jsx   # Full Year / Current Cycle tabs; Full Year has a DB/OSP BinaryToggle over
 │   │   │                             collapsible per-cycle week accordions; Current Cycle shows SR Model
 │   │   │                             (DB+OSP) and Contacts Model (DB only) from the source's second sheet
+│   │   ├── HolidayCalendarView.jsx # Third sidebar section (2026-07-27) — Region pill filter + searchable Country
+│   │   │                             MultiSelectField over src/data/holidayCalendarData.js's 800-row real global
+│   │   │                             holiday list, grouped into collapsible per-month accordions
 │   │   ├── LandingPage.jsx     # "TSG SPoG" title + MSG/TSA tiles — the app's entry point (2026-07-03)
 │   │   ├── ForecastingPage.jsx # MSG Forecasting page body (filters + cards + 3 layers + RCA/CLCA sidebar)
 │   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by every page
@@ -852,6 +855,25 @@ was hand-built, not a parsing choice) — the extraction script checks both. A t
 "Current Planning cycle" sheet (`Utilization/Outage/ESG/HES` percentages) didn't fit the planning-cycle narrative
 and was excluded rather than guessed at. The workbook's "Sheet4" tab and its 2 hidden sheets were excluded per
 direct request / since hidden sheets aren't part of the visible deliverable.
+
+---
+
+## Data Model (`src/data/holidayCalendarData.js`) — Holiday Calendar (2026-07-27)
+
+Also 100% real content, supplied as `Hoilday.xlsx` (a single sheet, `Fiscal Quarter | Fiscal Month | Week no. |
+Day of the week | Holiday Date | Name of the Holiday | Country | SubRegion | Region`).
+
+```
+HOLIDAYS           — 800 entries: { date, dow, month, quarter, name, country, subRegion, region }, sorted by
+  date then country. `month`/`quarter` are real names ('February'..'January', 'Q1'..'Q4') derived from the
+  source's own fiscal-month labels (2027M01..2027M12 -> February..January), verified to line up with this app's
+  existing FISCAL_CALENDAR month boundaries before trusting them
+HOLIDAY_REGIONS    — ['AMER', 'APJ', 'EMEA'] (derived, not hand-typed)
+HOLIDAY_COUNTRIES  — 53 real country names, sorted (derived, not hand-typed)
+```
+
+One source row (Spain's "All Saints' Day (in lieu)", 2027-11-02, labeled `2028Q04`/`2028M10`) fell after FY27's own
+end date (Jan 29, 2027) and was excluded — this view is scoped to FY27, matching the rest of the app.
 
 ---
 

@@ -603,3 +603,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified with a Node smoke test of the data file (52 weeks, all 19 annotations land on the right dates, April Plan's weeks match the Excel exactly) and `npm run build` (clean, 1178 modules). Caught and fixed a real layout bug during the build: the sidebar's sticky box used a fixed `height: 100vh`, which would have reserved dead scroll space below the header on every page since a `position: sticky` element's box still counts toward document height even once stuck — switched to `maxHeight: 100vh`.
 - Started the dev server and opened it in the user's browser; this environment has no browser-automation tool, so the sidebar's expand/collapse interaction and the reflowed calendar layout weren't visually click-tested by the agent itself — flagged as a follow-up to verify manually.
 - Updated `handoff.md`, `tech_spec.md` (added the new Data Model section + fixed stale SLO references left over from the 2026-07-23 removal that hadn't been updated in this file yet), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 45 — 2026-07-27
+**Input:** "C:\Users\hrishikesh.yadav\Downloads\Hoilday.xlsx also add this holiday calender"
+
+**Action:**
+- Unzipped and parsed `Hoilday.xlsx` (single sheet, 801 rows: Fiscal Quarter/Fiscal Month/Week no./Day of the week/Holiday Date/Name of the Holiday/Country/SubRegion/Region) — a real global holiday list for FY27: 800 holidays (after excluding 1 out-of-range row), 53 countries, 3 regions (AMER/APJ/EMEA).
+- Verified the source's own fiscal-month labels (`2027M01`..`2027M12`) line up exactly with this app's existing `FISCAL_CALENDAR` month boundaries (e.g. February's holidays run through Feb 27, matching that fiscal month's own last week) before trusting them for the month-name mapping used to group the view.
+- Excluded 1 row (Spain's "All Saints' Day (in lieu)", 2027-11-02, labeled `2028Q04`) — it falls after FY27's own end date (Jan 29, 2027), out of scope for a view framed around FY27.
+- Generated `src/data/holidayCalendarData.js` (`HOLIDAYS` × 800, `HOLIDAY_REGIONS`, `HOLIDAY_COUNTRIES`) from the parsed workbook rather than hand-typing, and verified it imports cleanly under Node before building UI on top of it.
+- Built `HolidayCalendarView.jsx` — a third sidebar section (🌍 Holiday Calendar, alongside 📅 Fiscal Calendar and 🗓 Planning Cycle) with a Region pill filter and a searchable Country multi-select (reusing the existing `MultiSelectField.jsx` rather than building a new filter component), results grouped into collapsible per-month accordions — necessary given 800 rows would be unusable as a flat list.
+- Wired the new section into `PlanningSidebar.jsx`. Verified with `npm run build` (clean, 1180 modules, up from 1178).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
