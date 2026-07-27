@@ -4,6 +4,10 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance, filterQueues } from '../data/mockData'
+import {
+  contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
+  allBucketsQueues, BUCKET_TABLE_COLUMNS,
+} from '../data/insightFactors'
 import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -35,10 +39,10 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, subtitle, children, controls, rca, clca, info }) {
+function Visual({ title, subtitle, children, controls, rca, clca, table, info }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
-      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
+      {(rca || clca || table) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} table={table} /></div>}
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         {title}{info && <InfoButton info={info} />}
       </p>
@@ -75,10 +79,16 @@ function QueueTick({ x, y, payload }) {
 
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => actualVsPlanByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="Adherence dips concentrate in quarters with seasonal call spikes."
       clca="Build a seasonal overlay into the forecast model for those quarters."
+      table={table}
       info="Actual volume against plan volume by fiscal year (or sub-period), with the resulting adherence % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
@@ -106,7 +116,19 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
   // Same DB/OSP-agnostic queue count the Total Queues card uses — converts each
   // bucket's % into "how many queues" for the tooltip, since a bare % repeats what
   // the on-bar label already shows.
-  const totalQueues = useMemo(() => filterQueues({ ...filters, dbOsp: 'All' }).length, [filters])
+  const scopedQueues = useMemo(() => filterQueues({ ...filters, dbOsp: 'All' }), [filters])
+  const totalQueues = scopedQueues.length
+  // Every bucket's queue composition for the latest in-scope period, in one table —
+  // answers "which queues contributed what % to that bucket" without needing a
+  // separate click per bucket. See insightFactors.js for why this is a deterministic,
+  // chart-consistent assignment rather than a literal filter of real per-queue variance
+  // (STACKED_ADHERENCE's bucket mix is its own illustrative aggregate).
+  const latest = data[data.length - 1]
+  const table = useMemo(() => ({
+    title: latest ? `Bucket composition — ${latest.fy}` : 'Bucket composition',
+    columns: BUCKET_TABLE_COLUMNS,
+    rows: latest ? allBucketsQueues(scopedQueues, latest) : [],
+  }), [scopedQueues, latest])
   const StackedTip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
     return (
@@ -127,6 +149,7 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
     <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="The >30% variance band has been growing year over year."
       clca="Audit queues in the >30% band first — they disproportionately hurt overall accuracy."
+      table={table}
       info="Percentage of the queue population per fiscal year, bucketed by how far actuals landed from plan.">
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
         {STACK_META.map(({ key, label }) => (
@@ -167,11 +190,24 @@ function Visual3({ filters, selectedPlan, onPlanChange }) {
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(...sorted.map(d => Math.abs(d.variance))) / 5) * 5), [sorted])
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
+  // Full in-scope roster, tiered High/Moderate/Low with an illustrative likely-reason
+  // per queue — same treatment as Layer 1's Plan A/B version of this chart.
+  const table = useMemo(() => {
+    const all = cqnActualVariance(filters, 999, selectedPlan)
+    return {
+      title: 'Every queue in scope, by variance tier',
+      columns: VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(q => ({ name: q.cqn, tier: varianceTier(Math.abs(q.variance)).label, variance: `${q.variance > 0 ? '+' : ''}${q.variance}%`, reason: varianceReason(q.cqn), _abs: Math.abs(q.variance) }))
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, selectedPlan])
   return (
     <Visual title="Top Queues by Variance"
       controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="Actual-vs-plan misses cluster in a handful of high-volume queues."
       clca="Re-baseline those queues' plans using the last two quarters of actuals."
+      table={table}
       info="The queues with the largest actual-vs-plan variance, ranked by magnitude regardless of direction.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={sorted} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>

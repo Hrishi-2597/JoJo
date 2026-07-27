@@ -5,6 +5,9 @@ import {
 } from 'recharts'
 import { PLAN_NAMES } from '../../data/mockData'
 import { utilizationByFY, utilizationByQueue, leavesByQueue } from '../../data/msgCapacityData'
+import {
+  contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
+} from '../../data/insightFactors'
 import { C, Visual, Tip, CategoryTick, PlanSelect } from '../ChartKit'
 
 // Same PLAN_NAMES list as Headcount and SL%'s "Actual vs Plan Variation" dropdown
@@ -49,12 +52,20 @@ function UtilFyTip({ active, payload, label }) {
 function Visual1({ filters, granularity }) {
   const [plan, setPlan] = useState(PLANS[0])
   const data = useMemo(() => utilizationByFY(filters, granularity, plan), [filters, granularity, plan])
+  // Period-based trend, no real region context here — same treatment as Visual1 on
+  // Layer1PlanOverPlan/HeadcountLayer.
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Actual vs Target Utilization" subtitle="Hover a bar to see the Aux codes driving the gap"
       controls={<PlanSelect label="Plan" value={plan} onChange={setPlan} options={PLANS} />}
       info="Actual vs Target utilization % over time, with an Adherence % trend line and the Aux codes driving any gap."
       rca="Utilization shortfalls trace back to a handful of recurring Aux codes."
-      clca="Add an Aux-code contingency buffer for queues with recurring exposure.">
+      clca="Add an Aux-code contingency buffer for queues with recurring exposure."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -112,12 +123,31 @@ function QueueBarChart({ data, actualLabel, targetLabel, actualColor, targetColo
 function Visual2({ filters }) {
   const [plan, setPlan] = useState(PLANS[0])
   const data = useMemo(() => utilizationByQueue(filters, 6, plan), [filters, plan])
+  // Full in-scope roster (not just the chart's own top-6), tiered High/Moderate/Low
+  // with an illustrative likely-reason per queue, worst first — same treatment as the
+  // "Top Queues by Variance" charts, adapted here to tier by |utilization gap| (a
+  // percentage-point gap, same numeric scale as a plan-variance %) rather than a plan
+  // A/B variance.
+  const table = useMemo(() => {
+    const all = utilizationByQueue(filters, 999, plan)
+    return {
+      title: 'Every queue in scope, by gap tier',
+      columns: VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(q => {
+          const gap = +(q.actual - q.target).toFixed(1)
+          return { name: q.name, tier: varianceTier(Math.abs(gap)).label, variance: `${gap > 0 ? '+' : ''}${gap}pt`, reason: varianceReason(q.name), _abs: Math.abs(gap) }
+        })
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, plan])
   return (
     <Visual title="Utilization Defaulter Queues" subtitle="Worst utilization gap first"
       controls={<PlanSelect label="Plan" value={plan} onChange={setPlan} options={PLANS} />}
       info="Queues with the largest gap between actual and target utilization, worst first."
       rca="These queues share the same 2-3 Aux codes as their main driver."
-      clca="Target training/system-downtime fixes at the Aux codes shown here first.">
+      clca="Target training/system-downtime fixes at the Aux codes shown here first."
+      table={table}>
       <QueueBarChart
         data={data} actualLabel="Actual %" targetLabel="Target %" actualColor={C.metric1} targetColor={C.metric2}
         tooltipExtra={row => (
@@ -136,12 +166,27 @@ function Visual2({ filters }) {
 function Visual3({ filters }) {
   const [plan, setPlan] = useState(PLANS[0])
   const data = useMemo(() => leavesByQueue(filters, 6, plan), [filters, plan])
+  // Full in-scope roster (not just the chart's own top-6), tiered by |outage delta|
+  // (a raw day-count gap, not a percentage — so the cell is labeled with a plain
+  // signed number, not a "%"/"pt" suffix) — same ranked-queue treatment as Visual2,
+  // adapted to this metric's own unit.
+  const table = useMemo(() => {
+    const all = leavesByQueue(filters, 999, plan)
+    return {
+      title: 'Every queue in scope, by outage gap tier',
+      columns: VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(q => ({ name: q.name, tier: varianceTier(Math.abs(q.delta)).label, variance: `${q.delta > 0 ? '+' : ''}${q.delta}`, reason: varianceReason(q.name), _abs: Math.abs(q.delta) }))
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, plan])
   return (
     <Visual title="Outage — Actual vs Target" subtitle="Highest delta, ascending"
       controls={<PlanSelect label="Plan" value={plan} onChange={setPlan} options={PLANS} />}
       info="Queues with the largest gap between actual and target outage, ordered by delta."
       rca="Outages cluster in a few queues rather than spreading evenly."
-      clca="Add contingent staffing coverage for the queues with the largest outage gap.">
+      clca="Add contingent staffing coverage for the queues with the largest outage gap."
+      table={table}>
       <QueueBarChart
         data={data} actualLabel="Actual Outage" targetLabel="Target Outage" actualColor={C.behind} targetColor={C.metric2}
         tooltipExtra={row => (

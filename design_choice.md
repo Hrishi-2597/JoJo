@@ -4,6 +4,30 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Detail Tables Live in the Existing RCA/CLCA Button, Not a New One (2026-07-27)
+
+**Decision:** Every graph's new tabular "what contributed"/"variance breakdown"/"bucket composition" content was added as an optional `table` prop on the EXISTING `GraphInsightButton` (RCA/CLCA popup), not a fourth button per chart.
+
+**Why:** Directly asked the user this exact question before touching any code — they confirmed clicking RCA/CLCA should "give details," matching the literal wording of the request. Every chart already carries up to 2 buttons in its corners (`GraphInsightButton` top-left, `cornerControls`/Plan-dropdowns top-right); a 3rd/4th button per chart would crowd every visual in the app for a feature that's conceptually the same button doing more (RCA already means "root cause," which is exactly what a contributing-factors table is).
+
+## Real Holiday Cross-Reference Only by Region, Never by Chart Period (2026-07-27)
+
+**Decision:** `contributingFactors()` only pulls a real holiday row when given a real region (NAMER/LATAM/APJ/EMEA). It never attempts to match a chart's period label (FY25/FY26/FY27, or a Quarter/Month/Week sub-period) against a real calendar date.
+
+**Why:** This app's mock chart periods and the real FY27 Fiscal/Holiday Calendar (built 2026-07-27, same day) are two independent systems that happen to share the label "FY27" — the mock periods are a purely illustrative labeling convention with no anchor date, while the Holiday Calendar is anchored to one real fiscal year (Jan 31, 2026 – Jan 29, 2027). Forcing a mapping between an illustrative "FY27 Q2" chart period and a specific real calendar week would be false precision dressed up as a genuine cross-reference — worse than not cross-referencing at all, since it would look authoritative without being true. Region, by contrast, is a real, stable dimension both systems genuinely share (once mapped onto the Holiday Calendar's 3-region taxonomy) — so region-scoped factor tables get a real holiday row, period-scoped ones stay illustrative-only.
+
+## Bucket-Composition Tables Match the Chart's Own Illustrative Percentages, Not Literal Per-Queue Variance (2026-07-27)
+
+**Decision:** `bucketQueues()`/`allBucketsQueues()` deterministically assign in-scope queues to a distribution chart's buckets in the SAME proportions the chart already displays, rather than literally filtering queues by their real variance value into those bucket ranges.
+
+**Why:** "Forecast Variance Distribution"'s bucket percentages (`STACKED_ADHERENCE` in `mockData.js`) are their own hand-curated illustrative aggregate, built independently of any single queue's real plan-variance (which never exceeds ~8%, per `ACTIVE_QUEUES`'s own documented range). A literal per-queue filter into the chart's 4 buckets (<10%/10-20%/20-30%/>30%) would leave 3 of them permanently empty — clicking through would contradict the chart it's supposed to explain. Assigning queues proportionally, with a synthesized-but-stable value inside each bucket's own range, keeps the popup internally consistent with what the chart already shows, which matters more here than literal derivation from a field that was never designed to produce that spread.
+
+## Queue Performance Table + Geo Map Redesign Stay ESG-Forecasting-Specific (2026-07-27)
+
+**Decision:** The new `QueuePerformanceTable.jsx` and the Geo Map's redesign (rename, summary-table removal, click-region queue table) were built only for ESG Forecasting — not replicated onto ESG Capacity, HES Forecasting, or HES Capacity's own geo maps or as new summary tables there, even though the broader "add a table popup to every graph" request was confirmed in scope for all 4 pages.
+
+**Why:** Every concrete detail in the request (the reference image, "Forecast" vs "Actual" volume columns, "queues" specifically) was Forecasting-shaped — a per-queue forecast-accuracy concept that doesn't map cleanly onto the Capacity pages (which are about headcount/utilization, not per-queue call-volume accuracy) without inventing a different data concept the request never described. The general table-popup-in-RCA/CLCA pattern (contributing factors, variance tiers, bucket composition) is genuinely reusable across chart TYPES regardless of page, which is why that part extended everywhere; the Queue Performance table and Geo Map redesign are a specific new UI section/behavior tied to data (per-queue forecast accuracy) that only exists in this exact shape on one page.
+
 ## Rebrand Touches User-Facing Text Only, Not Internal Code or Real Data (2026-07-27)
 
 **Decision:** Renaming TSG->ISG, MSG->ESG, TSA->HES (and dropping "Enterprise Service Group"/"High End Storage" entirely) was scoped to strings a user actually sees — headers, titles, badges, modal titles, info descriptions. Internal code (component/file/folder names, function names, data exports, code comments) still says MSG/TSA, and two categories of real data were left untouched even though they contain the old acronyms as substrings.

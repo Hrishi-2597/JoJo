@@ -7,7 +7,14 @@ import {
   tsaPlanOverPlanByDimension, tsaPlanOverPlanTrendByDimension, planOverPlanLobVariance,
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
+import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanDropdowns, BinaryToggle, PillButton, CategoryTick } from '../ChartKit'
+
+// Local override of the shared VARIANCE_TABLE_COLUMNS' 'Queue' header — this page's
+// ranked-variance chart ranks LOBs, not queues (TSA has no per-queue dimension), so
+// the popup table should say what it actually contains rather than reuse the label
+// the shared column spec happens to default to.
+const LOB_VARIANCE_COLUMNS = VARIANCE_TABLE_COLUMNS.map(c => (c.key === 'name' ? { ...c, label: 'LOB' } : c))
 
 // Plan A/B pickers exclude 'Actual' the same way Forecasting's plan dropdowns already
 // do (see mockData.js's CAPACITY_PLAN_NAMES comment) — both charts below plot two
@@ -38,6 +45,15 @@ function MainChart({ filters, granularity, planA, planB }) {
   const xKey = selectedKey ? 'period' : 'key'
   const handleBarClick = selectedKey ? undefined : (d => setSelectedKey(d.key))
 
+  // Always built off the region/sub-region breakdown (not the drilled-into trend) —
+  // a real region name is only passed in Region view since sub-region labels don't
+  // map onto the Holiday Calendar's 3-region taxonomy (see insightFactors.js).
+  const table = useMemo(() => ({
+    title: `What contributed, by ${dimLabel.toLowerCase()}`,
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: dimData.flatMap(d => contributingFactors(d.key, dimension === 'Region' ? d.key : null, 1).map(f => ({ ...f, factor: `${d.key} — ${f.factor}` }))),
+  }), [dimData, dimension, dimLabel])
+
   return (
     <Visual title="Plan over Plan Variation"
       subtitle={selectedKey ? `${selectedKey} — headcount trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
@@ -45,7 +61,8 @@ function MainChart({ filters, granularity, planA, planB }) {
       controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
       info="Headcount plan for the selected Plan A vs Plan B, by region or sub-region."
       rca="Headcount plan variance is widest for LOBs with the newest onboarding."
-      clca="Re-baseline those LOBs' plans using actual ramp data before the next lock.">
+      clca="Re-baseline those LOBs' plans using actual ramp data before the next lock."
+      table={table}>
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -75,6 +92,21 @@ function LobVarianceChart({ filters, planA, planB }) {
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
 
+  // Full in-scope LOB roster (not just the chart's own top-N) bucketed into
+  // High/Moderate/Low variance tiers with an illustrative likely-reason per LOB,
+  // worst first — same treatment as Layer1PlanOverPlan.jsx's "Top Queues by Variance"
+  // reference, adapted to this page's LOB-shaped data.
+  const table = useMemo(() => {
+    const all = planOverPlanLobVariance(filters, 999, planA, planB)
+    return {
+      title: 'Every LOB in scope, by variance tier',
+      columns: LOB_VARIANCE_COLUMNS,
+      rows: all
+        .map(l => ({ name: l.name, tier: varianceTier(Math.abs(l.variance)).label, variance: `${l.variance > 0 ? '+' : ''}${l.variance}%`, reason: varianceReason(l.name), _abs: Math.abs(l.variance) }))
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, planA, planB])
+
   const LobTip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
     const row = payload[0]?.payload
@@ -91,7 +123,8 @@ function LobVarianceChart({ filters, planA, planB }) {
     <Visual title="LOBs with Highest Variation" subtitle="Plan A vs Plan B, worst variance first"
       info="Ranks LOBs by how far the selected Plan A and Plan B headcount diverge."
       rca="A small number of LOBs account for most of the plan-to-plan swing."
-      clca="Review these LOBs' plans first — they carry the most headcount risk.">
+      clca="Review these LOBs' plans first — they carry the most headcount risk."
+      table={table}>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />

@@ -4,6 +4,7 @@ import MetricCards from './MetricCards'
 import Layer1PlanOverPlan from './Layer1PlanOverPlan'
 import Layer2ActualVsPlan from './Layer2ActualVsPlan'
 import Layer3GeoMap from './Layer3GeoMap'
+import QueuePerformanceTable from './QueuePerformanceTable'
 import SectionDivider from './SectionDivider'
 
 // Every filter below is multi-select: [] means "no selection = All". DB/OSP alone stays
@@ -46,6 +47,7 @@ export default function ForecastingPage() {
       <div className="px-4 pb-4 flex flex-col gap-3">
         <Layer1PlanOverPlan filters={filters} granularity={granularity} />
         <Layer2ActualVsPlan filters={filters} granularity={granularity} />
+        <QueuePerformanceTable filters={filters} />
         <Layer3GeoMap filters={filters} />
       </div>
     </>

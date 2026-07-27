@@ -7,17 +7,26 @@ import { PLAN_NAMES } from '../../data/mockData'
 import {
   hcStaffingByFY, attritionByDimension, attritionTrendByDimension, slTrendByFY, slDefaulterQueues,
 } from '../../data/msgCapacityData'
+import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
 
 const PLANS = PLAN_NAMES
 
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => hcStaffingByFY(filters, granularity), [filters, granularity])
+  // Period-based trend, no real region context to cross-reference — same treatment
+  // as Layer1PlanOverPlan's Visual1 on the Forecasting page.
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
       info="Actual headcount vs the planned headcount, by fiscal period, with a Variation % trend line."
       rca="Staffing variation is largest in quarters right after a hiring freeze."
-      clca="Smooth headcount ramp-up across quarters instead of a single freeze/unfreeze cycle.">
+      clca="Smooth headcount ramp-up across quarters instead of a single freeze/unfreeze cycle."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -81,6 +90,26 @@ function Visual2({ filters, granularity }) {
   const xKey = selectedKey ? 'period' : 'key'
   const handleBarClick = selectedKey ? undefined : (d => setSelectedKey(d.key))
 
+  // Default view: one row per region/sub-region key — real region name passed through
+  // (in Region view only) for the holiday cross-reference. Drilled-in view: same idea
+  // but per period within the selected key's own trend, since the chart itself has
+  // switched to showing that.
+  const table = useMemo(() => {
+    if (selectedKey) {
+      const regionArg = dimension === 'Region' ? selectedKey : null
+      return {
+        title: `What contributed, by period — ${selectedKey}`,
+        columns: FACTOR_TABLE_COLUMNS,
+        rows: trendData.flatMap(d => contributingFactors(`${selectedKey}-${d.period}`, regionArg, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+      }
+    }
+    return {
+      title: `What contributed, by ${dimLabel.toLowerCase()}`,
+      columns: FACTOR_TABLE_COLUMNS,
+      rows: dimData.flatMap(d => contributingFactors(d.key, dimension === 'Region' ? d.key : null, 1).map(f => ({ ...f, factor: `${d.key} — ${f.factor}` }))),
+    }
+  }, [selectedKey, trendData, dimData, dimension, dimLabel])
+
   return (
     <Visual title="Attrition"
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
@@ -88,7 +117,8 @@ function Visual2({ filters, granularity }) {
       controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
       info="Headcount and attrition % by region or sub-region; click a bar to drill into that key's own trend."
       rca="Attrition is concentrated in regions with the longest backfill lead time."
-      clca="Shorten the backfill pipeline for the regions driving attrition.">
+      clca="Shorten the backfill pipeline for the regions driving attrition."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -117,12 +147,19 @@ function Visual2({ filters, granularity }) {
 function Visual3({ filters, granularity, slPlan, onSlPlanChange }) {
   const data = useMemo(() => slTrendByFY(filters, granularity, slPlan), [filters, granularity, slPlan])
   const defaulters = useMemo(() => slDefaulterQueues(filters, 6, slPlan), [filters, slPlan])
+  // Period-based trend, same treatment as Visual1 above.
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Headcount Impact on SL"
       controls={<PlanSelect label="Plan" value={slPlan} onChange={onSlPlanChange} options={PLANS} />}
       info="Actual vs Plan headcount alongside SL % trend, plus over-plan queues still missing their SL target."
       rca="Extra headcount alone hasn't closed the SL gap for these defaulter queues."
-      clca="Prioritize a skill-mix/routing review for those queues over further hiring.">
+      clca="Prioritize a skill-mix/routing review for those queues over further hiring."
+      table={table}>
       <ResponsiveContainer width="100%" height={175}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

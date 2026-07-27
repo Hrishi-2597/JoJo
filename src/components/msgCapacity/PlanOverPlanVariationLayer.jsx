@@ -7,6 +7,9 @@ import { PLAN_NAMES } from '../../data/mockData'
 import {
   planOverPlanByDimension, planOverPlanTrendByDimension, planOverPlanQueueVariance,
 } from '../../data/msgCapacityData'
+import {
+  contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
+} from '../../data/insightFactors'
 import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick, PlanDropdowns } from '../ChartKit'
 
 // Real, user-selectable Plan A/Plan B (2026-07-23) — uses the same PLAN_NAMES list as
@@ -38,6 +41,26 @@ function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
   const xKey = selectedKey ? 'period' : 'key'
   const handleBarClick = selectedKey ? undefined : (d => setSelectedKey(d.key))
 
+  // Default view: one row per region/sub-region key — real region name passed through
+  // (in Region view only) for the holiday cross-reference. Drilled-in view: same idea
+  // but per period within the selected key's own trend, since the chart itself has
+  // switched to showing that — same drill-aware treatment as HeadcountLayer's Attrition.
+  const table = useMemo(() => {
+    if (selectedKey) {
+      const regionArg = dimension === 'Region' ? selectedKey : null
+      return {
+        title: `What contributed, by period — ${selectedKey}`,
+        columns: FACTOR_TABLE_COLUMNS,
+        rows: trendData.flatMap(d => contributingFactors(`${selectedKey}-${d.period}`, regionArg, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+      }
+    }
+    return {
+      title: `What contributed, by ${dimLabel.toLowerCase()}`,
+      columns: FACTOR_TABLE_COLUMNS,
+      rows: dimData.flatMap(d => contributingFactors(d.key, dimension === 'Region' ? d.key : null, 1).map(f => ({ ...f, factor: `${d.key} — ${f.factor}` }))),
+    }
+  }, [selectedKey, trendData, dimData, dimension, dimLabel])
+
   return (
     <Visual title="Plan over Plan Variation"
       subtitle={selectedKey ? `${selectedKey} — headcount trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
@@ -50,7 +73,8 @@ function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
       }
       info="Plan A vs Plan B headcount by region or sub-region; click a bar to drill into that key's own trend."
       rca="Headcount plan variance is widest in the regions with the newest queues."
-      clca="Re-baseline those regions' plans using actual ramp data before the next lock.">
+      clca="Re-baseline those regions' plans using actual ramp data before the next lock."
+      table={table}>
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -81,6 +105,19 @@ function QueueVarianceChart({ filters, planA, planB }) {
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(1, ...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
+  // Full in-scope roster (not just the chart's own top-8), tiered High/Moderate/Low
+  // with an illustrative likely-reason per queue, worst first — same treatment as
+  // Layer1PlanOverPlan's Visual3 on the Forecasting page.
+  const table = useMemo(() => {
+    const all = planOverPlanQueueVariance(filters, 999, planA, planB)
+    return {
+      title: 'Every queue in scope, by variance tier',
+      columns: VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(q => ({ name: q.name, tier: varianceTier(Math.abs(q.variance)).label, variance: `${q.variance > 0 ? '+' : ''}${q.variance}%`, reason: varianceReason(q.name), _abs: Math.abs(q.variance) }))
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, planA, planB])
 
   const QueueTip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
@@ -98,7 +135,8 @@ function QueueVarianceChart({ filters, planA, planB }) {
     <Visual title="Queues with Highest Variation" subtitle={`${planA} vs ${planB}, worst variance first`}
       info="Queues with the largest Plan A vs Plan B headcount swing, worst first."
       rca="A small number of queues account for most of the plan-to-plan swing."
-      clca="Review these queues' plans first — they carry the most headcount risk.">
+      clca="Review these queues' plans first — they carry the most headcount risk."
+      table={table}>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />

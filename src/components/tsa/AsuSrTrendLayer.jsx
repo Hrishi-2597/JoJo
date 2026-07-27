@@ -8,9 +8,26 @@ import {
   cpasuByRegion, regionTrendGranularity, cpasuTrendByRegion, srBotsByFY,
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
+import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanSelect, Modal, PillButton } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
+
+// CPASU Trend's regions (AMER/APJ/EMEA/Global, see tsaData's IMPACT_REGIONS) are this
+// page's own 4-region taxonomy, distinct from the 5-region NAMER/LATAM/APJ/EMEA/Global
+// set the Holiday Calendar (and insightFactors' real-holiday lookup) uses — AMER maps
+// onto NAMER for that lookup, APJ/EMEA match directly, Global has no clean match.
+const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
+
+// "UCR Runrate with Target" ranks LOBs, not queues, so its variance-tier table gets
+// its own column labels (copy of insightFactors' VARIANCE_TABLE_COLUMNS shape with
+// 'Queue' swapped for 'LOB') rather than reusing that export's literal 'Queue' label.
+const LOB_VARIANCE_TABLE_COLUMNS = [
+  { key: 'name', label: 'LOB', wrap: true },
+  { key: 'tier', label: 'Tier' },
+  { key: 'variance', label: 'Gap vs Target', align: 'right' },
+  { key: 'reason', label: 'Likely reason', wrap: true },
+]
 
 // Regions render by default (one bar-pair per region); clicking a region drills
 // into that region's own trend at whatever granularity the page-wide View By
@@ -28,13 +45,36 @@ function Visual1({ filters, granularity: pageGranularity }) {
   const xKey = selectedRegion ? 'period' : 'region'
   const handleBarClick = selectedRegion ? undefined : (d => setSelectedRegion(d.region))
 
+  // Table follows whichever view is currently on screen — region-level factors by
+  // default, or per-period factors for the drilled-into region's own trend (seeded
+  // by region+period so each period still gets a distinct, stable factor while the
+  // holiday cross-reference stays fixed to the selected region).
+  const table = useMemo(() => {
+    if (selectedRegion) {
+      const holidayRegion = HOLIDAY_REGION_MAP[selectedRegion] ?? null
+      return {
+        title: `What contributed, by period — ${selectedRegion}`,
+        columns: FACTOR_TABLE_COLUMNS,
+        rows: trendData.flatMap(d => contributingFactors(`${selectedRegion}-${d.period}`, holidayRegion, 1)
+          .map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+      }
+    }
+    return {
+      title: 'What contributed, by region',
+      columns: FACTOR_TABLE_COLUMNS,
+      rows: regionData.flatMap(d => contributingFactors(d.region, HOLIDAY_REGION_MAP[d.region] ?? null, 1)
+        .map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
+    }
+  }, [selectedRegion, regionData, trendData])
+
   return (
     <Visual title="CPASU Trend"
       subtitle={selectedRegion ? `${selectedRegion} — ${granularity} view` : 'Click a region to see its trend'}
       controls={selectedRegion && <PillButton onClick={() => setSelectedRegion(null)}>← All Regions</PillButton>}
       info="ASU, SR, and CPASU by region; click a region to drill into its trend over time."
       rca="CPASU is rising fastest in regions with the lowest bot deflection."
-      clca="Expand bot-deflection coverage in the regions driving the CPASU increase.">
+      clca="Expand bot-deflection coverage in the regions driving the CPASU increase."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -59,11 +99,17 @@ function Visual1({ filters, granularity: pageGranularity }) {
 function Visual2({ filters, granularity }) {
   const [plan, setPlan] = useState('FY27 Q1 APR Plan')
   const data = useMemo(() => srBotsByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="UCR Impact on SR" cornerControls={<PlanSelect value={plan} onChange={setPlan} options={PLANS} />}
       info="Human-handled vs bot (UCR) handled SR volume against the SR plan, by period."
       rca="Bot-handled SR's are growing faster than the plan assumed."
-      clca="Fold observed bot deflection into next quarter's SR plan.">
+      clca="Fold observed bot deflection into next quarter's SR plan."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -92,12 +138,39 @@ function Visual3({ filters, granularity }) {
     () => (modalPeriod ? topNonAdherentLobsByYear(filters, modalPeriod) : []),
     [filters, modalPeriod]
   )
+  // The chart itself is a period trend, but the real diagnostic depth here is per-LOB
+  // (topNonAdherentLobsByYear already ranks LOBs by how far they sit from the UCR
+  // target) — so the "i" popup uses the same variance-tier + reason treatment as the
+  // ranked-queue charts elsewhere, scoped to the latest in-view period's full LOB
+  // roster (not just its top 5), rather than a period-based contributing-factors table.
+  const latestPeriod = data[data.length - 1]?.period
+  const table = useMemo(() => {
+    if (!latestPeriod) return { title: 'Every LOB in scope, by adherence gap', columns: LOB_VARIANCE_TABLE_COLUMNS, rows: [] }
+    const all = topNonAdherentLobsByYear(filters, latestPeriod, 999)
+    return {
+      title: `Every LOB in scope, by adherence gap — ${latestPeriod}`,
+      columns: LOB_VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(l => {
+          const gap = +(l.target - l.runrate).toFixed(1)
+          return {
+            name: l.lob,
+            tier: varianceTier(Math.abs(gap)).label,
+            variance: `${gap > 0 ? '-' : gap < 0 ? '+' : ''}${Math.abs(gap)}%`,
+            reason: varianceReason(l.lob),
+            _abs: Math.abs(gap),
+          }
+        })
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters, latestPeriod])
 
   return (
     <Visual title="UCR Runrate with Target" subtitle="Click a bar to see that period's top 5 non-adherent LOBs"
       info="UCR runrate against target by period; click a bar to see that period's top non-adherent LOBs."
       rca="Non-adherent LOBs share a common low bot-deflection profile."
-      clca="Prioritize automation coverage for the LOBs on the non-adherent list.">
+      clca="Prioritize automation coverage for the LOBs on the non-adherent list."
+      table={table}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

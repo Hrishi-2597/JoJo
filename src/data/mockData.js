@@ -650,6 +650,31 @@ export function cqnActualVariance(filters = {}, topN = 5, planName) {
   return hasQueue ? rows : [...rows].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance)).slice(0, topN)
 }
 
+// ── Queue Performance table (2026-07-27) ──────────────────────────────────────
+// Backs the new "Queue Performance" table shown just above the Geo Map, and the
+// Geo Map's own click-a-region/sub-region breakdown — both are just this same
+// selector, scoped by whatever's currently in `filters` (the page's normal filter
+// bar) plus an optional {region} or {subRegion} override for the map's click-through.
+// `code` is a stable per-queue id (index in ACTIVE_QUEUES, not affected by filtering)
+// so the same queue always shows the same code regardless of which filters are applied.
+export function queuePerformance(filters = {}, override) {
+  const overrideFilter = override?.subRegion ? { subRegion: [override.subRegion] }
+    : override?.region ? { region: [override.region] }
+    : {}
+  const scoped = filterQueues({ ...filters, dbOsp: 'All', ...overrideFilter })
+  return scoped
+    .map(q => ({
+      code: `Q-${String(ACTIVE_QUEUES.indexOf(q) + 1).padStart(3, '0')}`,
+      name: q.name,
+      region: q.region,
+      forecast: q.offered,
+      actual: q.handled,
+      accuracy: q.accuracy,
+      status: q.accuracy >= 90 ? 'Good' : q.accuracy >= 75 ? 'Fair' : 'Poor',
+    }))
+    .sort((a, b) => a.accuracy - b.accuracy)
+}
+
 // ── Geo Map (Layer 3) ─────────────────────────────────────────────────────────
 // Choropleth, not circle markers: every country on the map gets filled by the
 // accuracy of the region or sub-region it belongs to. The country→region and

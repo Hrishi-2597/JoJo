@@ -36,6 +36,10 @@ SPoG/
 │   ├── index.css               # Tailwind imports + theme CSS variables (:root / [data-theme='light']) +
 │   │                              global scrollbar/select/card/tooltip/etc. component classes
 │   ├── components/
+│   │   ├── QueuePerformanceTable.jsx # ESG Forecasting only (2026-07-27) — real per-queue Forecast/Actual/
+│   │   │                              Accuracy%/Status table sitting just above the Geo Map, filter-aware
+│   │   │                              (wraps mockData.js's queuePerformance()); per-row purple "RCA/CLCA" pill
+│   │   │                              opens a contributing-factors popup via ChartKit's shared PopupTable
 │   │   ├── PlanningSidebar.jsx # Collapsible left sidebar (2026-07-27) — 46px icon rail expands to a 360px
 │   │   │                         panel (Fiscal Calendar / Planning Cycle), mounted once in App.jsx outside the
 │   │   │                         page conditionals so it's present + keeps its open/closed state on every page
@@ -62,7 +66,11 @@ SPoG/
 │   │   │                         predate this file and keep their own local Visual) import just the button and
 │   │   │                         wire the same two props into their own local Visual instead. InfoButton
 │   │   │                         (2026-07-23) is a separate "what this shows" popup (info prop, plain sentence, no
-│   │   │                         RCA/CLCA framing) — see the dedicated section below for placement rules
+│   │   │                         RCA/CLCA framing) — see the dedicated section below for placement rules.
+│   │   │                         GraphInsightButton gained an optional `table` prop (2026-07-27, {title?,
+│   │   │                         columns, rows}) rendered via the new shared PopupTable component — widens the
+│   │   │                         popup and shows real/illustrative tabular detail alongside rca/clca; see
+│   │   │                         src/data/insightFactors.js below for what generates that content
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
@@ -876,6 +884,40 @@ HOLIDAY_COUNTRIES  — 53 real country names, sorted (derived, not hand-typed)
 
 One source row (Spain's "All Saints' Day (in lieu)", 2027-11-02, labeled `2028Q04`/`2028M10`) fell after FY27's own
 end date (Jan 29, 2027) and was excluded — this view is scoped to FY27, matching the rest of the app.
+
+---
+
+## Data Model (`src/data/insightFactors.js`) — Detail-Table Popup Content (2026-07-27)
+
+Shared across all 4 pages — backs every graph's optional `table` popup content (see ChartKit.jsx's `GraphInsightButton`/`PopupTable` above).
+
+```
+contributingFactors(seed, region, count=2)  — [{factor, detail}]. `region` (one of NAMER|LATAM|APJ|EMEA) adds
+  one REAL holiday row (cross-referenced from src/data/holidayCalendarData.js's real FY27 data); `Global` or
+  a non-region seed skips that row. Remaining rows are deterministic illustrative factors (BP review delay,
+  capacity ramp, seasonal shift, etc.) — NOT cross-referenced against real dates for period-based seeds, since
+  this app's FY25/FY26/FY27 chart periods are an independent illustrative label system, not the one real FY27
+  calendar the Holiday Calendar/Fiscal Calendar sidebar sections use.
+FACTOR_TABLE_COLUMNS                        — {factor, detail} column spec for the above
+varianceTier(absVariance) / varianceReason(seed) — {key,label} High/Moderate/Low tier (thresholds calibrated
+  to this app's real ~0-8% per-queue plan-variance range) + a deterministic illustrative reason string, for
+  every "Top Queues/LOBs by Variance"-style ranked chart's full-roster detail table
+VARIANCE_TABLE_COLUMNS                      — {name, tier, variance, reason} column spec (pages with LOB-
+  shaped, not queue-shaped, data define their own local column-label override — see e.g. AsuSrTrendLayer.jsx's
+  LOB_VARIANCE_TABLE_COLUMNS — rather than this export's hardcoded "Queue" label)
+bucketQueues(rows, bucketShares, bucketKey) / allBucketsQueues(rows, bucketShares) — deterministically assigns
+  in-scope rows to distribution buckets IN THE SAME PROPORTIONS a stacked bucket chart already shows (its
+  illustrative bucket % is a hand-curated aggregate independent of any single row's real variance), with a
+  synthesized-but-stable value inside that bucket's own range — so a bucket-composition popup stays internally
+  consistent with the chart above it instead of contradicting it
+BUCKET_TABLE_COLUMNS                        — {bucket, name, region, variance} column spec
+```
+
+`mockData.js`'s new `queuePerformance(filters, override)` (2026-07-27) — real per-queue {code, name, region,
+forecast, actual, accuracy, status}, `code` a stable `Q-NNN` id (index in `ACTIVE_QUEUES`, unaffected by
+filtering), `status` Good (≥90%) / Fair (≥75%) / Poor (<75%), sorted worst-accuracy-first. `override` is
+`{region}` or `{subRegion}` for the Geo Map's click-through (queue-level data has no clean sub-region-only
+selector otherwise). Backs both `QueuePerformanceTable.jsx` and `Layer3GeoMap.jsx`'s click-region table.
 
 ---
 

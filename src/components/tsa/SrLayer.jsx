@@ -5,17 +5,31 @@ import {
 } from 'recharts'
 import { PLAN_NAMES } from '../../data/mockData'
 import { srByFY, srPlanVsPlanByFY, srRegionPlans, srLobImpact } from '../../data/tsaData'
+import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
+// This page's own Plan Impact region set (AMER/APJ/EMEA/Global, see tsaData's
+// IMPACT_REGIONS) is its own 4-region taxonomy, distinct from the 5-region
+// NAMER/LATAM/APJ/EMEA/Global set the Holiday Calendar (and insightFactors' real-
+// holiday lookup) uses — AMER maps onto NAMER for that lookup, APJ/EMEA match
+// directly, Global has no clean match.
+const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
+
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => srByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
       info="SR actuals vs the selected plan by fiscal period, with percent adherence."
       rca="SR actuals are outpacing plan as case complexity rises."
-      clca="Add a complexity-adjusted buffer to the SR plan.">
+      clca="Add a complexity-adjusted buffer to the SR plan."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -39,11 +53,17 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
 
 function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => srPlanVsPlanByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
       info="SR compared between two selected plans by fiscal period, with percent variance."
       rca="Plan variance for SR is widest in the most recent quarter."
-      clca="Reconcile plans against the latest actuals before the next AOP cycle.">
+      clca="Reconcile plans against the latest actuals before the next AOP cycle."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -69,13 +89,19 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const data = useMemo(() => srRegionPlans(filters), [filters])
   const lobImpact = useMemo(() => selectedRegion ? srLobImpact(selectedRegion) : [], [selectedRegion])
+  const table = useMemo(() => ({
+    title: 'What contributed, by region',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.region, HOLIDAY_REGION_MAP[d.region] ?? null, 1).map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
+  }), [data])
 
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
       info="Each region's SR gap between the two selected plans; click a region to see contributing LOBs."
       rca="SR impact concentrates in a small number of LOBs per region."
-      clca="Prioritize staffing reviews for the top LOBs in the highest-impact region.">
+      clca="Prioritize staffing reviews for the top LOBs in the highest-impact region."
+      table={table}>
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

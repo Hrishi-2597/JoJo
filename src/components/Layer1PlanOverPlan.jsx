@@ -4,6 +4,9 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } from '../data/mockData'
+import {
+  contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
+} from '../data/insightFactors'
 import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -43,10 +46,10 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, subtitle, children, controls, rca, clca, info }) {
+function Visual({ title, subtitle, children, controls, rca, clca, table, info }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
-      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
+      {(rca || clca || table) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} table={table} /></div>}
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         {title}{info && <InfoButton info={info} />}
       </p>
@@ -73,10 +76,16 @@ function QueueTick({ x, y, payload }) {
 
 function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => planOverPlanByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, period: d.period, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="PoP Variation" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="Plan-to-plan gaps widen most in quarters with late AOP updates."
       clca="Lock plan revisions earlier in the quarter to shrink the variance window."
+      table={table}
       info="Plan A vs Plan B volume by fiscal year (or sub-period), with the resulting variance % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
@@ -101,10 +110,16 @@ function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
 
 function Visual2({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => planOverPlanByRegion(filters), [filters])
+  const table = useMemo(() => ({
+    title: 'What contributed, by region',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.region, d.region, 1).map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Regional Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="LATAM and APJ tend to show the largest regional swings against Plan A."
       clca="Add a region-specific buffer to Plan B for the regions swinging most."
+      table={table}
       info="Plan A vs Plan B volume by region, with the resulting variance % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
@@ -138,11 +153,25 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
+  // Full in-scope roster (not just the chart's own top-N) bucketed into High/Moderate/
+  // Low variance tiers with an illustrative likely-reason per queue, worst first —
+  // the chart above only has room for the extremes, this shows the whole picture.
+  const table = useMemo(() => {
+    const all = cqnPlanVariance(filters, 999)
+    return {
+      title: 'Every queue in scope, by variance tier',
+      columns: VARIANCE_TABLE_COLUMNS,
+      rows: all
+        .map(q => ({ name: q.cqn, tier: varianceTier(Math.abs(q.variance)).label, variance: `${q.variance > 0 ? '+' : ''}${q.variance}%`, reason: varianceReason(q.cqn), _abs: Math.abs(q.variance) }))
+        .sort((a, b) => b._abs - a._abs),
+    }
+  }, [filters])
   return (
     <Visual title="Top Queues by Variance"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="A small set of queues accounts for most of the plan-to-plan swing."
       clca="Prioritize a plan review for the queues topping this list before broader changes."
+      table={table}
       info="The queues with the largest Plan A vs Plan B variance, ranked by magnitude regardless of direction.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>

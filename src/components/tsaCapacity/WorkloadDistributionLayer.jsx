@@ -4,7 +4,13 @@ import {
   Tooltip, Legend, ResponsiveContainer, Rectangle,
 } from 'recharts'
 import { workloadSankey, actHrsByFY, actHrsDefaulterLobs } from '../../data/tsaCapacityData'
+import { varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, BinaryToggle } from '../ChartKit'
+
+// Local override of the shared VARIANCE_TABLE_COLUMNS' 'Queue' header/'Variance' unit
+// — this table ranks LOBs by Average Case Time overage (hours), not queues by % plan
+// variance, so both the row label and the variance column need this page's own units.
+const ACT_VARIANCE_COLUMNS = VARIANCE_TABLE_COLUMNS.map(c => (c.key === 'name' ? { ...c, label: 'LOB' } : c))
 
 // Recharts' default Sankey node renders as a plain unlabeled rect — this custom
 // node paints the real LOB/queue name next to it so the diagram is legible without
@@ -168,11 +174,24 @@ function DefaulterLobList({ filters }) {
 // so this layer holds exactly 2 graphs instead of 3.)
 function Visual2({ filters, granularity }) {
   const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
+  // Full roster of LOBs currently running above their target Average Case Time (not
+  // just the DefaulterLobList's own top-N below) — tiered High/Moderate/Low using the
+  // same varianceTier/varianceReason helpers as the ranked-LOB charts elsewhere on this
+  // page, treating each LOB's actual-vs-plan hour gap as the tiering magnitude.
+  const table = useMemo(() => {
+    const all = actHrsDefaulterLobs(filters, 999)
+    return {
+      title: 'Every LOB above target ACT, by variance tier',
+      columns: ACT_VARIANCE_COLUMNS,
+      rows: all.map(l => ({ name: l.lob, tier: varianceTier(l.delta).label, variance: `+${l.delta}h`, reason: varianceReason(l.lob) })),
+    }
+  }, [filters])
   return (
     <Visual title="Average Case Time Variance"
       info="Actual vs plan Average Case Time by period, with adherence % and the LOBs running longest."
       rca="A handful of LOBs are driving most of the above-plan case time."
-      clca="Prioritize a case-time review for the LOBs topping this list.">
+      clca="Prioritize a case-time review for the LOBs topping this list."
+      table={table}>
       <ResponsiveContainer width="100%" height={190}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

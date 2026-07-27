@@ -7,6 +7,7 @@ import {
   fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension, tsaUtilByFY,
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
+import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
 
 // Plan A/B-style pickers exclude 'Actual' the same way Forecasting's plan dropdowns
@@ -17,11 +18,17 @@ const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => fteByFY(filters, granularity, selectedPlan), [filters, granularity, selectedPlan])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
       info="Compares actual FTE staffing against a selected plan vintage, period by period."
       rca="Staffing variation widens in quarters right after a hiring freeze."
-      clca="Smooth headcount ramp-up across quarters instead of freeze/unfreeze cycles.">
+      clca="Smooth headcount ramp-up across quarters instead of freeze/unfreeze cycles."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -82,6 +89,16 @@ function Visual2({ filters, granularity }) {
   const xKey = selectedKey ? 'period' : 'key'
   const handleBarClick = selectedKey ? undefined : (d => setSelectedKey(d.key))
 
+  // Always built off the region/sub-region breakdown (not the drilled-into trend),
+  // same "explain the overall split" scope as the chart's own default view — a real
+  // region name is only passed in Region view since sub-region labels don't map onto
+  // the Holiday Calendar's 3-region taxonomy (see insightFactors.js).
+  const table = useMemo(() => ({
+    title: `What contributed, by ${dimLabel.toLowerCase()}`,
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: dimData.flatMap(d => contributingFactors(d.key, dimension === 'Region' ? d.key : null, 1).map(f => ({ ...f, factor: `${d.key} — ${f.factor}` }))),
+  }), [dimData, dimension, dimLabel])
+
   return (
     <Visual title="Attrition"
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
@@ -89,7 +106,8 @@ function Visual2({ filters, granularity }) {
       controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
       info="Headcount and attrition % by region or sub-region; click a bar to see that key's own trend."
       rca="Attrition is highest in sub-regions with the longest backfill lead time."
-      clca="Shorten the backfill pipeline for the sub-regions driving attrition.">
+      clca="Shorten the backfill pipeline for the sub-regions driving attrition."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -113,11 +131,20 @@ function Visual2({ filters, granularity }) {
 function Visual3({ filters, granularity }) {
   const [lens, setLens] = useState('Region')
   const data = useMemo(() => tsaUtilByFY(filters, granularity, lens), [filters, granularity, lens])
+  // Region/Sub-region here is a cosmetic lens (see file-level note above the
+  // component), not a real dimension split, so this is period-based like Visual1 —
+  // no real region name is available to pass through to contributingFactors.
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
   return (
     <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}
       info="Actual vs target utilization % over time, viewable by region or sub-region."
       rca="Utilization gaps persist even where headcount is at or above plan."
-      clca="Investigate routing/skill-mix before adding further headcount.">
+      clca="Investigate routing/skill-mix before adding further headcount."
+      table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

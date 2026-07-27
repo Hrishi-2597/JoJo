@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoRegionData, geoSubRegionRows, regionForCountry, subRegionForCountry, GEO_REGION_DATA } from '../data/mockData'
+import { geoRegionData, geoSubRegionRows, regionForCountry, subRegionForCountry, GEO_REGION_DATA, queuePerformance } from '../data/mockData'
 import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -19,6 +19,10 @@ const LEGEND = [
   { label: '70–80% Fair',     color: '#d97706' },
   { label: '< 70% Critical',  color: '#dc2626' },
 ]
+
+// Same 3-tier status used by the Queue Performance table above this layer, reused
+// here so a queue's status reads the same way in both places.
+const STATUS_COLOR = { Good: '#34d399', Fair: '#fbbf24', Poor: '#f87171' }
 
 export default function Layer3GeoMap({ filters }) {
   const [open, setOpen]         = useState(true)
@@ -40,6 +44,16 @@ export default function Layer3GeoMap({ filters }) {
   // misleadingly widen an intentionally-scoped view — so it only applies when nothing
   // is narrowing the view (showing everything).
   const subRegionIsNarrowed = filters.region?.length > 0 || filters.subRegion?.length > 0
+
+  // The table below the map defaults to the first in-scope key (2026-07-27, per direct
+  // request) without changing the MAP's own default (still no spotlight until a click) —
+  // `selectedKey` stays null until clicked so the map's existing all-regions-equal-weight
+  // look is untouched; `effectiveKey` is only for driving the queue table's content.
+  const effectiveKey = selectedKey ?? rows[0]?.region ?? rows[0]?.label
+  const queueRows = useMemo(
+    () => (effectiveKey ? queuePerformance(filters, viewMode === 'Region' ? { region: effectiveKey } : { subRegion: effectiveKey }) : []),
+    [filters, effectiveKey, viewMode]
+  )
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -80,8 +94,8 @@ export default function Layer3GeoMap({ filters }) {
 
           {/* Centered title */}
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-            Global Forecast Accuracy Heatmap
-            <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map and listed in the table below." />
+            Global Forecast Accuracy
+            <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map — click a region/sub-region to see its queues below." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Forecast adherence % · {viewMode} view
@@ -193,38 +207,43 @@ export default function Layer3GeoMap({ filters }) {
             </div>
           </div>
 
-          {/* Summary table */}
-          <div style={{ marginTop: 10, overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {[viewMode, 'Accuracy', 'Status'].map((h, i) => (
-                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
-                      fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(m => {
-                  const col = acColor(m.accuracy)
-                  const status = m.accuracy >= 90 ? 'Excellent' : m.accuracy >= 80 ? 'Good' : m.accuracy >= 70 ? 'Fair' : 'Critical'
-                  const badgeCls = m.accuracy >= 90 ? 'badge-good' : m.accuracy >= 80 ? 'badge-good' : m.accuracy >= 70 ? 'badge-warn' : 'badge-bad'
-                  const isSelected = selectedKey === m.label
-                  return (
-                    <tr key={m.label} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.1)' : 'transparent' }}
-                      onClick={() => setSelectedKey(prev => prev === m.label ? null : m.label)}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.04)' }}
-                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: isSelected ? 700 : 500 }}>{m.label}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{m.accuracy}%</td>
+          {/* Queue breakdown for whichever region/sub-region is in effect — defaults to
+              the first in-scope one, updates on click, per direct request. Replaces the
+              old region-level summary table entirely (2026-07-27). */}
+          <div style={{ marginTop: 10 }}>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
+              Queues in <strong style={{ color: 'var(--accent)' }}>{effectiveKey ?? '—'}</strong>
+              {!selectedKey && effectiveKey && <span> (default — click a region/sub-region to change)</span>}
+            </p>
+            <div style={{ maxHeight: 220, overflowY: 'auto', overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    {['Queue', 'Name', 'Forecast', 'Actual', 'Acc%', 'Status'].map((h, i) => (
+                      <th key={h} style={{ position: 'sticky', top: 0, background: 'var(--bg-panel)', textAlign: i >= 2 ? 'right' : 'left', padding: '5px 10px 5px 0',
+                        fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {queueRows.length === 0 && (
+                    <tr><td colSpan={6} style={{ padding: '12px 0', textAlign: 'center', fontSize: 10.5, color: 'var(--text-muted)' }}>No queues in scope for this selection.</td></tr>
+                  )}
+                  {queueRows.map(q => (
+                    <tr key={q.code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', color: 'var(--text-faint)' }}>{q.code}</td>
+                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{q.name}</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', color: 'var(--text-secondary)' }}>{q.forecast.toLocaleString()}</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', color: 'var(--text-secondary)' }}>{q.actual.toLocaleString()}</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: STATUS_COLOR[q.status] }}>{q.accuracy}%</td>
                       <td style={{ padding: '6px 0', textAlign: 'right' }}>
-                        <span className={`badge ${badgeCls}`}>{status}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[q.status] }}>{q.status}</span>
                       </td>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
