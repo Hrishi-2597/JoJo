@@ -4,7 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension, tsaUtilByFY,
+  fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension,
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
@@ -125,43 +125,6 @@ function Visual2({ filters, granularity }) {
   )
 }
 
-// Renamed "Utilization Variance"; the lens toggle's "Country" label was always
-// cosmetic (no real per-country utilization data existed on this page) — relabeled
-// "Sub-region" now that a real subRegion dimension exists on TSA_CAPACITY_LOBS.
-function Visual3({ filters, granularity }) {
-  const [lens, setLens] = useState('Region')
-  const data = useMemo(() => tsaUtilByFY(filters, granularity, lens), [filters, granularity, lens])
-  // Region/Sub-region here is a cosmetic lens (see file-level note above the
-  // component), not a real dimension split, so this is period-based like Visual1 —
-  // no real region name is available to pass through to contributingFactors.
-  const table = useMemo(() => ({
-    title: 'What contributed, by period',
-    columns: FACTOR_TABLE_COLUMNS,
-    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
-  }), [data])
-  return (
-    <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}
-      info="Actual vs target utilization % over time, viewable by region or sub-region."
-      rca="Utilization gaps persist even where headcount is at or above plan."
-      clca="Investigate routing/skill-mix before adding further headcount."
-      table={table}>
-      <ResponsiveContainer width="100%" height={222}>
-        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual %" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="target" name="Target %" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </Visual>
-  )
-}
-
 export default function HeadcountAttritionLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [plan, setPlan] = useState(PLANS[0])
@@ -171,8 +134,8 @@ export default function HeadcountAttritionLayer({ filters, granularity }) {
       <div className="layer-header" onClick={() => setOpen(o => !o)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#38bdf8', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>01</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Headcount and Utilization</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— staffing, attrition &amp; utilization</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Headcount and Attrition</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— staffing &amp; attrition</span>
         </div>
         <span style={{ fontSize: 11, color: '#38bdf8', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
@@ -180,7 +143,6 @@ export default function HeadcountAttritionLayer({ filters, granularity }) {
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
           <Visual2 filters={filters} granularity={granularity} />
-          <Visual3 filters={filters} granularity={granularity} />
         </div>
       )}
     </div>

@@ -704,3 +704,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Changed `projectionConfig` to `{ scale: 100, center: [10, 0] }` in all 4 files — both the scale reduction and the center-latitude shift (20°N → equator) were needed together, not either alone, to redistribute the fixed vertical budget so it covers up to ~84°N with margin while the (already-fine) southern edge keeps comfortable clearance too. Re-verified numerically: Greenland (83.6°N) moved from y≈-54 (clipped) to y≈12 (visible); Svalbard (80°N) from y≈9 to y≈56; mainland Russia/Canada (75°N) to y≈97; Tierra del Fuego (-56°) still comfortably at y≈419.
 - Verified with `npm run build` (clean, 1183 modules).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 53 — 2026-07-28
+**Input:** Also remove the utilization variance graph from HES capacity planning and use the space to accomodate remaining two graphs
+
+**Action:**
+- Removed `HeadcountAttritionLayer.jsx` (tsaCapacity) Visual3 "Utilization Variance" entirely, along with its now-dead `tsaUtilByFY`/`TSA_UTIL_BY_FY` selector in `tsaCapacityData.js` (Visual3 was their only consumer).
+- No layout code needed to "use the space" — every `Visual` panel already carries `flex-1` in a plain flexbox row, so the remaining "Actual vs Plan Variation" and "Attrition" visuals automatically expand into the freed width, same mechanic already established when `WorkloadDistributionLayer`'s own Visual3 was removed 2026-07-23.
+- Renamed the layer "Headcount and Utilization" → "Headcount and Attrition" (subtitle updated to match) since Utilization Variance was this layer's only utilization content — a direct, minimal consequence of the removal, not a separately requested change.
+- Verified with `npm run build` (clean, 1183 modules) and a grep sweep confirming no remaining reference to `tsaUtilByFY`/`TSA_UTIL_BY_FY`/"Utilization Variance" anywhere in the codebase.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

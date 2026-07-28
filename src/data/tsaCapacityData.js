@@ -150,24 +150,6 @@ export function geoHeadcountBySubRegion(filters = {}) {
   return tsaAttritionByDimension(filters, 'SubRegion').map(r => ({ subRegion: r.key, headcount: r.headcount }))
 }
 
-// ── Actual vs Plan utilization (Layer 1, Visual 3) ─────────────────────────
-const BASE_TSA_UTIL_TARGET = { FY25: 80, FY26: 82, FY27: 84 }
-
-export const TSA_UTIL_BY_FY = FISCAL_YEARS.map((fy, i) => ({
-  period: fy,
-  target: BASE_TSA_UTIL_TARGET[fy],
-  actual: +(BASE_TSA_UTIL_TARGET[fy] * (0.94 + (i * 5 % 9) / 100)).toFixed(1),
-}))
-
-export function tsaUtilByFY(filters = {}, granularity, lens = 'Region') {
-  const years = tsaEffectiveFiscalYears(filters)
-  const lensScale = lens === 'Country' ? 0.98 : 1
-  const fyRows = TSA_UTIL_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, target: d.target, actual: +(d.actual * lensScale).toFixed(1) }))
-  return expandRateToGranularity(fyRows, granularity, ['target', 'actual'])
-    .map(d => ({ ...d, adherence: d.target ? +((d.actual / d.target) * 100).toFixed(1) : 0 }))
-}
-
 // ── Cases per FTE / Avg Case Time (cards only) ─────────────────────────────
 const BASE_CPF_PLAN = { FY25: 15.5, FY26: 16.2, FY27: 16.9 }
 export const CPF_BY_FY = FISCAL_YEARS.map((fy, i) => ({

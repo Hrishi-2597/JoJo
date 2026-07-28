@@ -4,6 +4,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Removing a Visual Renames Its Layer Too, When the Layer Name No Longer Fits (2026-07-28)
+
+**Decision:** Removing "Utilization Variance" from `HeadcountAttritionLayer` also renamed the layer itself from "Headcount and Utilization" to "Headcount and Attrition" (and its subtitle from "staffing, attrition & utilization" to "staffing & attrition"), even though only the chart removal was explicitly requested.
+
+**Why:** "Utilization Variance" was this layer's ONLY utilization content — after removing it, a header still reading "Headcount and Utilization" would name a concept the layer no longer covers at all, the same kind of staleness this project's docs already avoid leaving behind. This is a direct, minimal consequence of the requested removal (keeping the header accurate), not scope creep — no other layer content, layout, or naming was touched.
+
+## A Removed Chart's Layout Space Goes to Its Siblings via Existing flex-1, Not a New Layout (2026-07-28)
+
+**Decision:** With "Utilization Variance" removed, `HeadcountAttritionLayer`'s remaining 2 visuals automatically fill the freed space — no new CSS, grid, or width overrides were added.
+
+**Why:** Every `Visual` panel already carries `flex-1` in the shared `ChartKit.jsx` component, inside a plain flexbox row (not a fixed CSS grid) — removing one child lets its siblings' `flex-1` claim the freed space automatically. This is the exact same mechanic already used when `WorkloadDistributionLayer`'s own Visual3 ("ACT Trend — Actual vs Plan") was removed 2026-07-23, dropping that layer from 3 visuals to 2 with no layout changes needed — "removing a chart from a flex row already produces the requested layout for free" is now an established pattern in this codebase, not something to solve freshly each time.
+
 ## Geo Map Projection Recentered South, Not Just Rescaled, to Stop Clipping the Top (2026-07-28)
 
 **Decision:** All 4 Geo Maps' `projectionConfig` changed from `{ scale: 140, center: [10, 20] }` to `{ scale: 100, center: [10, 0] }` — both the scale reduction AND the center-latitude change (20°N → 0°) were needed, not just one.

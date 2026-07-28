@@ -101,10 +101,10 @@ SPoG/
 │   │   └── tsaCapacity/         # TSA Capacity Plan page (all new, 2026-07-03; revised same day)
 │   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
-│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Utilization" — staffing, region/sub-region attrition drill, utilization variance
+│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28)
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
-│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Average Case Time Variance, ACT trend
-│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide SLO, Region/Sub-region toggle
+│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Workload Impact on Headcount (2026-07-28, replaced Average Case Time Variance)
+│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide Headcount (2026-07-23, was SLO), Region/Sub-region toggle
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
@@ -259,15 +259,17 @@ TsaCapacityPage
 │   │                          Each card a Modal drill-down
 │   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
 │                         AvgCaseTimeTrendChart (line)
-├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Utilization", badge "01"
+├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Attrition" (2026-07-28, was "...and
+│   │                                                Utilization" — see below), badge "01"
 │   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity, planName); line
 │   │                                                   renamed "Variation %"; Plan dropdown added 2026-07-23 for parity
 │   │                                                   with MSG Capacity's equivalent chart
-│   ├── Visual2 "Attrition"          — Region/Sub-region-level default (tsaAttritionByDimension), click a bar to drill
-│   │                                   into tsaAttritionTrendByDimension(filters, key, dimension, granularity);
-│   │                                   custom tooltip also shows the raw attritionCount
-│   └── Visual3 "Utilization Variance" (renamed) — ComposedChart: tsaUtilByFY(filters, granularity, lens); lens toggle
-│                                                   relabeled Region/Sub-region (was Region/Country, always cosmetic)
+│   └── Visual2 "Attrition"          — Region/Sub-region-level default (tsaAttritionByDimension), click a bar to drill
+│                                       into tsaAttritionTrendByDimension(filters, key, dimension, granularity);
+│                                       custom tooltip also shows the raw attritionCount
+│   (Visual3 "Utilization Variance" removed entirely 2026-07-28, per direct request, to give Visual1/Visual2 more
+│    room — layer is now exactly 2 visuals, filling the row via each Visual's own flex-1, no layout change needed;
+│    tsaUtilByFY/TSA_UTIL_BY_FY removed from tsaCapacityData.js as dead code, this was their only consumer)
 ├── PlanOverPlanVariationLayer(filters, granularity) — TSA-specific (no longer the shared component), badge "02"
 │   ├── MainChart "Plan over Plan Variation" — Region/Sub-region default view (tsaPlanOverPlanByDimension), click a bar
 │   │                                          to drill into tsaPlanOverPlanTrendByDimension; shared Plan A/Plan B
@@ -805,9 +807,8 @@ tsaAttritionByDimension(filters, dimension) — {key, headcount, attrition, attr
   ('Region'|'SubRegion')                      HeadcountAttritionLayer Visual2's default view
 tsaAttritionTrendByDimension(filters, key,  — {period, headcount, attrition, attritionCount} — FY/granularity trend for
   dimension, granularity)                     one clicked region/sub-region key
-tsaUtilByFY(filters, granularity, lens)   — {period, actual, target, adherence} — HeadcountAttritionLayer Visual3
-                                              ("Utilization Variance"); lens 'Region'|'Country' internally, relabeled
-                                              Region/Sub-region in the UI (still a cosmetic nudge, not a real dimension split)
+(Removed 2026-07-28: tsaUtilByFY/TSA_UTIL_BY_FY — backed HeadcountAttritionLayer's "Utilization Variance" Visual3,
+  removed entirely per direct request to give the remaining 2 visuals more room; this was its only consumer)
 cpfByFY(filters, granularity)             — {period, actual, plan} — Cases per FTE card (rate-preserving expansion, unchanged)
 actHrsByFY(filters, granularity)          — {period, actual, plan, adherence} — Avg Case Time card + Workload
   Distribution Visual2/Visual3; adherence = plan/actual*100 (a "lower is better" metric, so adherence >=100 means
@@ -1018,5 +1019,5 @@ Steps:
 19. MSG Capacity's Cases per FTE card carries no `prevPeriod`/`yoyPct` in `capacityCardData` (unlike every other card) — this is intentional, not a partial implementation, since the card is YTD-only by design
 20. TSA Capacity's `subRegion` tag on `TSA_CAPACITY_LOBS` and the resulting region/sub-region drills (Attrition, Plan over Plan Variation) and Geo Map sub-region view are all illustrative — no real per-LOB sub-region mapping exists, same convention as everywhere else in this app
 21. ~~TSA Capacity's Workload Distribution Visual2 ("Average Case Time Variance") and Visual3 ("ACT Trend — Actual vs Plan") now plot the identical `actHrsByFY` metric — intentional per direct request, not a duplication bug~~ — stale: Visual3 was removed entirely 2026-07-23, and Visual2 itself was replaced by "Workload Impact on Headcount" 2026-07-28 (no longer plots `actHrsByFY` at all); left struck through rather than renumbered, per this doc's own convention elsewhere
-22. `tsaUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math
+22. ~~`tsaUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math~~ — moot: `tsaUtilByFY` and the "Utilization Variance" visual it backed were removed entirely 2026-07-28
 23. All 4 Geo Maps' `<ComposableMap projectionConfig>` is `{ scale: 100, center: [10, 0] }` (2026-07-28, was `{ scale: 140, center: [10, 20] }` — the old values clipped everything north of ~80°N off the top of the fixed 800×600 viewBox; see `design_choice.md`). Keep these 4 in sync if either ever changes — there's no shared Geo Map component, each page's map duplicates this config independently

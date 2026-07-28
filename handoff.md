@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity Plan: Removed "Utilization Variance", Remaining 2 Visuals Fill the Space (2026-07-28)
+
+- **`HeadcountAttritionLayer.jsx` (tsaCapacity) Visual3** — "Utilization Variance" (Actual/Target % bars + Adherence % line, Region/Sub-region lens toggle) removed entirely, per direct request to free up space for the layer's other two charts. Removed the now-dead `tsaUtilByFY`/`TSA_UTIL_BY_FY` from `tsaCapacityData.js` — Visual3 was their only consumer.
+- **No new layout code needed** — every `Visual` panel already carries `flex-1` inside a plain flexbox row, so removing the third child lets "Actual vs Plan Variation" and "Attrition" automatically claim the freed width. Same mechanic already used when `WorkloadDistributionLayer`'s Visual3 was removed 2026-07-23.
+- **Layer renamed** "Headcount and Utilization" → **"Headcount and Attrition"** (subtitle "staffing, attrition & utilization" → "staffing & attrition") — "Utilization Variance" was this layer's only utilization content, so the old name/subtitle would have gone stale the moment the chart was removed. Not explicitly requested, but a direct, minimal consequence of the requested removal.
+- **Verified**: `npm run build` clean (1183 modules); grepped for any remaining reference to `tsaUtilByFY`/`TSA_UTIL_BY_FY`/"Utilization Variance" (none).
+
 ## All 4 Geo Maps: Fixed the Map Being Cut Off at the Top (2026-07-28)
 
 - **Root cause**: all 4 Geo Maps (`Layer3GeoMap.jsx`, `MsgCapacityGeoMap.jsx`, `TsaGeoMap.jsx`, `TsaCapacityGeoMap.jsx`) share the identical `<ComposableMap projection="geoMercator" projectionConfig={{ scale: 140, center: [10, 20] }}>`, rendered inside react-simple-maps' default 800×600 SVG viewBox (independent of the container div's own CSS `height: 380`). Traced the actual `d3-geo` Mercator math: at `scale 140` centered on `20°N`, anything north of ~80°N (Greenland's tip, Svalbard, the northern edges of Canada/Russia/Scandinavia) projects to a negative y-coordinate — silently clipped by the SVG viewBox itself, producing a flat cut across the top of the map. Nothing about the container's CSS was actually at fault.
