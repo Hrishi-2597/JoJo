@@ -86,7 +86,7 @@ export default function TsaGeoMap({ filters }) {
               </div>
             )}
 
-            <ComposableMap projection="geoMercator" projectionConfig={{ scale: 140, center: [10, 20] }} style={{ width: '100%', height: '100%' }}>
+            <ComposableMap projection="geoMercator" projectionConfig={{ scale: 100, center: [10, 0] }} style={{ width: '100%', height: '100%' }}>
               <Geographies geography={GEO_URL}>
                 {({ geographies }) =>
                   geographies.map(geo => {

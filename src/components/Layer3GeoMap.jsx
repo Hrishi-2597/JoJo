@@ -159,7 +159,7 @@ export default function Layer3GeoMap({ filters, granularity }) {
 
             <ComposableMap
               projection="geoMercator"
-              projectionConfig={{ scale: 140, center: [10, 20] }}
+              projectionConfig={{ scale: 100, center: [10, 0] }}
               style={{ width: '100%', height: '100%' }}
             >
               <Geographies geography={GEO_URL}>

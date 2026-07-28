@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## All 4 Geo Maps: Fixed the Map Being Cut Off at the Top (2026-07-28)
+
+- **Root cause**: all 4 Geo Maps (`Layer3GeoMap.jsx`, `MsgCapacityGeoMap.jsx`, `TsaGeoMap.jsx`, `TsaCapacityGeoMap.jsx`) share the identical `<ComposableMap projection="geoMercator" projectionConfig={{ scale: 140, center: [10, 20] }}>`, rendered inside react-simple-maps' default 800×600 SVG viewBox (independent of the container div's own CSS `height: 380`). Traced the actual `d3-geo` Mercator math: at `scale 140` centered on `20°N`, anything north of ~80°N (Greenland's tip, Svalbard, the northern edges of Canada/Russia/Scandinavia) projects to a negative y-coordinate — silently clipped by the SVG viewBox itself, producing a flat cut across the top of the map. Nothing about the container's CSS was actually at fault.
+- **Fix**: `projectionConfig` changed to `{ scale: 100, center: [10, 0] }` in all 4 files. Verified with a Node script driving the real `d3-geo` projection (not guesswork) — Greenland's northernmost point (83.6°N) now lands at y≈12 (was y≈-54, clipped), Svalbard (80°N) at y≈56 (was y≈9, barely surviving), mainland Russia/Canada (75°N) at y≈97, while the southern edge (Tierra del Fuego, -56°) still comfortably fits at y≈419 (well clear of the 600 bottom edge, more margin than before).
+- **Verified**: `npm run build` clean (1183 modules).
+
 ## HES Capacity Plan: "Average Case Time Variance" Replaced With "Workload Impact on Headcount" (2026-07-28)
 
 - **`WorkloadDistributionLayer.jsx` (tsaCapacity) Visual2** — the old "Average Case Time Variance" chart (Actual/Plan hours bars + Adherence % line + a permanent "Top LOBs above target ACT" list) is gone, replaced by a new **"Workload Impact on Headcount"** ComposedChart per direct request: SR as a bar, Workload Actual + Workload Plan as a solid/dashed line pair on the primary axis, Headcount as a line on the secondary axis. `actHrsByFY` (still used by this page's own Avg Case Time card, unaffected) is untouched; `actHrsDefaulterLobs` was removed entirely from `tsaCapacityData.js` since Visual2 and its inline defaulter list were its only consumers.

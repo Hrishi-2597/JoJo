@@ -693,3 +693,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Wired the click-title popup (existing shared `Visual`/`table` convention) with columns CQN/LOB/SR/Workload Actual/Workload Plan/Headcount, calling the selector with `cap=999` for the full in-scope roster.
 - Verified with `npm run build` (clean, 1183 modules) and a Node smoke test of `workloadImpactOnHeadcount()`: unfiltered returns 8 CQNs spread across different LOBs; `lob: ['High End Storage']` narrows to 3 real "High End Storage" queues; `lob: ['BackupWave']` narrows to 3 different real queues — confirming genuine LOB-aware filtering with realistic values.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 52 — 2026-07-28
+**Input:** Also all the geo map in all the tabs have the visual cut at the top..please fix that
+
+**Action:**
+- Traced the root cause rather than guessing: all 4 Geo Maps (`Layer3GeoMap.jsx`, `MsgCapacityGeoMap.jsx`, `TsaGeoMap.jsx`, `TsaCapacityGeoMap.jsx`) share the identical `<ComposableMap projectionConfig={{ scale: 140, center: [10, 20] }}>` on react-simple-maps' fixed 800×600 SVG viewBox (independent of each map's own container `height: 380` CSS — that wasn't the culprit). Ran the actual `d3-geo` Mercator projection this app already depends on through a Node script at real latitudes and confirmed anything north of ~80°N (Greenland's tip, Svalbard, the northern edges of Canada/Russia/Scandinavia) projected to a negative y-coordinate, silently clipped by the SVG viewBox — a flat cut across the top of every map.
+- Changed `projectionConfig` to `{ scale: 100, center: [10, 0] }` in all 4 files — both the scale reduction and the center-latitude shift (20°N → equator) were needed together, not either alone, to redistribute the fixed vertical budget so it covers up to ~84°N with margin while the (already-fine) southern edge keeps comfortable clearance too. Re-verified numerically: Greenland (83.6°N) moved from y≈-54 (clipped) to y≈12 (visible); Svalbard (80°N) from y≈9 to y≈56; mainland Russia/Canada (75°N) to y≈97; Tierra del Fuego (-56°) still comfortably at y≈419.
+- Verified with `npm run build` (clean, 1183 modules).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

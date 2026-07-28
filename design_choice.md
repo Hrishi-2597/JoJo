@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Geo Map Projection Recentered South, Not Just Rescaled, to Stop Clipping the Top (2026-07-28)
+
+**Decision:** All 4 Geo Maps' `projectionConfig` changed from `{ scale: 140, center: [10, 20] }` to `{ scale: 100, center: [10, 0] }` — both the scale reduction AND the center-latitude change (20°N → 0°) were needed, not just one.
+
+**Why:** Per direct report that every Geo Map's visual was cut off at the top. Tracing the actual d3-geo Mercator math (all 4 maps use react-simple-maps' default 800×600 viewBox, unchanged by the container's own CSS height) showed the old settings put anything north of ~80°N at a negative y-coordinate — silently clipped by the SVG viewBox, not a CSS overflow issue, so nothing about the container's own `height`/`overflow` styling was at fault. Reducing scale alone would still center the visible window on 20°N and waste it on latitudes nobody needed (open ocean north of Scandinavia while still nearly clipping Greenland); moving the center latitude down to 0° (equator) redistributes the same vertical budget so it actually covers up to ~84°N (Greenland's tip, with margin) while the southern edge — already unclipped before — keeps a comfortable margin too. Verified numerically (not just by eyeballing) with a Node script driving the real `d3-geo` projection this app already depends on, checking specific real latitudes (Greenland 83.6°N, Svalbard 80°N, mainland Russia/Canada 75°N, Tierra del Fuego -56°) before and after.
+
 ## A Queue-to-LOB Mapping With No Real Source Gets a Deterministic Placeholder, Not Invented Names (2026-07-28)
 
 **Decision:** "Workload Impact on Headcount"'s CQN-per-LOB filtering (`CQN_LOB_ASSIGNMENTS` in `tsaCapacityData.js`) assigns each of the 71 REAL queue names in `TSA_ACTIVE_QUEUE_NAMES` to a `LOB_LIST` entry round-robin by index, rather than either (a) inventing plausible-looking fake queue names per LOB, or (b) leaving every LOB's CQN list identical/unfiltered.
