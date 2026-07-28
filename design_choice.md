@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Capacity Geo Map's Legend Wording Matches the Other 3 Maps, Thresholds Don't (2026-07-28)
+
+**Decision:** Reworded `TsaCapacityGeoMap.jsx`'s legend from "≥ 75% of peak Highest / 50–75% of peak High / 25–50% of peak Moderate / < 25% of peak Lowest" to "≥ 75% Excellent / 50–75% Good / 25–50% Fair / < 25% Critical" — same "X% Word" style and same 4 adjectives as the other 3 Geo Maps' legends — but kept the 75/50/25% THRESHOLDS themselves, rather than copying the other maps' 90/80/70%.
+
+**Why:** Directly requested ("remove this of peak highest and all... make it similar to other Geo Map"). Only the wording was in scope, not the underlying calculation — this map's 75/50/25% thresholds are a % of the CURRENT view's own peak headcount (a relative scale, since headcount is a raw count, not a 0-100 rate, per `hcColor`'s own file comment), not a % of an absolute 0-100 metric the way the other 3 maps' accuracy/fulfillment/SL% readings are. Copying the other maps' 90/80/70% thresholds onto a relative-to-peak scale would silently change which regions land in which tier (undoing the color-spread verification just done the same day — see the geo map color-spread entry above), for a request that only asked about label wording. The relative basis is still disclosed in this chart's own `InfoButton` text ("...colored relative to the highest-staffed area in the current view"), so dropping "of peak" from the legend doesn't remove that information, just moves it out of the legend row.
+
 ## Geo Map Color Spread Needed a Deliberately-Curated Baseline, Not Just a Formula Tweak (2026-07-28)
 
 **Decision:** Fixed HES Forecasting's and HES Capacity's Geo Maps both showing near-uniform colors across every region by giving each selector a deliberately-spread per-key baseline (`REGION_ADHERENCE_BASE` in `tsaData.js`; `geoHeadcountEmphasis()` in `tsaCapacityData.js`) instead of tweaking the existing formula's constants.

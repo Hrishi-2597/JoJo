@@ -18,11 +18,17 @@ function hcColor(pct) {
   return '#dc2626'
 }
 
+// Same wording style as the other 3 Geo Maps' legends ("X% Word", 4 tiers) — per
+// direct request, dropping the "of peak Highest/High/Moderate/Lowest" phrasing this
+// legend had. The color thresholds themselves are unchanged (still 75/50/25% of the
+// current view's own peak, not the other maps' fixed 90/80/70% of an absolute rate —
+// see hcColor's comment above for why headcount needs a relative scale); the relative
+// basis is still explained in this chart's own InfoButton text below.
 const LEGEND = [
-  { label: '≥ 75% of peak Highest', color: '#059669' },
-  { label: '50–75% of peak High',   color: '#2563eb' },
-  { label: '25–50% of peak Moderate', color: '#d97706' },
-  { label: '< 25% of peak Lowest',  color: '#dc2626' },
+  { label: '≥ 75% Excellent', color: '#059669' },
+  { label: '50–75% Good',     color: '#2563eb' },
+  { label: '25–50% Fair',     color: '#d97706' },
+  { label: '< 25% Critical',  color: '#dc2626' },
 ]
 
 // Worldwide Headcount, now with a Region/Sub-region toggle (2026-07-03) mirroring

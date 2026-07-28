@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity Geo Map: Legend Wording Now Matches the Other 3 Maps (2026-07-28)
+
+- **`TsaCapacityGeoMap.jsx`'s legend** — "≥ 75% of peak Highest / 50–75% of peak High / 25–50% of peak Moderate / < 25% of peak Lowest" → **"≥ 75% Excellent / 50–75% Good / 25–50% Fair / < 25% Critical"**, matching the exact "X% Word" style and adjectives the other 3 Geo Maps' legends already use.
+- **Thresholds unchanged (75/50/25%)** — those are still a % of the current view's own peak headcount (a relative scale, since headcount is a raw count, not a 0-100 rate), NOT the other maps' 90/80/70% of an absolute rate; copying those numbers over would have silently undone the color-spread fix from earlier today. The relative basis is still explained in this chart's own `InfoButton` text, just no longer spelled out in the legend row itself.
+- **Verified**: `npm run build` clean (1183 modules).
+
 ## HES Forecasting & HES Capacity Geo Maps: Fixed Near-Identical Coloring Across Regions (2026-07-28)
 
 - **Root cause, traced with real numbers before fixing anything**: HES Forecasting's `geoAdherenceByRegion` (`tsaData.js`) averaged a modulo-30 per-LOB formula across all 33 LOBs — a complete residue cycle, so every region's average converged to the same ~79-80 regardless of region (verified: all 5 regions landed within 1 point of each other). HES Capacity's `geoHeadcountByRegion`/`geoHeadcountBySubRegion` (`tsaCapacityData.js`) reshape a headcount split driven by round-robin LOB→region/sub-region tagging (33 LOBs over 5 regions ≈ 18-21% share each; over 24 sub-regions ≈ 1-2 LOBs each) — too even for the map's relative-to-peak color bands to ever show more than 1-2 colors. Neither was a color-threshold bug; both were a genuine lack of underlying data spread.

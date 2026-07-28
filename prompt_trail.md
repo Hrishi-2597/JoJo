@@ -729,3 +729,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified by running the actual selectors through the real `acColor`/`hcColor` tier functions (not hand-derived): all 4 real map regions (APJ/EMEA/LATAM/NAMER) now land in 4 different color tiers on both pages, and HES Capacity's ~22 real map sub-regions span all 4 tiers too. Re-verified LOB-filtered scenarios still narrow/rescale correctly.
 - Verified with `npm run build` (clean, 1183 modules).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 55 — 2026-07-28
+**Input:** [image of the "Worldwide Headcount Heatmap" legend row showing "≥ 75% of peak Highest / 50–75% of peak High / 25–50% of peak Moderate / < 25% of peak Lowest"] also remove this of peak highest and all ..make it similar to other Geo Map
+
+**Action:**
+- Reworded `TsaCapacityGeoMap.jsx`'s legend to "≥ 75% Excellent / 50–75% Good / 25–50% Fair / < 25% Critical" — same "X% Word" style and adjectives the other 3 Geo Maps already use, dropping the "of peak Highest/High/Moderate/Lowest" phrasing.
+- Kept the underlying 75/50/25% thresholds unchanged — those are a % of the current view's own peak headcount (a relative scale, since headcount is a raw count, not a 0-100 rate), not the other maps' 90/80/70% of an absolute rate; copying those numbers over would have silently undone the color-spread fix from earlier the same day. The relative basis is still explained via this chart's own InfoButton text, just no longer spelled out in the legend row.
+- Verified with `npm run build` (clean, 1183 modules).
+- Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`.
