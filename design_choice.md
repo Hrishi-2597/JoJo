@@ -4,6 +4,26 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## A Queue-to-LOB Mapping With No Real Source Gets a Deterministic Placeholder, Not Invented Names (2026-07-28)
+
+**Decision:** "Workload Impact on Headcount"'s CQN-per-LOB filtering (`CQN_LOB_ASSIGNMENTS` in `tsaCapacityData.js`) assigns each of the 71 REAL queue names in `TSA_ACTIVE_QUEUE_NAMES` to a `LOB_LIST` entry round-robin by index, rather than either (a) inventing plausible-looking fake queue names per LOB, or (b) leaving every LOB's CQN list identical/unfiltered.
+
+**Why:** Directly requested "when I select a particular LOB... the graph should show the respective CQN of that LOB," but no real queue-to-LOB mapping has ever been supplied to this app — `LOB_QUEUES` only has a real roster for one LOB ("High End Storage"), a known limitation already documented for the Total Queues card. Inventing new "real-sounding" queue names per LOB would violate this project's standing rule of never fabricating fake real-sounding names; leaving the chart unfiltered by LOB would ignore an explicit, unambiguous instruction. Round-robin assignment over the REAL 71-name roster is the same "real names, illustrative structure" compromise `LOB_FACTS` already uses for `businessPartner`/`globalGrouping` tagging — every CQN shown anywhere is still a genuine business-supplied name, just its LOB assignment is a placeholder pending real data, flagged directly in both `tech_spec.md`'s Known Limitations and inline in the code.
+
+## Workload Impact on Headcount's Numbers Are Each Metric's Own LOB-Level Field, Sub-Divided by Queue Count (2026-07-28)
+
+**Decision:** SR is scaled off `tsaData.js`'s existing `SR_BY_FY` plan (TSA Forecasting's own SR chart baseline) divided across all active queues; Workload Actual/Plan and Headcount are each a deterministic per-queue share of their assigned LOB's own `TSA_CAPACITY_LOBS` fields (`workloadPlan`/`workloadActual`, `popPlan1`) — none of the three metrics uses a freshly-invented scale.
+
+**Why:** Directly requested ("make values for SR, Workload, Headcount similar to volume we used in other graphs"). Every one of these three metrics already exists elsewhere on this app at LOB or page level with an established, realistic magnitude; sub-dividing those existing totals by each LOB's queue count keeps a per-CQN row's numbers proportionate to what the same LOB already shows in its other charts (e.g. the LOB's own workload/headcount rolls up correctly across its queues) instead of introducing a fourth, disconnected illustrative scale just for this one chart.
+
+## Workload Actual/Plan Share One Hue (Solid/Dashed), Not a Third Categorical Color (2026-07-28)
+
+**Decision:** "Workload Impact on Headcount" uses only 3 hues for 4 series: SR (bar, `metric1`), Workload Actual/Plan (both `metric2`, solid vs dashed line), Headcount (`trend`, secondary axis). No new categorical color was introduced.
+
+**Why:** This app's palette deliberately reserves `ahead`/`behind` (green/red) as status colors for positive/negative variance, not general series identity — reusing them here for a plain "Workload Actual" line would misuse a reserved color the way the dataviz guidance explicitly warns against. Rather than inventing a new, unvalidated 6th hue for a single chart, this reuses a pattern already established elsewhere in this exact codebase (`TsaCapacityMetricCards.jsx`'s Cases/FTE and Avg Case Time trend charts already pair an actual/plan line as one hue, solid vs dashed) — keeping the palette's fixed, validated set intact while still making Actual and Plan visually distinguishable via stroke pattern, and reserving `trend` (violet) for Headcount matches its established role everywhere else in this app as "the secondary-axis line's color."
+
+---
+
 ## A Chart's Detail Table Should Be Its Real Data, Not a Second Generic One (2026-07-27)
 
 **Decision:** "Headcount Impact on SL"'s click-table shows the actual "over-plan queues still below 90% SL" list (the chart's own real, concrete detail) instead of the generic `contributingFactors`-based "what contributed, by period" table every other time-based chart on this page got.

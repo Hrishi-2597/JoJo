@@ -6,6 +6,7 @@
 // are new.
 import {
   LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, tsaEffectiveFiscalYears,
+  SR_BY_FY, TSA_ACTIVE_QUEUE_NAMES,
 } from './tsaData'
 import {
   FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
@@ -201,17 +202,6 @@ export function actHrsByFY(filters = {}, granularity) {
     .map(d => ({ ...d, adherence: d.actual ? +((d.plan / d.actual) * 100).toFixed(1) : 0 }))
 }
 
-// LOBs whose Average Case Time is running above plan (worse — taking longer than
-// planned), worst delta first — backs the "top LOBs going above target" list under
-// both Workload Distribution ACT visuals.
-export function actHrsDefaulterLobs(filters = {}, count = 6) {
-  return filterCapacityLobs(filters)
-    .filter(l => l.actHrsActual > l.actHrsPlan)
-    .map(l => ({ lob: l.lob, actual: l.actHrsActual, plan: l.actHrsPlan, delta: +(l.actHrsActual - l.actHrsPlan).toFixed(1) }))
-    .sort((a, b) => b.delta - a.delta)
-    .slice(0, count)
-}
-
 // Year-over-year % change between the latest in-scope FY and the one before it;
 // null when there's no prior year in scope, same convention as msgCapacityData.js's yoyPct.
 function yoyPct(curr, prev) {
@@ -352,6 +342,49 @@ export const TSA_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
     get popVariance() { return this.popPlan1 ? +((this.popPlan2 - this.popPlan1) / this.popPlan1 * 100).toFixed(1) : 0 },
   }
 })
+
+// ── Workload Impact on Headcount (Layer 3, replacing "Average Case Time Variance",
+// 2026-07-28) — per-CQN detail using the SAME real queue-name roster the adjacent
+// Workload Distribution Sankey draws from (TSA_ACTIVE_QUEUE_NAMES, sourced from
+// LOB_QUEUES['High End Storage'] — the only real per-queue list this app has). No
+// real queue-to-LOB mapping has been supplied, so each queue is assigned to a
+// LOB_LIST entry round-robin by index — same "real names, illustrative structure"
+// approach LOB_FACTS already uses for businessPartner/globalGrouping — so picking a
+// LOB from the filter panel narrows to a genuine, real-named CQN subset instead of
+// an arbitrary one.
+const CQN_LOB_ASSIGNMENTS = TSA_ACTIVE_QUEUE_NAMES.map((name, i) => ({ name, lob: LOB_LIST[i % LOB_LIST.length] }))
+
+function cqnsForFilters(filters) {
+  const inScope = new Set(filterLobs(filters).map(l => l.lob))
+  const scoped = CQN_LOB_ASSIGNMENTS.filter(q => inScope.has(q.lob))
+  return scoped.length ? scoped : CQN_LOB_ASSIGNMENTS
+}
+
+// SR/Workload/Headcount scaled off this page's own existing conventions rather than
+// invented outright: SR off TSA Forecasting's own SR_BY_FY plan (tsaData.js, same
+// magnitude as the SR chart on that page), Workload off TSA_CAPACITY_LOBS' own
+// workloadPlan/workloadActual per LOB, Headcount off TSA_CAPACITY_LOBS' popPlan1
+// (already documented there as the Plan-over-Plan headcount-per-LOB field) — each
+// queue takes a deterministic sub-share of its assigned LOB's totals. `cap` (default
+// 8) keeps the chart legible when unfiltered; the click-popup table calls with a
+// much higher cap to show the full in-scope roster. A single-LOB filter typically
+// narrows to 2-3 queues, well under the default cap either way.
+export function workloadImpactOnHeadcount(filters = {}, cap = 8) {
+  const years = tsaEffectiveFiscalYears(filters)
+  const latestFy = years[years.length - 1] || 'FY27'
+  const srRow = SR_BY_FY.find(d => d.period === latestFy) || SR_BY_FY[SR_BY_FY.length - 1]
+  const srPerQueueBase = srRow.plan / TSA_ACTIVE_QUEUE_NAMES.length
+
+  return cqnsForFilters(filters).slice(0, cap).map((q, i) => {
+    const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
+    const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
+    const sr = Math.round(srPerQueueBase * (0.7 + ((i * 7 + q.name.length) % 11) * 0.04))
+    const workloadPlan = Math.round((lobRow?.workloadPlan ?? 620) / queueCount)
+    const workloadActual = Math.round((lobRow?.workloadActual ?? workloadPlan) / queueCount)
+    const headcount = Math.max(1, Math.round((lobRow?.popPlan1 ?? 10) / queueCount))
+    return { cqn: q.name, lob: q.lob, sr, workloadActual, workloadPlan, headcount }
+  })
+}
 
 // Illustrative Sankey, now with two modes (2026-07-03): 'LOB' flows 3 illustrative
 // CQN priority tiers into 4 real LOB names; 'CQN' flows 3 illustrative LOB-priority

@@ -275,17 +275,22 @@ TsaCapacityPage
 │   │                                          series) live here, driving both this chart and LobVarianceChart below
 │   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters,
 │                                                         planA, planB), worst |variance| first, value-labeled
-├── WorkloadDistributionLayer(filters, granularity) — badge "03"
+├── WorkloadDistributionLayer(filters) — badge "03" (dropped its unused `granularity` prop 2026-07-28 — see below)
 │   ├── Visual1 "Workload Distribution" (renamed) — recharts Sankey: workloadSankey(filters, mode), LOB/CQN BinaryToggle
 │   │                                                (LOB mode: CQN tiers→real LOBs; CQN mode: LOB tiers→real TSA queues);
 │   │                                                node hover (2026-07-20) shows every connected node on the other side
 │   │                                                with value + % of the hovered node's own total (nodeHoverSummary(),
 │   │                                                fixed top-right panel) — separate from the existing link-hover Tooltip,
 │   │                                                which still shows one single flow at a time
-│   └── Visual2 "Average Case Time Variance" (renamed, repointed) — ComposedChart: actHrsByFY(filters, granularity)
-│                                                                    bars + Adherence % line + actHrsDefaulterLobs list
-│   (Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23 — layer is now exactly 2 visuals, filling the
-│    row via each Visual's own flex-1, no layout change needed)
+│   └── Visual2 "Workload Impact on Headcount" (2026-07-28, replaces "Average Case Time Variance") — ComposedChart:
+│                                                workloadImpactOnHeadcount(filters), X-axis = CQN (real queue names,
+│                                                same roster the Sankey's CQN mode draws from); SR bar (metric1) +
+│                                                Workload Actual/Plan line pair (metric2, solid/dashed) on the primary
+│                                                axis, Headcount line (trend) on the secondary axis; narrows to the
+│                                                selected LOB's real CQNs via cqnsForFilters()/filterLobs; click-title
+│                                                table shows the full in-scope CQN roster (cap=999)
+│   (Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23; "Average Case Time Variance" removed 2026-07-28 —
+│    layer is still exactly 2 visuals, filling the row via each Visual's own flex-1, no layout change needed)
 └── TsaCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
                                                  Region/Sub-region BinaryToggle, same fallback-to-parent-region
                                                  mechanic as MsgCapacityGeoMap. Switched from SLO% to Headcount
@@ -807,8 +812,8 @@ cpfByFY(filters, granularity)             — {period, actual, plan} — Cases p
 actHrsByFY(filters, granularity)          — {period, actual, plan, adherence} — Avg Case Time card + Workload
   Distribution Visual2/Visual3; adherence = plan/actual*100 (a "lower is better" metric, so adherence >=100 means
   actual is at or under plan); rate-preserving expansion (avg case time is hours-per-case, not a summable volume)
-actHrsDefaulterLobs(filters, count=6)     — {lob, actual, plan, delta} sorted by delta DESCENDING — LOBs running above
-  target ACT, backing the "top LOBs above target" list under both Workload Distribution ACT visuals
+(Removed 2026-07-28: actHrsDefaulterLobs — its only consumers were Workload Distribution Visual2's defaulter list and
+  click-table, both removed when Visual2 was repointed at Workload Impact on Headcount; see design_choice.md.)
 geoHeadcountByRegion(filters) / geoHeadcountBySubRegion(filters) — {region/subRegion, headcount} — reshapes
   tsaAttritionByDimension's own headcount split for TsaCapacityGeoMap (2026-07-23, replacing the removed SLO%
   selectors below — see design_choice.md). Color bands relative to the current view's own peak value, not fixed
@@ -832,6 +837,19 @@ workloadSankey(filters, mode='LOB')       — {nodes, links} recharts Sankey sha
 TSA_CAPACITY_LOBS                         — LOB_FACTS.map(...) + {region, subRegion, workloadPlan, workloadActual,
   actHrsPlan, actHrsActual, popPlan1, popPlan2, popVariance (getter)} — per-LOB fact table (spreads LOB_FACTS's own
   businessPartner/globalGrouping tags rather than re-deriving them); popPlan1/popPlan2 back planOverPlanLobVariance
+CQN_LOB_ASSIGNMENTS (2026-07-28, private)  — TSA_ACTIVE_QUEUE_NAMES (tsaData.js, 71 real queues, the same roster
+  workloadSankey's CQN mode draws from) each assigned to a LOB_LIST entry round-robin by index — no real queue-to-LOB
+  mapping has been supplied, so this is the "real names, illustrative structure" placeholder (same convention
+  LOB_FACTS uses for businessPartner/globalGrouping) until a real mapping arrives
+cqnsForFilters(filters) (private)         — CQN_LOB_ASSIGNMENTS narrowed to filterLobs(filters)'s in-scope LOB names
+  (falls back to the full 71-queue set if a filter combination leaves nothing in scope)
+workloadImpactOnHeadcount(filters, cap=8) — {cqn, lob, sr, workloadActual, workloadPlan, headcount} × up to `cap` CQNs
+  in scope — Workload Distribution Visual2 ("Workload Impact on Headcount", 2026-07-28, replacing "Average Case Time
+  Variance"). SR scaled off tsaData.js's own SR_BY_FY plan (same magnitude as the SR chart on TSA Forecasting) ÷
+  TSA_ACTIVE_QUEUE_NAMES.length; Workload Actual/Plan and Headcount are each a deterministic per-queue sub-share of
+  their assigned LOB's own TSA_CAPACITY_LOBS fields (workloadPlan/workloadActual, popPlan1) — not invented numbers.
+  Selecting a LOB filter narrows to that LOB's 2-3 real CQNs directly (via cqnsForFilters); unfiltered, the cap keeps
+  the chart to 8 bars. The click-title table calls this with cap=999 for the full in-scope roster.
 ```
 
 `workloadByFY`/`WORKLOAD_BY_FY` (the original "Workload Act vs Plan" hours-based dataset) were removed 2026-07-03 once
@@ -986,7 +1004,7 @@ Steps:
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
 5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (146 real names as of 2026-07-02) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
-7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs
+7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied
 8. `GLOBAL_GROUPING_LIST` (TSA Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
 9. TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view
 10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
@@ -999,5 +1017,5 @@ Steps:
 18. The 2026-07-03 MSG Capacity revision pass (filters, YTD cards, Attrition/Plan-over-Plan drill, Utilization aux detail, Geo Map sub-region toggle) was verified via an extended Node smoke test + clean build only, same browser-automation gap as item 16
 19. MSG Capacity's Cases per FTE card carries no `prevPeriod`/`yoyPct` in `capacityCardData` (unlike every other card) — this is intentional, not a partial implementation, since the card is YTD-only by design
 20. TSA Capacity's `subRegion` tag on `TSA_CAPACITY_LOBS` and the resulting region/sub-region drills (Attrition, Plan over Plan Variation) and Geo Map sub-region view are all illustrative — no real per-LOB sub-region mapping exists, same convention as everywhere else in this app
-21. TSA Capacity's Workload Distribution Visual2 ("Average Case Time Variance") and Visual3 ("ACT Trend — Actual vs Plan") now plot the identical `actHrsByFY` metric — intentional per direct request, not a duplication bug
+21. ~~TSA Capacity's Workload Distribution Visual2 ("Average Case Time Variance") and Visual3 ("ACT Trend — Actual vs Plan") now plot the identical `actHrsByFY` metric — intentional per direct request, not a duplication bug~~ — stale: Visual3 was removed entirely 2026-07-23, and Visual2 itself was replaced by "Workload Impact on Headcount" 2026-07-28 (no longer plots `actHrsByFY` at all); left struck through rather than renumbered, per this doc's own convention elsewhere
 22. `tsaUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math

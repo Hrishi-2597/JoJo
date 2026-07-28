@@ -3,14 +3,8 @@ import {
   ComposedChart, Sankey, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Rectangle,
 } from 'recharts'
-import { workloadSankey, actHrsByFY, actHrsDefaulterLobs } from '../../data/tsaCapacityData'
-import { varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, BinaryToggle } from '../ChartKit'
-
-// Local override of the shared VARIANCE_TABLE_COLUMNS' 'Queue' header/'Variance' unit
-// — this table ranks LOBs by Average Case Time overage (hours), not queues by % plan
-// variance, so both the row label and the variance column need this page's own units.
-const ACT_VARIANCE_COLUMNS = VARIANCE_TABLE_COLUMNS.map(c => (c.key === 'name' ? { ...c, label: 'LOB' } : c))
+import { workloadSankey, workloadImpactOnHeadcount } from '../../data/tsaCapacityData'
+import { C, Visual, Tip, BinaryToggle, truncate } from '../ChartKit'
 
 // Recharts' default Sankey node renders as a plain unlabeled rect — this custom
 // node paints the real LOB/queue name next to it so the diagram is legible without
@@ -144,73 +138,67 @@ function Visual1({ filters }) {
   )
 }
 
-// Shared "top LOBs above target" list — both ACT visuals show it, per direct request.
-function DefaulterLobList({ filters }) {
-  const defaulters = useMemo(() => actHrsDefaulterLobs(filters, 6), [filters])
+// X-axis tick for CQN (queue) names — these run long (e.g. "APJ TSA MIDRANGE
+// Japanese"), so this truncates rather than reusing the shared CategoryTick (which
+// is built for Y-axis category labels, right-aligned into the axis). The Tooltip
+// still shows the untruncated name via its own `label`.
+function CqnTick({ x, y, payload }) {
   return (
-    <>
-      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', margin: '6px 0 4px', textAlign: 'center' }}>
-        Top LOBs above target ACT
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {defaulters.map((l, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '2px 4px' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>{l.lob}</span>
-            <span style={{ fontWeight: 600, color: C.behind }}>
-              {l.actual}h <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>vs {l.plan}h plan (+{l.delta}h)</span>
-            </span>
-          </div>
-        ))}
-        {defaulters.length === 0 && <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>No LOBs currently above target ACT.</p>}
-      </div>
-    </>
+    <text x={x} y={y} dy={10} textAnchor="middle" fontSize={8.5} fill="var(--text-secondary)">
+      {truncate(String(payload.value), 12)}
+    </text>
   )
 }
 
-// Renamed from "Workload Act vs Plan" — the original name's "Act" referred to
-// Average Case Time all along, not workload volume, so this plots actHrsByFY data as
-// a bar+adherence chart, plus the defaulter list. (The sibling "ACT Trend — Actual vs
-// Plan" line-chart visual that used to sit alongside this one was removed 2026-07-23
-// so this layer holds exactly 2 graphs instead of 3.)
-function Visual2({ filters, granularity }) {
-  const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
-  // Full roster of LOBs currently running above their target Average Case Time (not
-  // just the DefaulterLobList's own top-N below) — tiered High/Moderate/Low using the
-  // same varianceTier/varianceReason helpers as the ranked-LOB charts elsewhere on this
-  // page, treating each LOB's actual-vs-plan hour gap as the tiering magnitude.
-  const table = useMemo(() => {
-    const all = actHrsDefaulterLobs(filters, 999)
-    return {
-      title: 'Every LOB above target ACT, by variance tier',
-      columns: ACT_VARIANCE_COLUMNS,
-      rows: all.map(l => ({ name: l.lob, tier: varianceTier(l.delta).label, variance: `+${l.delta}h`, reason: varianceReason(l.lob) })),
-    }
-  }, [filters])
+const WORKLOAD_HC_COLUMNS = [
+  { key: 'cqn', label: 'CQN', wrap: true },
+  { key: 'lob', label: 'LOB' },
+  { key: 'sr', label: 'SR', align: 'right' },
+  { key: 'workloadActual', label: 'Workload Actual', align: 'right' },
+  { key: 'workloadPlan', label: 'Workload Plan', align: 'right' },
+  { key: 'headcount', label: 'Headcount', align: 'right' },
+]
+
+// Replaces "Average Case Time Variance" (2026-07-28) per direct request — SR as a
+// column, Workload Actual/Plan as a solid/dashed line pair sharing one hue (same
+// actual/plan line convention as this page's own metric cards), Headcount as a line
+// on the secondary axis (this page's established role for a secondary-axis line).
+// X-axis is CQN, reusing the real queue-name roster the Sankey's CQN mode draws
+// from; workloadImpactOnHeadcount narrows those CQNs to the selected LOB(s) via the
+// same filterLobs the rest of this page already uses.
+function Visual2({ filters }) {
+  const data = useMemo(() => workloadImpactOnHeadcount(filters), [filters])
+  const table = useMemo(() => ({
+    title: 'Workload Impact on Headcount — CQN detail',
+    columns: WORKLOAD_HC_COLUMNS,
+    rows: workloadImpactOnHeadcount(filters, 999),
+  }), [filters])
   return (
-    <Visual title="Average Case Time Variance"
-      info="Actual vs plan Average Case Time by period, with adherence % and the LOBs running longest."
-      rca="A handful of LOBs are driving most of the above-plan case time."
-      clca="Prioritize a case-time review for the LOBs topping this list."
+    <Visual title="Workload Impact on Headcount"
+      subtitle="SR, workload and headcount by CQN — narrows to the selected LOB's queues"
+      info="Service requests, workload actual/plan and headcount for each CQN in scope."
+      rca="A handful of CQNs carry most of the workload relative to their assigned headcount."
+      clca="Rebalance headcount toward the CQNs running heaviest on workload vs plan."
       table={table}>
-      <ResponsiveContainer width="100%" height={190}>
-        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={210}>
+        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}h`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <XAxis dataKey="cqn" tick={<CqnTick />} interval={0} axisLine={false} tickLine={false} height={30} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual (hrs)" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan" name="Plan (hrs)" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30} />
+          <Line yAxisId="l" type="monotone" dataKey="workloadActual" name="Workload Actual" stroke={C.metric2} strokeWidth={2} dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line yAxisId="l" type="monotone" dataKey="workloadPlan" name="Workload Plan" stroke={C.metric2} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line yAxisId="r" type="monotone" dataKey="headcount" name="Headcount" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
-      <DefaulterLobList filters={filters} />
     </Visual>
   )
 }
 
-export default function WorkloadDistributionLayer({ filters, granularity }) {
+export default function WorkloadDistributionLayer({ filters }) {
   const [open, setOpen] = useState(true)
 
   return (
@@ -219,14 +207,14 @@ export default function WorkloadDistributionLayer({ filters, granularity }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#fb923c', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>03</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Workload Distribution</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— LOB/queue flow &amp; Average Case Time</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— LOB/queue flow &amp; workload impact on headcount</span>
         </div>
         <span style={{ fontSize: 11, color: '#fb923c', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} />
-          <Visual2 filters={filters} granularity={granularity} />
+          <Visual2 filters={filters} />
         </div>
       )}
     </div>
