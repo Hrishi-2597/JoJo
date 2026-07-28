@@ -716,3 +716,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Renamed the layer "Headcount and Utilization" → "Headcount and Attrition" (subtitle updated to match) since Utilization Variance was this layer's only utilization content — a direct, minimal consequence of the removal, not a separately requested change.
 - Verified with `npm run build` (clean, 1183 modules) and a grep sweep confirming no remaining reference to `tsaUtilByFY`/`TSA_UTIL_BY_FY`/"Utilization Variance" anywhere in the codebase.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 54 — 2026-07-28
+**Input:** Also for the Geo Map in HES Forecasting and HES Capacity the color coding is same for all the region like its showing green and blue ..make it similar what we did for ESG Forecasting
+
+**Action:**
+- Traced both root causes with real numbers before changing anything. HES Forecasting's `geoAdherenceByRegion` (`tsaData.js`) averaged a modulo-30 per-LOB formula across all 33 LOBs — a complete residue cycle, so every region's average converged to the same ~79-80 regardless of region (verified with a Node script: all 5 regions within 1 point of each other). HES Capacity's `geoHeadcountByRegion`/`geoHeadcountBySubRegion` (`tsaCapacityData.js`) reshape a headcount split driven by round-robin LOB→region/sub-region tagging (33 LOBs over 5 regions ≈ 18-21% share each; over 24 sub-regions ≈ 1-2 LOBs each) — too even for the map's relative-to-peak color bands to ever surface more than green/blue. Neither was a color-threshold bug, both were genuinely too little underlying spread.
+- HES Forecasting fix: added `REGION_ADHERENCE_BASE` (`{ NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63, Global: 80 }`), mirroring ESG Forecasting's own curated `GEO_REGION_DATA` table — per-LOB values still vary ±15 around each region's base (clamped 50-99) so a LOB filter still moves the number.
+- HES Capacity fix: added `geoHeadcountEmphasis(key)` — a deterministic, verified well-spread multiplier (0.25-1.6, salted hash) layered on top of the real share-weighted headcount, scoped to ONLY `geoHeadcountByRegion`/`geoHeadcountBySubRegion` (grep-confirmed these are the only consumers, so Attrition/Plan-over-Plan's own headcount numbers for the same keys are untouched).
+- Verified by running the actual selectors through the real `acColor`/`hcColor` tier functions (not hand-derived): all 4 real map regions (APJ/EMEA/LATAM/NAMER) now land in 4 different color tiers on both pages, and HES Capacity's ~22 real map sub-regions span all 4 tiers too. Re-verified LOB-filtered scenarios still narrow/rescale correctly.
+- Verified with `npm run build` (clean, 1183 modules).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

@@ -4,6 +4,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Geo Map Color Spread Needed a Deliberately-Curated Baseline, Not Just a Formula Tweak (2026-07-28)
+
+**Decision:** Fixed HES Forecasting's and HES Capacity's Geo Maps both showing near-uniform colors across every region by giving each selector a deliberately-spread per-key baseline (`REGION_ADHERENCE_BASE` in `tsaData.js`; `geoHeadcountEmphasis()` in `tsaCapacityData.js`) instead of tweaking the existing formula's constants.
+
+**Why:** Traced both root causes with real numbers before touching anything (never guessed): HES Forecasting's `geoAdherenceByRegion` averaged a modulo-30 per-LOB formula across all 33 LOBs — a complete residue cycle, so every region's average converged to the same ~79-80 regardless of which region it was, verified with a Node script showing all 5 regions landing within 1 point of each other. HES Capacity's `geoHeadcountByRegion`/`geoHeadcountBySubRegion` reshape a headcount split driven by round-robin LOB→region/sub-region tagging (33 LOBs over 5 regions ≈ 18-21% share each, or over 24 sub-regions ≈ 1-2 LOBs each) — inherently too even for the map's relative-to-peak color bands to ever show more than 1-2 colors, confirmed the same way. Neither was a coloring-threshold bug; both were a genuine lack of underlying spread, so the fix had to add real spread, not retune `acColor`/`hcColor`. Modeled the fix directly on ESG Forecasting's own `GEO_REGION_DATA`/`SUB_REGION_ACCURACY` — small, deliberately-curated per-key tables spanning all 4 tiers — rather than leaving the map to derive its colors from a formula whose averaging behavior wasn't designed with visual differentiation in mind.
+
+**Scoping choice:** `geoHeadcountEmphasis()` was added ONLY inside `geoHeadcountByRegion`/`geoHeadcountBySubRegion`, not into the underlying `tsaAttritionByDimension` or the round-robin LOB tagging on `TSA_CAPACITY_LOBS` itself — confirmed via grep that nothing else in the app consumes these two geo selectors, so widening their spread doesn't change the Attrition or Plan-over-Plan visuals' own headcount numbers for the same region/sub-region, keeping this a genuinely map-only fix for a map-only complaint.
+
+**Verification:** Both fixes were checked by running the actual selector functions (not a hand-derived approximation) through the real `acColor`/`hcColor` tier functions — confirmed all 4 real map regions (APJ/EMEA/LATAM/NAMER) land in 4 different tiers on both pages, and HES Capacity's ~22 real map sub-regions span all 4 tiers too, not just green/blue.
+
 ## Removing a Visual Renames Its Layer Too, When the Layer Name No Longer Fits (2026-07-28)
 
 **Decision:** Removing "Utilization Variance" from `HeadcountAttritionLayer` also renamed the layer itself from "Headcount and Utilization" to "Headcount and Attrition" (and its subtitle from "staffing, attrition & utilization" to "staffing & attrition"), even though only the chart removal was explicitly requested.

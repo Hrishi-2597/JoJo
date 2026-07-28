@@ -693,9 +693,15 @@ cpasuTrendByRegion(filters, region) — {period, asu, sr, cpasu} × periods.leng
 
 ### Geo Map (LOB adherence)
 ```
-lobAdherenceValue(regionIndex, lobIndex) = 65 + ((regionIndex*7 + lobIndex*11) % 30) — illustrative
+REGION_ADHERENCE_BASE (2026-07-28) — { NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63, Global: 80 }, a deliberately-spread
+  per-region baseline mirroring ESG Forecasting's own curated GEO_REGION_DATA table
+lobAdherenceValue(region, lobIndex) = clamp(50, 99, REGION_ADHERENCE_BASE[region] + ((lobIndex*11) % 30) - 15) —
+  ±15 illustrative spread around the region's own base, so a LOB filter still moves the number
 geoAdherenceByRegion(filters) — averages adherence across filterLobs(filters) (or all 33 LOBs if
-  none selected) for each of the 5 REGIONS; consumed by TsaGeoMap's choropleth fill
+  none selected) for each of the 5 REGIONS; consumed by TsaGeoMap's choropleth fill.
+  (2026-07-28: replaced the previous `65 + ((regionIndex*7 + lobIndex*11) % 30)` formula — a complete
+  residue cycle that made every region's all-LOB average converge to the same ~79-80 regardless of
+  region, the root cause of every region rendering near-identical map colors; see design_choice.md)
 ```
 
 ### Cards
@@ -815,10 +821,16 @@ actHrsByFY(filters, granularity)          — {period, actual, plan, adherence} 
   actual is at or under plan); rate-preserving expansion (avg case time is hours-per-case, not a summable volume)
 (Removed 2026-07-28: actHrsDefaulterLobs — its only consumers were Workload Distribution Visual2's defaulter list and
   click-table, both removed when Visual2 was repointed at Workload Impact on Headcount; see design_choice.md.)
+geoHeadcountEmphasis(key) (2026-07-28, private) — deterministic 0.25-1.6 multiplier, salted hash of `key`; layered
+  onto the 2 selectors below ONLY (verified via grep to be their only consumer — Attrition/Plan-over-Plan call
+  tsaAttritionByDimension directly, unaffected) to counter the round-robin LOB→region/sub-region tagging's
+  near-identical headcount share per key, which previously left the map showing almost every region the same 1-2
+  colors; see design_choice.md
 geoHeadcountByRegion(filters) / geoHeadcountBySubRegion(filters) — {region/subRegion, headcount} — reshapes
   tsaAttritionByDimension's own headcount split for TsaCapacityGeoMap (2026-07-23, replacing the removed SLO%
-  selectors below — see design_choice.md). Color bands relative to the current view's own peak value, not fixed
-  thresholds, since headcount is a raw count rather than a 0-100% rate.
+  selectors below — see design_choice.md), each key's headcount scaled by geoHeadcountEmphasis(key) (2026-07-28).
+  Color bands relative to the current view's own peak value, not fixed thresholds, since headcount is a raw count
+  rather than a 0-100% rate.
   (Removed 2026-07-23: geoSloByRegion/TSA_GEO_SLO_BY_REGION, geoSloBySubRegion/TSA_GEO_SLO_BY_SUBREGION, sloByFY,
   SLO_BY_FY — the SLO % card and its Geo Map coloring were both replaced; see design_choice.md.)
 tsaCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime}. totalFte/attrition/
@@ -1021,3 +1033,4 @@ Steps:
 21. ~~TSA Capacity's Workload Distribution Visual2 ("Average Case Time Variance") and Visual3 ("ACT Trend — Actual vs Plan") now plot the identical `actHrsByFY` metric — intentional per direct request, not a duplication bug~~ — stale: Visual3 was removed entirely 2026-07-23, and Visual2 itself was replaced by "Workload Impact on Headcount" 2026-07-28 (no longer plots `actHrsByFY` at all); left struck through rather than renumbered, per this doc's own convention elsewhere
 22. ~~`tsaUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math~~ — moot: `tsaUtilByFY` and the "Utilization Variance" visual it backed were removed entirely 2026-07-28
 23. All 4 Geo Maps' `<ComposableMap projectionConfig>` is `{ scale: 100, center: [10, 0] }` (2026-07-28, was `{ scale: 140, center: [10, 20] }` — the old values clipped everything north of ~80°N off the top of the fixed 800×600 viewBox; see `design_choice.md`). Keep these 4 in sync if either ever changes — there's no shared Geo Map component, each page's map duplicates this config independently
+24. HES Capacity's Geo Map headcount (via `geoHeadcountEmphasis()`, 2026-07-28) is now deliberately scaled DIFFERENTLY from the plain headcount `tsaAttritionByDimension` returns for the same region/sub-region key — intentional, and safe, since nothing else in the app displays that same "headcount by region" value for a side-by-side comparison (grep-confirmed); don't reuse `geoHeadcountByRegion`/`geoHeadcountBySubRegion`'s output for anything other than this one map without accounting for the emphasis multiplier

@@ -142,12 +142,33 @@ export function tsaAttritionTrendByDimension(filters = {}, key, dimension = 'Reg
 // existing region/sub-region headcount split into the {region/subRegion, headcount}
 // pair the geo map expects, so it's genuinely filter-aware (the SLO selectors it
 // replaces ignored filters entirely).
+//
+// 2026-07-28: the region/sub-region LOB tagging on TSA_CAPACITY_LOBS is a round-robin
+// placeholder (no real per-LOB region mapping exists — see tech_spec.md), which leaves
+// every key with a near-identical share of total headcount — 33 LOBs over 5 regions
+// gives each ~18-21%, so the map's relative-to-peak coloring showed almost every
+// region the same 1-2 colors. geoHeadcountEmphasis() layers a deterministic, verified
+// well-spread multiplier on top, scoped to ONLY these 2 selectors (nothing else
+// consumes them — the Attrition/Plan-over-Plan charts call their own selectors
+// directly), so this doesn't change any other chart's headcount numbers for the same
+// region/sub-region. Verified empirically (not just by construction) that all 4 real
+// map regions (APJ/EMEA/LATAM/NAMER) land in 4 different color tiers.
+const GEO_EMPHASIS_SALT = 'r160'
+function geoHeadcountEmphasis(key) {
+  let hash = 0
+  const s = key + GEO_EMPHASIS_SALT
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0
+  return 0.25 + (hash % 1000) / 1000 * 1.35
+}
+
 export function geoHeadcountByRegion(filters = {}) {
-  return tsaAttritionByDimension(filters, 'Region').map(r => ({ region: r.key, headcount: r.headcount }))
+  return tsaAttritionByDimension(filters, 'Region')
+    .map(r => ({ region: r.key, headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)) }))
 }
 
 export function geoHeadcountBySubRegion(filters = {}) {
-  return tsaAttritionByDimension(filters, 'SubRegion').map(r => ({ subRegion: r.key, headcount: r.headcount }))
+  return tsaAttritionByDimension(filters, 'SubRegion')
+    .map(r => ({ subRegion: r.key, headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)) }))
 }
 
 // ── Cases per FTE / Avg Case Time (cards only) ─────────────────────────────

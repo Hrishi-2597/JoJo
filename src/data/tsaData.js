@@ -387,13 +387,23 @@ export function cpasuTrendByRegion(filters = {}, region, granularity) {
 }
 
 // ── Geo Map: LOB adherence by region (choropleth, reuses Forecasting's country lookup) ─
-function lobAdherenceValue(regionIndex, lobIndex) {
-  return 65 + ((regionIndex * 7 + lobIndex * 11) % 30)
+// Each region gets its own deliberately-spread base (2026-07-28), mirroring the
+// curated GEO_REGION_DATA table Forecasting's own ESG Geo Map uses — per-LOB values
+// vary ±15 around that base (so a LOB filter still moves the number meaningfully),
+// but averaging over ALL LOBs (no filter) still lands close to the region's own base.
+// The PREVIOUS formula (`65 + ((regionIndex*7 + lobIndex*11) % 30)`) used a modulo-30
+// spread that's a complete residue cycle — averaged across all 33 LOBs, every region's
+// mean converged to the identical ~79-80 regardless of regionIndex, which is exactly
+// why every region rendered the same 1-2 colors (see design_choice.md).
+const REGION_ADHERENCE_BASE = { NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63, Global: 80 }
+function lobAdherenceValue(region, lobIndex) {
+  const base = REGION_ADHERENCE_BASE[region] ?? 80
+  return Math.max(50, Math.min(99, base + ((lobIndex * 11) % 30) - 15))
 }
 export function geoAdherenceByRegion(filters = {}) {
   const activeLobs = filters.lob?.length ? filters.lob : LOB_LIST
-  return REGIONS.map((region, ri) => {
-    const values = activeLobs.map(lob => lobAdherenceValue(ri, LOB_LIST.indexOf(lob)))
+  return REGIONS.map(region => {
+    const values = activeLobs.map(lob => lobAdherenceValue(region, LOB_LIST.indexOf(lob)))
     const adherence = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
     return { region, adherence, label: region }
   })
