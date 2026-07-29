@@ -774,3 +774,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `PerformanceMatrixTable.jsx`'s shared `SUBHEAD_STYLE`/`DATA_CELL` gained a `borderRight`, and the RCA/CLCA body cell gained a matching `borderLeft`, giving every column a vertical divider (not just quarter-group boundaries and the LOB column). Since this is the one shared component behind all 4 tables, the single change applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
 - Verified with `npm run build` (clean).
 - Updated `handoff.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 59 — 2026-07-29
+**Input:** [image of the ASU Performance table, scrolled down, showing ghosted numbers ("51 58 87.9%...") overlapping the "FY26 Q1"/"FY26 Q2" sticky quarter header] Also while scrolling up the upward numbers are visible on the column headers and causing hinderance in the visibility please fix that for all the 4 tables
+
+**Action:**
+- Root-caused: `PerformanceMatrixTable.jsx`'s quarter-group header cells used `background: 'var(--accent-dim)'` — a translucent `rgba()` tint (`rgba(56,189,248,0.12)` dark / `rgba(2,132,199,0.09)` light), not an opaque color. Since the `<thead>` is `position: sticky`, scrolled-past body rows sat directly behind the header and showed through it as the user scrolled — exactly matching the reported ghosting.
+- Fixed by layering the same `--accent-dim` tint over an opaque `--bg-panel` backdrop (`linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel)`) — same visual color, now fully opaque. Confirmed the LOB/RCA header cells (`--bg-panel`) and the Actual/Plan/Adherence% sub-header row (`--bg-inset`) were already solid hex colors, so they didn't have this bug.
+- Single shared component behind all 4 tables, so the one fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
+- Verified with `npm run build` (clean).
+- Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`.

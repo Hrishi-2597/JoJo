@@ -106,7 +106,12 @@ export default function PerformanceMatrixTable({
                   }}>LOB</th>
                   {periods.map(p => (
                     <th key={p} colSpan={3} style={{
-                      background: 'var(--accent-dim)', color: 'var(--accent)', textAlign: 'center', padding: '6px 8px',
+                      // `--accent-dim` is a translucent rgba() tint (by design, for inline badges)
+                      // — used bare here it let scrolled body rows show through this sticky header
+                      // as the table scrolled. Layering it over an opaque `--bg-panel` backdrop
+                      // keeps the same tinted look while making the header fully opaque.
+                      background: 'linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel)',
+                      color: 'var(--accent)', textAlign: 'center', padding: '6px 8px',
                       fontSize: 9.5, fontWeight: 700, borderBottom: '1px solid var(--border-subtle)', borderLeft: '1px solid var(--border-subtle)',
                     }}>{formatQuarter(p)}</th>
                   ))}

@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Performance Tables: Fixed Scrolled Rows Bleeding Through the Sticky Quarter Header (2026-07-29)
+
+- **Root cause**: `PerformanceMatrixTable.jsx`'s quarter-group header cells used `background: 'var(--accent-dim)'` — a translucent `rgba()` tint (by design, meant for small inline badges elsewhere in the app), not an opaque color. Since the `<thead>` is `position: sticky`, scrolled-past body rows sat directly behind this header and showed through the translucent background as the user scrolled — visible in the reported screenshot as ghosted numbers overlapping "FY26 Q1" etc.
+- **Fix**: layered the same `--accent-dim` tint over an opaque `--bg-panel` backdrop (`linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel)`) — same visual tint, now fully opaque, so nothing scrolled behind it shows through. The LOB/RCA header cells (`--bg-panel`) and the Actual/Plan/Adherence% sub-header row (`--bg-inset`) were already solid hex colors, not translucent, so they didn't need this fix.
+- Since this is the one shared component behind all 4 tables, the fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
+- **Verified**: `npm run build` clean.
+
 ## Performance Tables: Added Vertical Column Borders (2026-07-29)
 
 - `PerformanceMatrixTable.jsx` — `SUBHEAD_STYLE`/`DATA_CELL` gained a `borderRight`, and the RCA/CLCA body cell gained a matching `borderLeft`, so every column (not just quarter-group boundaries and the LOB column) now has a vertical divider — per direct request with a screenshot. Since this is the one shared component behind all 4 tables (ASU/SR Performance, Workload/ACT Performance), a single change applies everywhere.

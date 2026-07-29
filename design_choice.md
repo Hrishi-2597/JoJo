@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Sticky Header's Tint Stays Layered Over an Opaque Backdrop, Not Swapped for a Solid Color (2026-07-29)
+
+**Decision:** Fixed the Performance tables' quarter-group header showing scrolled rows bleeding through it by layering `var(--accent-dim)` over `var(--bg-panel)` (`linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel)`), instead of replacing `--accent-dim` with a new solid, non-transparent color constant.
+
+**Why:** `--accent-dim` is deliberately translucent everywhere else it's used in this app (badges, dim highlights) — it's meant to tint whatever's behind it, which is exactly what broke here once that "behind it" became a sticky header with scrollable content underneath. Introducing a brand-new opaque color constant just for this one header would both duplicate `--accent-dim`'s intended hue in a second place (drifting out of sync if the accent color ever changes) and wouldn't generalize to any other sticky-over-scrollable-content case that comes up later. Layering the existing translucent variable over an existing opaque one keeps a single source of truth for the tint color while making the composited result opaque — a reusable pattern, not a one-off patch.
+
 ## New Performance Tables Reuse This App's Own LOB Roster, Not the Screenshots' Literal Product Names (2026-07-29)
 
 **Decision:** The 4 new "Performance" tables (ASU/SR on HES Forecasting, Workload/ACT on HES Capacity) use each page's own existing `LOB_LIST`/`filterLobs` roster for rows — NOT the specific product names visible in the 4 reference screenshots (APEX, AVAMAR, AZURE, CENTERA, CLARIION, COMPELLENT, CONNECTRIX, DATADOMAIN, CELERRA, ATMOS, BSAFE, CLOUDIQ, CLOUDLINK, DLM, DATA PROTECTION ADVISOR, CLOUD SERVERS, CLOUD TIERING APPLIANCE, APPSYNC).
