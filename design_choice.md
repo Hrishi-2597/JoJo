@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "UCR Impact on SR"'s Plan Dropdown Moved From `cornerControls` to `controls` (2026-07-29)
+
+**Decision:** `AsuSrTrendLayer.jsx`'s Visual2 ("UCR Impact on SR") now passes its `PlanSelect` via `Visual`'s `controls` prop (normal document flow, centered below the title/subtitle) instead of `cornerControls` (absolutely positioned, top-right corner).
+
+**Why:** Directly reported as looking "clumsy" with a screenshot showing the "PLAN" label crowding the title's own info button. `cornerControls` is an absolutely-positioned slot that doesn't reserve any vertical space — it's the right fit for a narrow, short control like a `BinaryToggle`, but a `PlanSelect` renders a label ABOVE its dropdown (two lines), which is tall enough to visually overlap the title row when floated on top of it. This page's own sibling charts (`AsuLayer`/`SrLayer` Visual1) already use `controls` for their own "Plan Name" `PlanSelect` — `cornerControls` on this one chart was the inconsistent choice, not the norm; switching it to match fixes the overlap and brings it in line with its neighbors on the same page.
+
+---
+
 ## Sticky Header's Tint Stays Layered Over an Opaque Backdrop, Not Swapped for a Solid Color (2026-07-29)
 
 **Decision:** Fixed the Performance tables' quarter-group header showing scrolled rows bleeding through it by layering `var(--accent-dim)` over `var(--bg-panel)` (`linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel)`), instead of replacing `--accent-dim` with a new solid, non-transparent color constant.

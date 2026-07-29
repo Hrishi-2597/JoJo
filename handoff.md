@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: Fixed "UCR Impact on SR"'s Overlapping Plan Dropdown (2026-07-29)
+
+- `AsuSrTrendLayer.jsx` Visual2 ("UCR Impact on SR") — its `PlanSelect` moved from `cornerControls` (absolutely-positioned top-right corner, no reserved space) to `controls` (normal flow, centered below the title/subtitle) — per direct report with a screenshot showing the "PLAN" label crowding the title's own info button. `cornerControls` fits narrow controls like a `BinaryToggle`; a `PlanSelect`'s label-above-dropdown is taller and was visually overlapping the title. This page's sibling charts (`AsuLayer`/`SrLayer` Visual1) already use `controls` for their own Plan Name picker — this brings Visual2 in line with that existing convention rather than inventing a new fix.
+- **Verified**: `npm run build` clean.
+
 ## Performance Tables: Frozen LOB Column (2026-07-29)
 
 - `PerformanceMatrixTable.jsx` — the LOB column (header cell and every body row's LOB cell) is now `position: sticky, left: 0`, so it stays pinned while scrolling horizontally through the Fiscal-Quarter columns, the same "frozen first column" behavior typical spreadsheet/BI tools have. Combined with the existing vertically-sticky `<thead>`, the LOB header cell now sticks in both directions at once (the top-left corner), via `zIndex: 4`; each body row's LOB cell uses `zIndex: 1` so it stays above the scrolling data columns but below the header.

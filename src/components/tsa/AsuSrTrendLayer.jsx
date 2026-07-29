@@ -105,7 +105,7 @@ function Visual2({ filters, granularity }) {
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="UCR Impact on SR" cornerControls={<PlanSelect value={plan} onChange={setPlan} options={PLANS} />}
+    <Visual title="UCR Impact on SR" controls={<PlanSelect label="Plan Name" value={plan} onChange={setPlan} options={PLANS} />}
       info="Human-handled vs bot (UCR) handled SR volume against the SR plan, by period."
       rca="Bot-handled SR's are growing faster than the plan assumed."
       clca="Fold observed bot deflection into next quarter's SR plan."

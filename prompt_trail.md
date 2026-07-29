@@ -797,3 +797,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Single shared component behind all 4 tables, so the fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
 - Verified with `npm run build` (clean).
 - Updated `handoff.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 61 — 2026-07-29
+**Input:** [image of the "UCR Impact on SR" chart showing its "PLAN" label/dropdown crowding the title's info button] for UCR Impact on SR graph you can bring the visual little down as plan name drop down looks clumsy..make it more readbale
+
+**Action:**
+- `AsuSrTrendLayer.jsx` Visual2 ("UCR Impact on SR"): moved its `PlanSelect` from `cornerControls` (absolutely positioned, no reserved space — meant for narrow controls like a `BinaryToggle`) to `controls` (normal flow, centered below the title/subtitle). This page's own sibling charts (`AsuLayer`/`SrLayer` Visual1) already use `controls` for their Plan Name picker — `cornerControls` on this one chart was the inconsistency, not the intended pattern.
+- Verified with `npm run build` (clean).
+- Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`.
