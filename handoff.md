@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Performance Tables: Frozen LOB Column (2026-07-29)
+
+- `PerformanceMatrixTable.jsx` — the LOB column (header cell and every body row's LOB cell) is now `position: sticky, left: 0`, so it stays pinned while scrolling horizontally through the Fiscal-Quarter columns, the same "frozen first column" behavior typical spreadsheet/BI tools have. Combined with the existing vertically-sticky `<thead>`, the LOB header cell now sticks in both directions at once (the top-left corner), via `zIndex: 4`; each body row's LOB cell uses `zIndex: 1` so it stays above the scrolling data columns but below the header.
+- Single shared component behind all 4 tables, so the fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
+- **Verified**: `npm run build` clean.
+
 ## Performance Tables: Fixed Scrolled Rows Bleeding Through the Sticky Quarter Header (2026-07-29)
 
 - **Root cause**: `PerformanceMatrixTable.jsx`'s quarter-group header cells used `background: 'var(--accent-dim)'` — a translucent `rgba()` tint (by design, meant for small inline badges elsewhere in the app), not an opaque color. Since the `<thead>` is `position: sticky`, scrolled-past body rows sat directly behind this header and showed through the translucent background as the user scrolled — visible in the reported screenshot as ghosted numbers overlapping "FY26 Q1" etc.

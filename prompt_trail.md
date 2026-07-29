@@ -786,3 +786,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Single shared component behind all 4 tables, so the one fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
 - Verified with `npm run build` (clean).
 - Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 60 — 2026-07-29
+**Input:** Also can you freeze the LOB column for all the tables
+
+**Action:**
+- `PerformanceMatrixTable.jsx`: the LOB column's header cell and every body row's LOB cell are now `position: sticky, left: 0` (`zIndex: 4` on the header so it also stays above the vertically-sticky quarter header at the top-left corner; `zIndex: 1` on body cells so they stay above the scrolling data columns) — a standard "frozen first column" behavior, stacking with the already-sticky header.
+- Single shared component behind all 4 tables, so the fix applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
+- Verified with `npm run build` (clean).
+- Updated `handoff.md`; committed and pushed to `main`.

@@ -100,6 +100,7 @@ export default function PerformanceMatrixTable({
               <thead style={{ position: 'sticky', top: 0, zIndex: 3 }}>
                 <tr>
                   <th rowSpan={2} style={{
+                    position: 'sticky', left: 0, zIndex: 4,
                     background: 'var(--bg-panel)', textAlign: 'left', padding: '6px 10px', fontSize: 9.5, fontWeight: 700,
                     color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
                     borderBottom: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)', minWidth: 150,
@@ -136,6 +137,7 @@ export default function PerformanceMatrixTable({
                 {rows.map(r => (
                   <tr key={r.lob}>
                     <td style={{
+                      position: 'sticky', left: 0, zIndex: 1,
                       background: 'var(--bg-panel)', padding: '6px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-primary)',
                       borderBottom: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)', whiteSpace: 'nowrap',
                     }}>{r.lob}</td>
