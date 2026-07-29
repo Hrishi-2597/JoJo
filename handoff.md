@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Performance Tables: Added Vertical Column Borders (2026-07-29)
+
+- `PerformanceMatrixTable.jsx` — `SUBHEAD_STYLE`/`DATA_CELL` gained a `borderRight`, and the RCA/CLCA body cell gained a matching `borderLeft`, so every column (not just quarter-group boundaries and the LOB column) now has a vertical divider — per direct request with a screenshot. Since this is the one shared component behind all 4 tables (ASU/SR Performance, Workload/ACT Performance), a single change applies everywhere.
+- **Verified**: `npm run build` clean.
+
 ## New: ASU/SR Performance & Workload/ACT Performance Tables, Above Both Geo Maps (2026-07-29)
 
 A large new feature: 4 real-BI-style "Performance" tables (2 per page, unified via a toggle) added above HES Forecasting's and HES Capacity's Geo Maps, modeled on 4 reference screenshots.

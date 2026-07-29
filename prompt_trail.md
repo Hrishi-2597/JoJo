@@ -764,3 +764,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Reconciled a likely mix-up in the request: image #14 was paired with "Workload Performance" and #15 with "ACT Performance," but the images' own headers say the reverse. Built each name against its own already-established metric fields rather than image order — both templates are structurally identical, so this only affects which image number a name was nominally attached to.
 - Verified with `npm run build` (clean, 1186 modules, 3 new files) and Node smoke tests of both new selectors: row/quarter counts, single-LOB and fiscal-year filter narrowing, ACT's rate-preserving values, and the ASU sum-back-to-page-total check.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 58 — 2026-07-29
+**Input:** [image of the ASU Performance table showing vertical dividers only at quarter-group boundaries and the LOB column, none between the Actual/Plan/Adherence% sub-columns] apply vertical borders as well..for all the 4 tables
+
+**Action:**
+- `PerformanceMatrixTable.jsx`'s shared `SUBHEAD_STYLE`/`DATA_CELL` gained a `borderRight`, and the RCA/CLCA body cell gained a matching `borderLeft`, giving every column a vertical divider (not just quarter-group boundaries and the LOB column). Since this is the one shared component behind all 4 tables, the single change applies to ASU Performance, SR Performance, Workload Performance, and ACT Performance at once.
+- Verified with `npm run build` (clean).
+- Updated `handoff.md`; committed and pushed to `main`.

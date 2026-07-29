@@ -10,11 +10,11 @@ function formatQuarter(period) {
 const SUBHEAD_STYLE = {
   background: 'var(--bg-inset)', color: 'var(--text-muted)', textAlign: 'right', padding: '5px 8px',
   fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
-  borderBottom: '1px solid var(--border-subtle)', whiteSpace: 'nowrap',
+  borderBottom: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)', whiteSpace: 'nowrap',
 }
 const DATA_CELL = {
   padding: '5px 8px', fontSize: 10.5, color: 'var(--text-secondary)', textAlign: 'right',
-  borderBottom: '1px solid var(--border-subtle)', whiteSpace: 'nowrap',
+  borderBottom: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)', whiteSpace: 'nowrap',
 }
 
 // Same purple RCA/CLCA pill + PopupTable convention msgCapacity/QueuePerformanceTable.jsx
@@ -139,7 +139,7 @@ export default function PerformanceMatrixTable({
                       <td key={`${q.period}-p`} className="num" style={DATA_CELL}>{q.plan.toLocaleString()}</td>,
                       <td key={`${q.period}-adh`} className="num" style={{ ...DATA_CELL, fontWeight: 600, color: q.adherence >= 100 ? '#34d399' : q.adherence >= 90 ? 'var(--text-secondary)' : '#f87171' }}>{q.adherence}%</td>,
                     ]))}
-                    <td style={{ padding: '6px 8px', textAlign: 'center', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '6px 8px', textAlign: 'center', borderBottom: '1px solid var(--border-subtle)', borderLeft: '1px solid var(--border-subtle)' }}>
                       <RcaClcaPill row={r} />
                     </td>
                   </tr>
