@@ -4,6 +4,26 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Forecasting's Geo Map Got an ASU/SR Toggle Too, Not Just the Requested Plan Name Dropdown (2026-07-29)
+
+**Decision:** Along with the explicitly-requested Plan Name dropdown, `TsaGeoMap.jsx` also gained an ASU/SR `BinaryToggle` controlling which metric the hover popup's per-LOB breakdown shows.
+
+**Why:** The request asked for the hover popup to show "actual and plan volume along with adherence" — but this page has two distinct, equally-established volume metrics (ASU and SR), and defaulting silently to just one without offering the other would be an arbitrary, undisclosed choice on a highly visible feature. The map's own adjacent "ASU Performance"/"SR Performance" table (added the same week) already established exactly this ASU/SR toggle pattern for LOB-level volume data — reusing it here, rather than guessing a single metric, keeps the map consistent with its own neighbor and avoids the user having to ask for the other metric separately. HES Capacity's equivalent addition did NOT get an analogous toggle, since that request named a single, unambiguous metric (headcount) with no second option to choose between.
+
+## Geo Map Hover Popups Reuse Each Page's Existing Per-LOB Selectors, Not New Calculations (2026-07-29)
+
+**Decision:** `TsaGeoMap.jsx`'s new per-LOB hover breakdown calls `tsaData.js`'s `asuSrPerformanceByLob` (the exact selector the ASU/SR Performance table already uses), narrowed to whichever LOBs are assigned to the hovered region and collapsed to the latest in-scope quarter. `TsaCapacityGeoMap.jsx`'s new per-LOB headcount breakdown shares its per-LOB weighting scheme with the Staffing Summary card's own `FTE_BY_FY` total, the same "sums back to the real total" property established for the Performance tables.
+
+**Why:** Both new hover popups needed "per-LOB actual/plan(/adherence or variance)" data that's structurally identical to what the Performance tables already compute — building a second, parallel calculation for the map would risk the two surfaces silently drifting apart (map says one number, table says another, for what a user would reasonably expect to be the same underlying fact). Reusing the existing selector (for Forecasting) and the existing weighting convention (for Capacity, where no page-level FY total existed yet for headcount specifically, so a new but consistently-styled weight array was added) keeps exactly one source of truth per metric.
+
+## No Real LOB-to-Region Mapping Exists, So the Geo Map Hover Uses a Deterministic Placeholder Assignment (2026-07-29)
+
+**Decision:** `TsaGeoMap.jsx`'s per-LOB hover breakdown needed to know which of the 4 real geographic regions each of the 33 real LOBs belongs to — no such mapping has ever been supplied for this page, so a new `LOB_REGION_ASSIGNMENTS` (round-robin by index over NAMER/LATAM/APJ/EMEA) fills the gap.
+
+**Why:** Same "real names, illustrative structure" convention already used everywhere else in this app when a real per-item relationship hasn't been supplied yet (e.g. `LOB_FACTS`' businessPartner/globalGrouping tags, `CQN_LOB_ASSIGNMENTS` for the Workload Impact on Headcount chart) — every LOB name shown in the popup is still a genuine, real business name, just its REGION assignment is a placeholder pending real data. Verified the partition is clean (33 LOBs split exactly across the 4 regions with no overlap or gap) before shipping.
+
+---
+
 ## "UCR Impact on SR"'s Plan Dropdown Moved From `cornerControls` to `controls` (2026-07-29)
 
 **Decision:** `AsuSrTrendLayer.jsx`'s Visual2 ("UCR Impact on SR") now passes its `PlanSelect` via `Visual`'s `controls` prop (normal document flow, centered below the title/subtitle) instead of `cornerControls` (absolutely positioned, top-right corner).

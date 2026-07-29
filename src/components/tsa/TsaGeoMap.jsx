@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoAdherenceByRegion, regionForCountry } from '../../data/tsaData'
-import { GraphInsightButton, InfoButton } from '../ChartKit'
+import { geoAdherenceByRegion, geoLobPerformanceByRegion, regionForCountry } from '../../data/tsaData'
+import { PLAN_NAMES } from '../../data/mockData'
+import { BinaryToggle, GraphInsightButton, InfoButton, PlanSelect } from '../ChartKit'
+
+const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -30,8 +33,17 @@ export default function TsaGeoMap({ filters }) {
   // every region at equal visual weight. Re-click the same region, or the Clear pill,
   // to go back to showing all of them.
   const [selectedKey, setSelectedKey] = useState(null)
+  // Metric + Plan Name for the hover popup's per-LOB breakdown (2026-07-29, added per
+  // direct request) — separate from the map's own choropleth coloring, which stays on
+  // geoAdherenceByRegion's synthetic adherence metric, untouched.
+  const [metric, setMetric] = useState('ASU')
+  const [plan, setPlan] = useState(PLANS[0])
   const rows = useMemo(() => geoAdherenceByRegion(filters), [filters])
   const accuracyByRegion = useMemo(() => Object.fromEntries(rows.map(r => [r.region, r.adherence])), [rows])
+  const hoveredLobs = useMemo(
+    () => (hovered ? geoLobPerformanceByRegion(hovered.name, filters, metric, plan) : []),
+    [hovered, filters, metric, plan]
+  )
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -45,15 +57,19 @@ export default function TsaGeoMap({ filters }) {
       </div>
 
       {open && (
-        <div style={{ padding: 14, position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 12, left: 14, zIndex: 2 }}>
+        <div style={{ padding: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
             <GraphInsightButton
               rca="Adherence is weakest in regions with the newest onboarded queues."
               clca="Prioritize ramp-up support for recently onboarded queues in low-adherence regions." />
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
+              <BinaryToggle leftLabel="ASU" rightLabel="SR" value={metric} onChange={setMetric} />
+              <PlanSelect label="Plan Name" value={plan} onChange={setPlan} options={PLANS} />
+            </div>
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             Global LOB Adherence Heatmap
-            <InfoButton info="Choropleth of LOB adherence percentage by region, colored from critical (red) to excellent (green)." />
+            <InfoButton info="Choropleth of LOB adherence percentage by region, colored from critical (red) to excellent (green). Hover a region to see its LOBs' ASU/SR actual vs plan and adherence." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Adherence % · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}
@@ -77,12 +93,30 @@ export default function TsaGeoMap({ filters }) {
             height: 380, border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.4)' }}>
 
             {hovered && (
-              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }} className="chart-tooltip">
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 240 }} className="chart-tooltip">
                 <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
-                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: acColor(hovered.accuracy) }}>
+                <p style={{ marginTop: 3, marginBottom: 6, fontSize: 13, fontWeight: 700, color: acColor(hovered.accuracy) }}>
                   {hovered.accuracy}%
                   <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>adherence</span>
                 </p>
+                <p style={{ fontSize: 8.5, color: 'var(--text-faint)', fontWeight: 700, letterSpacing: '0.03em', marginBottom: 3 }}>
+                  {metric} ACTUAL / PLAN — BY LOB
+                </p>
+                <div style={{ maxHeight: 180, overflowY: 'auto', borderTop: '1px solid var(--border-subtle)', paddingTop: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {hoveredLobs.length === 0 && (
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: '6px 0' }}>No LOBs in scope.</p>
+                  )}
+                  {hoveredLobs.map(l => (
+                    <div key={l.lob} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 10 }}>
+                      <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.lob}</span>
+                      <span style={{ flexShrink: 0 }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{l.actual.toLocaleString()}</span>
+                        <span style={{ color: 'var(--text-faint)' }}> / {l.plan.toLocaleString()}</span>
+                        <span style={{ fontWeight: 700, color: l.adherence >= 100 ? '#34d399' : l.adherence >= 90 ? 'var(--text-secondary)' : '#f87171', marginLeft: 5 }}>{l.adherence}%</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

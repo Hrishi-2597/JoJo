@@ -172,6 +172,30 @@ export function asuSrPerformanceByLob(filters = {}, metric = 'ASU', planName) {
   })
 }
 
+// Which of the 4 real geographic regions (that TsaGeoMap's choropleth already colors
+// via regionForCountry) each real LOB belongs to — no such mapping has been supplied,
+// so this is a deterministic round-robin placeholder (same "real names, illustrative
+// structure" convention as LOB_FACTS' businessPartner/globalGrouping tags), letting
+// the Geo Map's hover popup show a genuine, real-LOB-named subset per region rather
+// than every LOB appearing under every region.
+const GEO_LOB_REGIONS = ['NAMER', 'LATAM', 'APJ', 'EMEA']
+const LOB_REGION_ASSIGNMENTS = LOB_LIST.map((lob, i) => ({ lob, region: GEO_LOB_REGIONS[i % GEO_LOB_REGIONS.length] }))
+
+// Per-LOB ASU/SR actual/plan/adherence for one region's hovered Geo Map popup (2026-
+// 07-29) — reuses asuSrPerformanceByLob directly (the same selector the ASU/SR
+// Performance table above this map already uses), narrowed to this region's LOBs and
+// collapsed to the LATEST in-scope quarter — a hover popup wants a snapshot, not the
+// full per-quarter history the table shows.
+export function geoLobPerformanceByRegion(region, filters = {}, metric = 'ASU', planName) {
+  const regionLobs = new Set(LOB_REGION_ASSIGNMENTS.filter(l => l.region === region).map(l => l.lob))
+  return asuSrPerformanceByLob(filters, metric, planName)
+    .filter(l => regionLobs.has(l.lob))
+    .map(l => {
+      const latest = l.quarters[l.quarters.length - 1]
+      return { lob: l.lob, actual: latest?.actual ?? 0, plan: latest?.plan ?? 0, adherence: latest?.adherence ?? 0 }
+    })
+}
+
 // ── CPASU (= SR / ASU) ─────────────────────────────────────────────────────
 export function cpasuByFY(filters = {}, granularity) {
   const asu = asuByFY(filters, granularity)

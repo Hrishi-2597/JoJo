@@ -1,8 +1,15 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoHeadcountByRegion, geoHeadcountBySubRegion } from '../../data/tsaCapacityData'
-import { regionForCountry, subRegionForCountry } from '../../data/mockData'
-import { BinaryToggle, GraphInsightButton, InfoButton } from '../ChartKit'
+import {
+  geoHeadcountByRegion, geoHeadcountBySubRegion, geoLobHeadcountByRegion, geoLobHeadcountBySubRegion,
+} from '../../data/tsaCapacityData'
+import { regionForCountry, subRegionForCountry, CAPACITY_PLAN_NAMES } from '../../data/mockData'
+import { BinaryToggle, GraphInsightButton, InfoButton, PlanSelect } from '../ChartKit'
+
+// 'Actual' is the implicit baseline every other Plan-scaled selector on this page
+// already treats it as (see PLAN_SCALE_BY_NAME) — same PLANS-filtering idiom
+// HeadcountAttritionLayer/PlanOverPlanVariationLayer/WorkloadActPerformanceTable use.
+const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -46,6 +53,10 @@ export default function TsaCapacityGeoMap({ filters }) {
   // re-clicking it, the Clear pill, or switching Region/Sub-region view (different key
   // domains).
   const [selectedKey, setSelectedKey] = useState(null)
+  // Plan Name for the hover popup's per-LOB Actual vs Planned headcount + variance
+  // (2026-07-29, added per direct request) — separate from the map's own choropleth
+  // coloring, which stays on geoHeadcountByRegion/BySubRegion, untouched.
+  const [plan, setPlan] = useState(PLANS[0])
   const regionRows = useMemo(() => geoHeadcountByRegion(filters), [filters])
   const subRegionRows = useMemo(() => geoHeadcountBySubRegion(filters), [filters])
   const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r.headcount])), [regionRows])
@@ -53,6 +64,12 @@ export default function TsaCapacityGeoMap({ filters }) {
   const maxValue = useMemo(
     () => Math.max(1, ...(viewMode === 'Region' ? regionRows.map(r => r.headcount) : subRegionRows.map(r => r.headcount))),
     [viewMode, regionRows, subRegionRows]
+  )
+  const hoveredLobs = useMemo(
+    () => (hovered
+      ? (hovered.isRegionKey ? geoLobHeadcountByRegion(hovered.name, filters, plan) : geoLobHeadcountBySubRegion(hovered.name, filters, plan))
+      : []),
+    [hovered, filters, plan]
   )
 
   return (
@@ -68,15 +85,18 @@ export default function TsaCapacityGeoMap({ filters }) {
 
       {open && (
         <div style={{ padding: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
             <GraphInsightButton
               rca="Headcount concentration mirrors where the largest LOBs are staffed, not necessarily where attrition risk is highest."
               clca="Cross-check thinly-staffed regions/sub-regions against the Attrition visual before rebalancing headcount." />
-            <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
+              <PlanSelect label="Plan Name" value={plan} onChange={setPlan} options={PLANS} />
+              <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
+            </div>
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             Worldwide Headcount Heatmap
-            <InfoButton info="Worldwide headcount by region or sub-region, colored relative to the highest-staffed area in the current view." />
+            <InfoButton info="Worldwide headcount by region or sub-region, colored relative to the highest-staffed area in the current view. Hover a region/sub-region to see its LOBs' Actual vs Planned headcount and variance." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Headcount · {viewMode} view
@@ -100,12 +120,30 @@ export default function TsaCapacityGeoMap({ filters }) {
             height: 380, border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.4)' }}>
 
             {hovered && (
-              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }} className="chart-tooltip">
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 250 }} className="chart-tooltip">
                 <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
-                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: hcColor((hovered.headcount / maxValue) * 100) }}>
+                <p style={{ marginTop: 3, marginBottom: 6, fontSize: 13, fontWeight: 700, color: hcColor((hovered.headcount / maxValue) * 100) }}>
                   {hovered.headcount.toLocaleString()}
                   <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>Headcount</span>
                 </p>
+                <p style={{ fontSize: 8.5, color: 'var(--text-faint)', fontWeight: 700, letterSpacing: '0.03em', marginBottom: 3 }}>
+                  ACTUAL / PLANNED HEADCOUNT — BY LOB
+                </p>
+                <div style={{ maxHeight: 180, overflowY: 'auto', borderTop: '1px solid var(--border-subtle)', paddingTop: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {hoveredLobs.length === 0 && (
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: '6px 0' }}>No LOBs in scope.</p>
+                  )}
+                  {hoveredLobs.map(l => (
+                    <div key={l.lob} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 10 }}>
+                      <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.lob}</span>
+                      <span style={{ flexShrink: 0 }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{l.actual}</span>
+                        <span style={{ color: 'var(--text-faint)' }}> / {l.plan}</span>
+                        <span style={{ fontWeight: 700, color: l.variance >= 0 ? '#34d399' : '#f87171', marginLeft: 5 }}>{l.variance > 0 ? '+' : ''}{l.variance}%</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -139,7 +177,7 @@ export default function TsaCapacityGeoMap({ filters }) {
                     const baseOpacity = isFallback ? 0.35 : 1
                     return (
                       <Geography key={geo.rsmKey} geography={geo}
-                        onMouseEnter={() => headcount != null && setHovered({ name: displayName, headcount })}
+                        onMouseEnter={() => headcount != null && setHovered({ name: displayName, headcount, isRegionKey: viewMode === 'Region' || isFallback })}
                         onMouseLeave={() => setHovered(null)}
                         onClick={() => headcount != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
                         style={{

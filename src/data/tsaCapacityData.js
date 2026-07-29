@@ -171,6 +171,43 @@ export function geoHeadcountBySubRegion(filters = {}) {
     .map(r => ({ subRegion: r.key, headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)) }))
 }
 
+// Per-LOB Actual vs Planned headcount + variance for one region/sub-region's hovered
+// Geo Map popup (2026-07-29) — a deterministic per-LOB SHARE of the Staffing Summary
+// card's own FTE_BY_FY total (weight total computed over ALL in-scope LOBs, not just
+// this key's, so each region/sub-region's rows are a genuine fraction of the real
+// grand total, same "sums back to the real total" property tsaData.js's
+// asuSrPerformanceByLob already has). Plan Name reuses this page's own real
+// PLAN_SCALE_BY_NAME. Separate from geoHeadcountByRegion/BySubRegion above, which
+// drive the map's OWN choropleth coloring — this backs the hover popup's per-LOB list.
+const GEO_LOB_HEADCOUNT_WEIGHTS = LOB_LIST.map((_, i) => 0.5 + ((i * 13) % 37) / 37 * 2.5)
+
+function lobHeadcountForKey(key, dimension, filters, planName) {
+  const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
+  const years = tsaEffectiveFiscalYears(filters)
+  const latestFy = years[years.length - 1] || 'FY27'
+  const totalRow = FTE_BY_FY.find(d => d.period === latestFy) || FTE_BY_FY[FTE_BY_FY.length - 1]
+  const scale = planName ? (PLAN_SCALE_BY_NAME[planName] ?? 1) : 1
+  const allLobs = filterCapacityLobs(filters)
+  const weightTotal = allLobs.reduce((sum, l) => sum + (GEO_LOB_HEADCOUNT_WEIGHTS[LOB_LIST.indexOf(l.lob)] ?? 1), 0) || 1
+  return allLobs
+    .filter(l => l[dimKey] === key)
+    .map(l => {
+      const weight = GEO_LOB_HEADCOUNT_WEIGHTS[LOB_LIST.indexOf(l.lob)] ?? 1
+      const share = weight / weightTotal
+      const actual = Math.round(totalRow.actual * share)
+      const plan = Math.round(totalRow.plan * scale * share)
+      return { lob: l.lob, actual, plan, variance: plan ? +((actual - plan) / plan * 100).toFixed(1) : 0 }
+    })
+}
+
+export function geoLobHeadcountByRegion(region, filters = {}, planName) {
+  return lobHeadcountForKey(region, 'Region', filters, planName)
+}
+
+export function geoLobHeadcountBySubRegion(subRegion, filters = {}, planName) {
+  return lobHeadcountForKey(subRegion, 'SubRegion', filters, planName)
+}
+
 // ── Cases per FTE / Avg Case Time (cards only) ─────────────────────────────
 const BASE_CPF_PLAN = { FY25: 15.5, FY26: 16.2, FY27: 16.9 }
 export const CPF_BY_FY = FISCAL_YEARS.map((fy, i) => ({

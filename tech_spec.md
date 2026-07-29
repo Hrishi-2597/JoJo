@@ -115,7 +115,7 @@ SPoG/
 │   │       ├── WorkloadActPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle Workload/ACT retitles
 │   │       │                                     "Workload Performance"/"ACT Performance"; wraps PerformanceMatrixTable.jsx +
 │   │       │                                     tsaCapacityData.js's workloadActPerformanceByLob()
-│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide Headcount (2026-07-23, was SLO), Region/Sub-region toggle
+│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide Headcount (2026-07-23, was SLO), Region/Sub-region toggle; Plan Name dropdown + per-LOB Actual/Planned headcount + variance hover popup (2026-07-29)
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
@@ -129,7 +129,8 @@ SPoG/
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle ASU/SR retitles "ASU
 │   │       │                               Performance"/"SR Performance"; wraps PerformanceMatrixTable.jsx + tsaData.js's
 │   │       │                               asuSrPerformanceByLob()
-│   │       └── TsaGeoMap.jsx           # Layer 04 — choropleth by LOB adherence per region
+│   │       └── TsaGeoMap.jsx           # Layer 04 — choropleth by LOB adherence per region; ASU/SR BinaryToggle + Plan Name
+│   │                                     dropdown + per-LOB Actual/Plan/Adherence% hover popup (2026-07-29)
 │   └── data/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
 │       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
@@ -726,6 +727,14 @@ geoAdherenceByRegion(filters) — averages adherence across filterLobs(filters) 
   (2026-07-28: replaced the previous `65 + ((regionIndex*7 + lobIndex*11) % 30)` formula — a complete
   residue cycle that made every region's all-LOB average converge to the same ~79-80 regardless of
   region, the root cause of every region rendering near-identical map colors; see design_choice.md)
+LOB_REGION_ASSIGNMENTS (2026-07-29, private) — each of the 33 real LOB_LIST entries assigned to one of
+  the 4 real map regions (NAMER/LATAM/APJ/EMEA) round-robin by index — no real LOB-to-region mapping
+  exists, same "real names, illustrative structure" placeholder convention as CQN_LOB_ASSIGNMENTS
+  (tsaCapacityData.js); verified to partition all 33 LOBs with no overlap/gap
+geoLobPerformanceByRegion(region, filters, metric='ASU'|'SR', planName) (2026-07-29) — {lob, actual, plan,
+  adherence} × that region's LOBs, reusing asuSrPerformanceByLob directly (same selector the ASU/SR
+  Performance table uses) and collapsed to the LATEST in-scope quarter — backs TsaGeoMap's per-LOB
+  hover popup (a snapshot, not the table's full per-quarter history)
 ```
 
 ### Cards
@@ -857,6 +866,13 @@ geoHeadcountByRegion(filters) / geoHeadcountBySubRegion(filters) — {region/sub
   rather than a 0-100% rate.
   (Removed 2026-07-23: geoSloByRegion/TSA_GEO_SLO_BY_REGION, geoSloBySubRegion/TSA_GEO_SLO_BY_SUBREGION, sloByFY,
   SLO_BY_FY — the SLO % card and its Geo Map coloring were both replaced; see design_choice.md.)
+geoLobHeadcountByRegion(region, filters, planName) / geoLobHeadcountBySubRegion(subRegion, filters, planName)
+  (2026-07-29) — {lob, actual, plan, variance} × that key's LOBs — backs TsaCapacityGeoMap's per-LOB hover
+  popup (Actual vs Planned headcount + variance), separate from geoHeadcountByRegion/BySubRegion above
+  (which drive the map's own choropleth coloring). Each LOB's share is computed from the Staffing Summary
+  card's own FTE_BY_FY total, weight total computed over ALL in-scope LOBs (not just this key's) so shares
+  are genuine fractions of the real grand total — verified to sum to exactly FTE_BY_FY's FY27 actual (480)
+  across all 5 regions combined. planName reuses this page's own real PLAN_SCALE_BY_NAME.
 tsaCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime}. totalFte/attrition/
   avgCaseTime each carry {actual, period, prevPeriod, yoyPct} — both the headline value AND yoyPct drill with
   granularity (2026-07-20); casesPerFte is unchanged ({actual, plan} only). No longer returns globalSlo (2026-07-23,
