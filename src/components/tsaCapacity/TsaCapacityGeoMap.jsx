@@ -14,37 +14,32 @@ const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
 
-// Headcount is a raw count, not a 0-100 rate, so its color bands are relative to the
-// highest value in the CURRENT view (Region or Sub-region) rather than fixed absolute
-// thresholds — this keeps the same 4-band read (well-staffed → thin) meaningful at
-// both the ~4-region and ~24-sub-region scales, which differ by an order of magnitude.
-function hcColor(pct) {
-  if (pct >= 75) return '#059669'
-  if (pct >= 50) return '#2563eb'
-  if (pct >= 25) return '#d97706'
+// 2026-07-29: colors by Headcount ADHERENCE (actual vs the selected Plan Name)
+// instead of raw headcount relative to the current view's peak — a genuine 0-100%
+// rate now (see geoHeadcountByRegion/BySubRegion in tsaCapacityData.js), so it uses
+// the SAME fixed thresholds as every other Geo Map's acColor, not a relative scale.
+function acColor(pct) {
+  if (pct >= 90) return '#059669'
+  if (pct >= 80) return '#2563eb'
+  if (pct >= 70) return '#d97706'
   return '#dc2626'
 }
 
-// Same wording style as the other 3 Geo Maps' legends ("X% Word", 4 tiers) — per
-// direct request, dropping the "of peak Highest/High/Moderate/Lowest" phrasing this
-// legend had. The color thresholds themselves are unchanged (still 75/50/25% of the
-// current view's own peak, not the other maps' fixed 90/80/70% of an absolute rate —
-// see hcColor's comment above for why headcount needs a relative scale); the relative
-// basis is still explained in this chart's own InfoButton text below.
 const LEGEND = [
-  { label: '≥ 75% Excellent', color: '#059669' },
-  { label: '50–75% Good',     color: '#2563eb' },
-  { label: '25–50% Fair',     color: '#d97706' },
-  { label: '< 25% Critical',  color: '#dc2626' },
+  { label: '≥ 90% Excellent', color: '#059669' },
+  { label: '80–90% Good',     color: '#2563eb' },
+  { label: '70–80% Fair',     color: '#d97706' },
+  { label: '< 70% Critical',  color: '#dc2626' },
 ]
 
 // Worldwide Headcount, now with a Region/Sub-region toggle (2026-07-03) mirroring
 // MsgCapacityGeoMap's exact fallback mechanic: unmapped countries in Sub-region view
 // shade at their parent region's color, 35% opacity. The mockup labels this "Layer 5"
 // but skips a "Layer 4" entirely; renumbered to 04 here to keep this page's badges
-// sequential (see design_choice.md). Switched from SLO% to Headcount 2026-07-23, per
-// direct request — see design_choice.md for why (and why the color bands became
-// relative-to-peak instead of fixed thresholds).
+// sequential (see design_choice.md). Switched from SLO% to Headcount 2026-07-23
+// (see design_choice.md), then from a relative-to-peak headcount-level color to a
+// Plan-reactive Headcount Adherence % color 2026-07-29 (see design_choice.md) — a
+// Plan Name dropdown now genuinely repaints the map, not just the hover popup.
 export default function TsaCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [viewMode, setViewMode] = useState('Region')
@@ -53,18 +48,14 @@ export default function TsaCapacityGeoMap({ filters }) {
   // re-clicking it, the Clear pill, or switching Region/Sub-region view (different key
   // domains).
   const [selectedKey, setSelectedKey] = useState(null)
-  // Plan Name for the hover popup's per-LOB Actual vs Planned headcount + variance
-  // (2026-07-29, added per direct request) — separate from the map's own choropleth
-  // coloring, which stays on geoHeadcountByRegion/BySubRegion, untouched.
+  // Plan Name (2026-07-29) — drives BOTH the hover popup's per-LOB Actual vs Planned
+  // headcount + variance AND the map's own choropleth coloring (geoHeadcountByRegion/
+  // BySubRegion now take planName too, so switching plans genuinely repaints the map).
   const [plan, setPlan] = useState(PLANS[0])
-  const regionRows = useMemo(() => geoHeadcountByRegion(filters), [filters])
-  const subRegionRows = useMemo(() => geoHeadcountBySubRegion(filters), [filters])
-  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r.headcount])), [regionRows])
-  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r.headcount])), [subRegionRows])
-  const maxValue = useMemo(
-    () => Math.max(1, ...(viewMode === 'Region' ? regionRows.map(r => r.headcount) : subRegionRows.map(r => r.headcount))),
-    [viewMode, regionRows, subRegionRows]
-  )
+  const regionRows = useMemo(() => geoHeadcountByRegion(filters, plan), [filters, plan])
+  const subRegionRows = useMemo(() => geoHeadcountBySubRegion(filters, plan), [filters, plan])
+  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r])), [regionRows])
+  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r])), [subRegionRows])
   const hoveredLobs = useMemo(
     () => (hovered
       ? (hovered.isRegionKey ? geoLobHeadcountByRegion(hovered.name, filters, plan) : geoLobHeadcountBySubRegion(hovered.name, filters, plan))
@@ -96,10 +87,10 @@ export default function TsaCapacityGeoMap({ filters }) {
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             Worldwide Headcount Heatmap
-            <InfoButton info="Worldwide headcount by region or sub-region, colored relative to the highest-staffed area in the current view. Hover a region/sub-region to see its LOBs' Actual vs Planned headcount and variance." />
+            <InfoButton info="Headcount adherence (actual vs the selected Plan Name) by region or sub-region, colored from critical (red) to excellent (green). Hover a region/sub-region to see its LOBs' Actual vs Planned headcount and variance." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            Headcount · {viewMode} view
+            Headcount Adherence % · {plan} · {viewMode} view
             {selectedKey && (
               <> · Showing <strong style={{ color: 'var(--accent)' }}>{selectedKey}</strong>{' '}
                 <span onClick={() => setSelectedKey(null)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>
@@ -122,9 +113,10 @@ export default function TsaCapacityGeoMap({ filters }) {
             {hovered && (
               <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 250 }} className="chart-tooltip">
                 <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
-                <p style={{ marginTop: 3, marginBottom: 6, fontSize: 13, fontWeight: 700, color: hcColor((hovered.headcount / maxValue) * 100) }}>
-                  {hovered.headcount.toLocaleString()}
-                  <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>Headcount</span>
+                <p style={{ marginTop: 3, marginBottom: 6, fontSize: 13, fontWeight: 700, color: acColor(hovered.adherence) }}>
+                  {hovered.adherence}%
+                  <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>headcount adherence</span>
+                  <span style={{ fontSize: 9, color: 'var(--text-faint)', fontWeight: 400, marginLeft: 8 }}>{hovered.headcount.toLocaleString()} total headcount</span>
                 </p>
                 <p style={{ fontSize: 8.5, color: 'var(--text-faint)', fontWeight: 700, letterSpacing: '0.03em', marginBottom: 3 }}>
                   ACTUAL / PLANNED HEADCOUNT — BY LOB
@@ -152,36 +144,36 @@ export default function TsaCapacityGeoMap({ filters }) {
                 {({ geographies }) =>
                   geographies.map(geo => {
                     const name = geo.properties.name
-                    let headcount, displayName, isFallback = false
+                    let entry, displayName, isFallback = false
                     if (viewMode === 'Region') {
                       const region = regionForCountry(name)
-                      headcount = region != null ? regionValue[region] : undefined
+                      entry = region != null ? regionValue[region] : undefined
                       displayName = region
                     } else {
                       const subRegion = subRegionForCountry(name)
                       if (subRegion != null) {
-                        headcount = subRegionValue[subRegion]
+                        entry = subRegionValue[subRegion]
                         displayName = subRegion
                       } else {
                         const parentRegion = regionForCountry(name)
                         if (parentRegion != null) {
-                          headcount = regionValue[parentRegion]
+                          entry = regionValue[parentRegion]
                           displayName = parentRegion
                           isFallback = true
                         }
                       }
                     }
-                    const fill = headcount != null ? hcColor((headcount / maxValue) * 100) : DEFAULT_FILL
+                    const fill = entry != null ? acColor(entry.adherence) : DEFAULT_FILL
                     const isSelected = selectedKey != null && displayName === selectedKey
                     const isDimmed = selectedKey != null && !isSelected
                     const baseOpacity = isFallback ? 0.35 : 1
                     return (
                       <Geography key={geo.rsmKey} geography={geo}
-                        onMouseEnter={() => headcount != null && setHovered({ name: displayName, headcount, isRegionKey: viewMode === 'Region' || isFallback })}
+                        onMouseEnter={() => entry != null && setHovered({ name: displayName, headcount: entry.headcount, adherence: entry.adherence, isRegionKey: viewMode === 'Region' || isFallback })}
                         onMouseLeave={() => setHovered(null)}
-                        onClick={() => headcount != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
+                        onClick={() => entry != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
                         style={{
-                          default: { fill, fillOpacity: isDimmed ? 0.1 : baseOpacity, stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none', transition: 'fill-opacity 0.2s, stroke 0.2s', cursor: headcount != null ? 'pointer' : 'default' },
+                          default: { fill, fillOpacity: isDimmed ? 0.1 : baseOpacity, stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none', transition: 'fill-opacity 0.2s, stroke 0.2s', cursor: entry != null ? 'pointer' : 'default' },
                           hover:   { fill, fillOpacity: isDimmed ? 0.25 : (isFallback ? 0.55 : 0.8), stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none' },
                           pressed: { fill, outline: 'none' },
                         }}
@@ -193,9 +185,9 @@ export default function TsaCapacityGeoMap({ filters }) {
             </ComposableMap>
 
             <div style={{ position: 'absolute', bottom: 8, left: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: '#3d607a' }}>
-              <span>High</span>
+              <span>100%</span>
               <div style={{ width: 72, height: 5, borderRadius: 3, background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
-              <span>Low</span>
+              <span>0%</span>
             </div>
           </div>
         </div>

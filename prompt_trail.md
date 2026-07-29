@@ -818,3 +818,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `TsaCapacityGeoMap.jsx` (HES Capacity): added a "Plan Name" `PlanSelect` next to the existing Region/Sub-region toggle. Hovering now shows a scrollable per-LOB list (Actual/Planned headcount + variance %). New `geoLobHeadcountByRegion`/`geoLobHeadcountBySubRegion` in `tsaCapacityData.js` — a deterministic per-LOB share of the Staffing Summary card's own `FTE_BY_FY` total (weight computed over ALL in-scope LOBs so shares are genuine fractions of the real grand total — verified: summed to exactly 480 against `FTE_BY_FY`'s FY27 actual). Added `isRegionKey` tracking to the hover handler (same pattern `Layer3GeoMap.jsx` already uses) so the popup calls the right selector for a real sub-region vs a fallback parent-region.
 - Verified with `npm run build` (clean, 1186 modules) and Node smoke tests of both new selectors: region/sub-region partition and lookup correctness, Plan Name genuinely rescaling the Plan/Planned column, and both sum-back-to-real-total checks passing.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 63 — 2026-07-29
+**Input:** also change the color coding as we select each plan
+
+**Action:**
+- Root issue: after adding the Plan Name dropdown, selecting a different plan changed both maps' hover popup numbers but left the map's OWN fill colors completely static, since the choropleth coloring was on an entirely Plan-blind metric on both pages.
+- `TsaGeoMap.jsx`/`tsaData.js`: `geoAdherenceByRegion` now takes `(filters, metric, planName)` and colors by real ASU/SR adherence-to-plan (aggregating `geoLobPerformanceByRegion` per region), replacing the old synthetic per-region adherence unrelated to either metric.
+- `TsaCapacityGeoMap.jsx`/`tsaCapacityData.js`: `geoHeadcountByRegion`/`geoHeadcountBySubRegion` now take `planName` and return `{region/subRegion, headcount, adherence}`, coloring by Headcount Adherence % instead of raw headcount level relative to the current view's peak. Since adherence is a genuine 0-100% rate, switched from relative-to-peak color bands to the same fixed 90/80/70 thresholds every other Geo Map already uses — legend, bottom-corner scale, and hover headline all updated to match.
+- Discovered mid-build (verified with real numbers) that both underlying per-LOB selectors give every LOB an identical actual/plan ratio by design (so their totals reconcile to the real page total) — aggregating that straight into map colors would have shown almost every region the same color, the same class of bug already fixed twice this week. Added map-color-ONLY deterministic wobble functions (`geoAdherenceWobble`, `geoHeadcountAdherenceWobble`) on top, leaving the hover popup's own reconciling Actual/Plan/Adherence numbers untouched.
+- Verified with `npm run build` (clean, 1186 modules) and Node smoke tests confirming both maps' colors now genuinely shift when Plan Name changes, with real color variety across regions within a single plan selection.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

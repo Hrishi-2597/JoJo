@@ -115,7 +115,7 @@ SPoG/
 │   │       ├── WorkloadActPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle Workload/ACT retitles
 │   │       │                                     "Workload Performance"/"ACT Performance"; wraps PerformanceMatrixTable.jsx +
 │   │       │                                     tsaCapacityData.js's workloadActPerformanceByLob()
-│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide Headcount (2026-07-23, was SLO), Region/Sub-region toggle; Plan Name dropdown + per-LOB Actual/Planned headcount + variance hover popup (2026-07-29)
+│   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — colors by Headcount Adherence % vs the selected Plan Name (2026-07-29, was raw headcount relative-to-peak 2026-07-23, was SLO before that), Region/Sub-region toggle; per-LOB Actual/Planned headcount + variance hover popup
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
@@ -129,8 +129,9 @@ SPoG/
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle ASU/SR retitles "ASU
 │   │       │                               Performance"/"SR Performance"; wraps PerformanceMatrixTable.jsx + tsaData.js's
 │   │       │                               asuSrPerformanceByLob()
-│   │       └── TsaGeoMap.jsx           # Layer 04 — choropleth by LOB adherence per region; ASU/SR BinaryToggle + Plan Name
-│   │                                     dropdown + per-LOB Actual/Plan/Adherence% hover popup (2026-07-29)
+│   │       └── TsaGeoMap.jsx           # Layer 04 — colors by real ASU/SR Adherence % vs the selected Plan Name (2026-07-29,
+│   │                                     was a filters-only synthetic adherence unrelated to either metric); ASU/SR
+│   │                                     BinaryToggle + Plan Name dropdown + per-LOB Actual/Plan/Adherence% hover popup
 │   └── data/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
 │       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
@@ -722,11 +723,6 @@ REGION_ADHERENCE_BASE (2026-07-28) — { NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63
   per-region baseline mirroring ESG Forecasting's own curated GEO_REGION_DATA table
 lobAdherenceValue(region, lobIndex) = clamp(50, 99, REGION_ADHERENCE_BASE[region] + ((lobIndex*11) % 30) - 15) —
   ±15 illustrative spread around the region's own base, so a LOB filter still moves the number
-geoAdherenceByRegion(filters) — averages adherence across filterLobs(filters) (or all 33 LOBs if
-  none selected) for each of the 5 REGIONS; consumed by TsaGeoMap's choropleth fill.
-  (2026-07-28: replaced the previous `65 + ((regionIndex*7 + lobIndex*11) % 30)` formula — a complete
-  residue cycle that made every region's all-LOB average converge to the same ~79-80 regardless of
-  region, the root cause of every region rendering near-identical map colors; see design_choice.md)
 LOB_REGION_ASSIGNMENTS (2026-07-29, private) — each of the 33 real LOB_LIST entries assigned to one of
   the 4 real map regions (NAMER/LATAM/APJ/EMEA) round-robin by index — no real LOB-to-region mapping
   exists, same "real names, illustrative structure" placeholder convention as CQN_LOB_ASSIGNMENTS
@@ -735,6 +731,17 @@ geoLobPerformanceByRegion(region, filters, metric='ASU'|'SR', planName) (2026-07
   adherence} × that region's LOBs, reusing asuSrPerformanceByLob directly (same selector the ASU/SR
   Performance table uses) and collapsed to the LATEST in-scope quarter — backs TsaGeoMap's per-LOB
   hover popup (a snapshot, not the table's full per-quarter history)
+geoAdherenceWobble(lob) (2026-07-29, private) — deterministic ~0.6x-1.4x per-LOB multiplier, MAP-COLOR
+  ONLY (does not touch geoLobPerformanceByRegion's own reconciling actual/plan numbers, which the hover
+  popup shows verbatim) — needed because geoLobPerformanceByRegion's own actual/plan share cancels out
+  in the ratio (every LOB gets the identical weight for both), which would otherwise color every region
+  nearly the same; see design_choice.md
+geoAdherenceByRegion(filters, metric='ASU'|'SR', planName) (2026-07-29, signature changed — was
+  filters-only) — aggregates geoLobPerformanceByRegion's per-LOB actual/plan (weighted by
+  geoAdherenceWobble) into one adherence % per region, for each of the 4 real map regions; consumed by
+  TsaGeoMap's choropleth fill AND its hover headline — now genuinely reacts to the map's own metric
+  toggle and Plan Name dropdown, replacing the previous filters-only synthetic-adherence version (see
+  design_choice.md for both the 2026-07-28 spread fix and the 2026-07-29 plan-reactivity rework)
 ```
 
 ### Cards
@@ -859,11 +866,15 @@ geoHeadcountEmphasis(key) (2026-07-28, private) — deterministic 0.25-1.6 multi
   tsaAttritionByDimension directly, unaffected) to counter the round-robin LOB→region/sub-region tagging's
   near-identical headcount share per key, which previously left the map showing almost every region the same 1-2
   colors; see design_choice.md
-geoHeadcountByRegion(filters) / geoHeadcountBySubRegion(filters) — {region/subRegion, headcount} — reshapes
-  tsaAttritionByDimension's own headcount split for TsaCapacityGeoMap (2026-07-23, replacing the removed SLO%
-  selectors below — see design_choice.md), each key's headcount scaled by geoHeadcountEmphasis(key) (2026-07-28).
-  Color bands relative to the current view's own peak value, not fixed thresholds, since headcount is a raw count
-  rather than a 0-100% rate.
+geoHeadcountByRegion(filters, planName) / geoHeadcountBySubRegion(filters, planName) (signature changed
+  2026-07-29, was filters-only) — {region/subRegion, headcount, adherence} — `headcount` reshapes
+  tsaAttritionByDimension's own split (2026-07-23, replacing the removed SLO% selectors below — see
+  design_choice.md), scaled by geoHeadcountEmphasis(key) (2026-07-28); `adherence` (new 2026-07-29) is a
+  genuine Headcount-Actual-vs-selected-Plan percentage via regionHeadcountAdherence (below) — THIS field
+  now drives TsaCapacityGeoMap's choropleth fill AND hover headline, using the SAME fixed 90/80/70
+  thresholds every other Geo Map uses (no longer relative-to-peak — see design_choice.md for why the
+  metric switch made that the correct call, not just a cosmetic tweak). `headcount` is kept as the hover
+  popup's secondary reference number.
   (Removed 2026-07-23: geoSloByRegion/TSA_GEO_SLO_BY_REGION, geoSloBySubRegion/TSA_GEO_SLO_BY_SUBREGION, sloByFY,
   SLO_BY_FY — the SLO % card and its Geo Map coloring were both replaced; see design_choice.md.)
 geoLobHeadcountByRegion(region, filters, planName) / geoLobHeadcountBySubRegion(subRegion, filters, planName)
@@ -873,6 +884,13 @@ geoLobHeadcountByRegion(region, filters, planName) / geoLobHeadcountBySubRegion(
   card's own FTE_BY_FY total, weight total computed over ALL in-scope LOBs (not just this key's) so shares
   are genuine fractions of the real grand total — verified to sum to exactly FTE_BY_FY's FY27 actual (480)
   across all 5 regions combined. planName reuses this page's own real PLAN_SCALE_BY_NAME.
+geoHeadcountAdherenceWobble(lob) / regionHeadcountAdherence(key, dimension, filters, planName)
+  (2026-07-29, private) — MAP-COLOR ONLY: geoLobHeadcountByRegion/BySubRegion's own actual/plan share
+  cancels out in the ratio (every LOB gets the identical weight for both, by design, so totals reconcile
+  to the real FTE_BY_FY total), which would otherwise color every region/sub-region nearly the same.
+  geoHeadcountAdherenceWobble adds a deterministic ~0.6x-1.4x per-LOB spread scoped to this aggregation
+  only — it does not touch geoLobHeadcountByRegion/BySubRegion's own reconciling numbers, which the hover
+  popup's per-LOB list still shows verbatim; see design_choice.md
 tsaCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime}. totalFte/attrition/
   avgCaseTime each carry {actual, period, prevPeriod, yoyPct} — both the headline value AND yoyPct drill with
   granularity (2026-07-20); casesPerFte is unchanged ({actual, plan} only). No longer returns globalSlo (2026-07-23,

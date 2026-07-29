@@ -33,12 +33,13 @@ export default function TsaGeoMap({ filters }) {
   // every region at equal visual weight. Re-click the same region, or the Clear pill,
   // to go back to showing all of them.
   const [selectedKey, setSelectedKey] = useState(null)
-  // Metric + Plan Name for the hover popup's per-LOB breakdown (2026-07-29, added per
-  // direct request) — separate from the map's own choropleth coloring, which stays on
-  // geoAdherenceByRegion's synthetic adherence metric, untouched.
+  // Metric + Plan Name (2026-07-29) — drive BOTH the hover popup's per-LOB breakdown
+  // AND the map's own choropleth coloring (geoAdherenceByRegion now takes metric/
+  // planName too, so switching either genuinely repaints the map, not just the
+  // hover text).
   const [metric, setMetric] = useState('ASU')
   const [plan, setPlan] = useState(PLANS[0])
-  const rows = useMemo(() => geoAdherenceByRegion(filters), [filters])
+  const rows = useMemo(() => geoAdherenceByRegion(filters, metric, plan), [filters, metric, plan])
   const accuracyByRegion = useMemo(() => Object.fromEntries(rows.map(r => [r.region, r.adherence])), [rows])
   const hoveredLobs = useMemo(
     () => (hovered ? geoLobPerformanceByRegion(hovered.name, filters, metric, plan) : []),
@@ -72,7 +73,7 @@ export default function TsaGeoMap({ filters }) {
             <InfoButton info="Choropleth of LOB adherence percentage by region, colored from critical (red) to excellent (green). Hover a region to see its LOBs' ASU/SR actual vs plan and adherence." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            Adherence % · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}
+            {metric} Adherence % · {plan} · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}
             {selectedKey && (
               <> · Showing <strong style={{ color: 'var(--accent)' }}>{selectedKey}</strong>{' '}
                 <span onClick={() => setSelectedKey(null)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>

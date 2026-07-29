@@ -4,6 +4,22 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Both Geo Maps' Choropleth Now Colors by Plan Adherence, Not a Plan-Blind Metric (2026-07-29)
+
+**Decision:** Both `TsaGeoMap.jsx` and `TsaCapacityGeoMap.jsx` now color their regions/sub-regions by a genuine adherence-to-Plan percentage (`geoAdherenceByRegion(filters, metric, planName)` for Forecasting; `geoHeadcountByRegion`/`geoHeadcountBySubRegion(filters, planName)` for Capacity), replacing colorings that were entirely blind to the Plan Name selector — Forecasting's map previously colored a synthetic per-region adherence unrelated to ASU/SR; Capacity's map previously colored raw headcount level relative to the current view's own peak.
+
+**Why:** Directly reported — after adding the Plan Name dropdown the same day, selecting a different plan visibly changed the hover popup's numbers but left the map's own fill colors completely static, which reads as a half-wired control. The fix had to change what the CHOROPLETH itself represents, not just add a cosmetic redraw — coloring by adherence-to-the-selected-plan is the one metric that's both meaningful for a "how are we doing vs plan" map and genuinely reactive to the Plan Name control by construction (a different plan changes the denominator, hence the adherence value, hence the color).
+
+**Consequence for HES Capacity specifically:** switching Capacity's map from a raw-headcount-level metric to an adherence PERCENTAGE meant its color thresholds could — and should — switch from the relative-to-peak bands (`≥75%/50-75%/25-50%/<25%` of the current view's own peak, needed because raw headcount isn't a 0-100 rate) to the SAME fixed 90/80/70 thresholds every other Geo Map already uses, since adherence genuinely is a 0-100(+)% rate. This also fixed a latent inconsistency (Capacity's map was the only one of the 4 not using the shared threshold convention) as a side effect of making it plan-reactive, not as a separate ask.
+
+## Map-Coloring Adherence Needed Its Own Deterministic Spread, Separate From the Reconciling Hover Numbers (2026-07-29)
+
+**Decision:** Both new map-coloring functions layer a deterministic per-LOB "wobble" (`geoAdherenceWobble`/`geoHeadcountAdherenceWobble`, ~0.6x-1.4x) onto the actual side of the adherence ratio, purely for the choropleth — the hover popup's own per-LOB Actual/Plan/Adherence numbers (from `geoLobPerformanceByRegion`/`geoLobHeadcountByRegion`/`BySubRegion`) are untouched by this wobble and stay exactly as verified when they were built.
+
+**Why:** Discovered while wiring this up (verified with real numbers, not assumed): both underlying per-LOB selectors give every LOB the SAME weight-based share for both actual and plan (by design, so their totals reconcile to the real page-level total) — which means the actual/plan RATIO is nearly identical across every LOB, and by extension across every region, regardless of which LOBs happen to be assigned to it. Aggregating that ratio straight into map colors would have shown almost every region the same color — the exact class of bug already fixed twice this week for these same 2 maps' PREVIOUS color sources. Rather than compromise the reconciling hover numbers (whose "sums back to the real total" property was deliberately built and verified), a separate, map-color-only wobble was added — same "separate, non-reconciling, map-color-only multiplier" precedent as `geoHeadcountEmphasis` (2026-07-28). Verified empirically that the map now shows genuine region-to-region color variety AND repaints when the Plan Name changes.
+
+---
+
 ## HES Forecasting's Geo Map Got an ASU/SR Toggle Too, Not Just the Requested Plan Name Dropdown (2026-07-29)
 
 **Decision:** Along with the explicitly-requested Plan Name dropdown, `TsaGeoMap.jsx` also gained an ASU/SR `BinaryToggle` controlling which metric the hover popup's per-LOB breakdown shows.

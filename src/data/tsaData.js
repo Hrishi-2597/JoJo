@@ -453,24 +453,32 @@ export function cpasuTrendByRegion(filters = {}, region, granularity) {
 }
 
 // ── Geo Map: LOB adherence by region (choropleth, reuses Forecasting's country lookup) ─
-// Each region gets its own deliberately-spread base (2026-07-28), mirroring the
-// curated GEO_REGION_DATA table Forecasting's own ESG Geo Map uses — per-LOB values
-// vary ±15 around that base (so a LOB filter still moves the number meaningfully),
-// but averaging over ALL LOBs (no filter) still lands close to the region's own base.
-// The PREVIOUS formula (`65 + ((regionIndex*7 + lobIndex*11) % 30)`) used a modulo-30
-// spread that's a complete residue cycle — averaged across all 33 LOBs, every region's
-// mean converged to the identical ~79-80 regardless of regionIndex, which is exactly
-// why every region rendered the same 1-2 colors (see design_choice.md).
-const REGION_ADHERENCE_BASE = { NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63, Global: 80 }
-function lobAdherenceValue(region, lobIndex) {
-  const base = REGION_ADHERENCE_BASE[region] ?? 80
-  return Math.max(50, Math.min(99, base + ((lobIndex * 11) % 30) - 15))
+// Colors the map by the SAME ASU/SR adherence the hover popup's per-LOB breakdown
+// already shows (2026-07-29, replacing a synthetic adherence unrelated to either
+// metric) — so the map's own metric toggle and Plan Name dropdown now genuinely
+// change which color each region shows, not just the hover popup's numbers.
+//
+// geoLobPerformanceByRegion's own actual/plan reconcile to the real page-level total
+// (every LOB gets the identical weight-based share for both, by design, so the
+// ASU/SR Performance table's numbers sum back correctly) — which means the ratio
+// between them is nearly constant across LOBs (only integer-rounding noise differs
+// it). That's correct for a reconciling total, but wrong for a choropleth, which
+// needs real region-to-region spread. geoAdherenceWobble() adds a deterministic
+// per-LOB spread scoped to THIS map-coloring selector only — it does not touch
+// geoLobPerformanceByRegion's own reconciling numbers (still shown verbatim in the
+// hover popup's per-LOB list), same "separate, non-reconciling, map-color-only
+// multiplier" precedent as tsaCapacityData.js's geoHeadcountEmphasis.
+function geoAdherenceWobble(lob) {
+  const i = LOB_LIST.indexOf(lob)
+  return 0.6 + ((i * 17) % 80) / 100
 }
-export function geoAdherenceByRegion(filters = {}) {
-  const activeLobs = filters.lob?.length ? filters.lob : LOB_LIST
-  return REGIONS.map(region => {
-    const values = activeLobs.map(lob => lobAdherenceValue(region, LOB_LIST.indexOf(lob)))
-    const adherence = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+
+export function geoAdherenceByRegion(filters = {}, metric = 'ASU', planName) {
+  return GEO_LOB_REGIONS.map(region => {
+    const lobs = geoLobPerformanceByRegion(region, filters, metric, planName)
+    const actualSum = lobs.reduce((s, l) => s + l.actual * geoAdherenceWobble(l.lob), 0)
+    const planSum = lobs.reduce((s, l) => s + l.plan, 0)
+    const adherence = planSum ? Math.round((actualSum / planSum) * 100) : 0
     return { region, adherence, label: region }
   })
 }

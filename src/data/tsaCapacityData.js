@@ -161,14 +161,28 @@ function geoHeadcountEmphasis(key) {
   return 0.25 + (hash % 1000) / 1000 * 1.35
 }
 
-export function geoHeadcountByRegion(filters = {}) {
+// 2026-07-29: the map's own choropleth now colors by Headcount ADHERENCE (actual vs
+// the selected Plan Name) instead of raw headcount level, so picking a different
+// Plan Name genuinely repaints the map — see regionHeadcountAdherence below (defined
+// further down, hoisted like every other function declaration in this module).
+// `headcount` is kept alongside `adherence` for the hover popup's existing headline
+// reference; `adherence` is the new field driving the fill color.
+export function geoHeadcountByRegion(filters = {}, planName) {
   return tsaAttritionByDimension(filters, 'Region')
-    .map(r => ({ region: r.key, headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)) }))
+    .map(r => ({
+      region: r.key,
+      headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)),
+      adherence: regionHeadcountAdherence(r.key, 'Region', filters, planName),
+    }))
 }
 
-export function geoHeadcountBySubRegion(filters = {}) {
+export function geoHeadcountBySubRegion(filters = {}, planName) {
   return tsaAttritionByDimension(filters, 'SubRegion')
-    .map(r => ({ subRegion: r.key, headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)) }))
+    .map(r => ({
+      subRegion: r.key,
+      headcount: Math.round(r.headcount * geoHeadcountEmphasis(r.key)),
+      adherence: regionHeadcountAdherence(r.key, 'SubRegion', filters, planName),
+    }))
 }
 
 // Per-LOB Actual vs Planned headcount + variance for one region/sub-region's hovered
@@ -206,6 +220,27 @@ export function geoLobHeadcountByRegion(region, filters = {}, planName) {
 
 export function geoLobHeadcountBySubRegion(subRegion, filters = {}, planName) {
   return lobHeadcountForKey(subRegion, 'SubRegion', filters, planName)
+}
+
+// lobHeadcountForKey's own actual/plan reconcile to the real page-level total (every
+// LOB gets the identical weight-based share for both, by design), which means the
+// RATIO between them is nearly constant across LOBs — correct for a reconciling
+// total, wrong for a choropleth, which needs real region-to-region spread.
+// geoHeadcountAdherenceWobble() adds a deterministic per-LOB spread scoped to THIS
+// map-coloring calculation only — it does not touch lobHeadcountForKey's own
+// reconciling numbers (still shown verbatim in the hover popup's per-LOB list), same
+// "separate, non-reconciling, map-color-only multiplier" precedent as
+// geoHeadcountEmphasis() above.
+function geoHeadcountAdherenceWobble(lob) {
+  const i = LOB_LIST.indexOf(lob)
+  return 0.6 + ((i * 17) % 80) / 100
+}
+
+function regionHeadcountAdherence(key, dimension, filters, planName) {
+  const rows = lobHeadcountForKey(key, dimension, filters, planName)
+  const actualSum = rows.reduce((sum, r) => sum + r.actual * geoHeadcountAdherenceWobble(r.lob), 0)
+  const planSum = rows.reduce((sum, r) => sum + r.plan, 0)
+  return planSum ? Math.round((actualSum / planSum) * 100) : 0
 }
 
 // ── Cases per FTE / Avg Case Time (cards only) ─────────────────────────────
