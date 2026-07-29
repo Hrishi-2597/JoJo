@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## PlanningSidebar Hidden on the Landing Page, Still Shared Across Business Pages (2026-07-29)
+
+**Decision:** `PlanningSidebar` (Fiscal Calendar / Planning Cycle / Holiday Calendar) now renders only when `view !== 'landing'` in `App.jsx`, instead of unconditionally for every view.
+
+**Why:** Directly requested — the landing page is just the ESG/HES business-selector tile screen, not a Forecasting/Capacity Plan view with its own fiscal periods to reference, so the calendar/cycle/holiday tools didn't have anything to attach to there. `PlanningSidebar` stays mounted once in `App.jsx` (not per-page) specifically so its expand/collapse state persists across business-page switches — a single `view !== 'landing'` condition around the existing mount point preserves that, rather than duplicating the component into each business page's own render tree.
+
 ## HES Capacity Geo Map's Legend Wording Matches the Other 3 Maps, Thresholds Don't (2026-07-28)
 
 **Decision:** Reworded `TsaCapacityGeoMap.jsx`'s legend from "≥ 75% of peak Highest / 50–75% of peak High / 25–50% of peak Moderate / < 25% of peak Lowest" to "≥ 75% Excellent / 50–75% Good / 25–50% Fair / < 25% Critical" — same "X% Word" style and same 4 adjectives as the other 3 Geo Maps' legends — but kept the 75/50/25% THRESHOLDS themselves, rather than copying the other maps' 90/80/70%.

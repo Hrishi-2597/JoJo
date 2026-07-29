@@ -44,8 +44,10 @@ SPoG/
 │   │   │                              purple "RCA/CLCA" pill opens a contributing-factors popup via ChartKit's
 │   │   │                              shared PopupTable
 │   │   ├── PlanningSidebar.jsx # Collapsible left sidebar (2026-07-27) — 46px icon rail expands to a 360px
-│   │   │                         panel (Fiscal Calendar / Planning Cycle), mounted once in App.jsx outside the
-│   │   │                         page conditionals so it's present + keeps its open/closed state on every page
+│   │   │                         panel (Fiscal Calendar / Planning Cycle / Holiday Calendar), mounted once in
+│   │   │                         App.jsx outside the page conditionals so it keeps its open/closed state across
+│   │   │                         every business-page switch; hidden on the landing page itself (2026-07-29,
+│   │   │                         App.jsx gates it on `view !== 'landing'`) — see design_choice.md
 │   │   ├── FiscalCalendarView.jsx  # Renders src/data/planningCalendarData.js's FISCAL_CALENDAR as a single-
 │   │   │                             column stack of quarters/months (reflowed from the source image's wide
 │   │   │                             4-quarters-across layout to fit the 360px sidebar panel)

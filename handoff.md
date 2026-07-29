@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Landing Page: Removed Fiscal Calendar / Planning Cycle / Holiday Calendar Sidebar (2026-07-29)
+
+- **`App.jsx`** — `<PlanningSidebar />` (the 3-icon left column: 📅 Fiscal Calendar, 🗓 Planning Cycle, 🌍 Holiday Calendar) now renders only when `view !== 'landing'`, per direct request with a screenshot of it appearing on the landing tile screen. Still mounted once (not duplicated per business page), so its open/closed state keeps surviving switches between ESG/HES and Forecasting/Capacity Plan — only the landing page itself no longer shows it.
+- **Verified**: `npm run build` clean (1183 modules).
+
 ## HES Capacity Geo Map: Legend Wording Now Matches the Other 3 Maps (2026-07-28)
 
 - **`TsaCapacityGeoMap.jsx`'s legend** — "≥ 75% of peak Highest / 50–75% of peak High / 25–50% of peak Moderate / < 25% of peak Lowest" → **"≥ 75% Excellent / 50–75% Good / 25–50% Fair / < 25% Critical"**, matching the exact "X% Word" style and adjectives the other 3 Geo Maps' legends already use.

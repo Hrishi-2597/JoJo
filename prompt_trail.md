@@ -740,3 +740,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Kept the underlying 75/50/25% thresholds unchanged — those are a % of the current view's own peak headcount (a relative scale, since headcount is a raw count, not a 0-100 rate), not the other maps' 90/80/70% of an absolute rate; copying those numbers over would have silently undone the color-spread fix from earlier the same day. The relative basis is still explained via this chart's own InfoButton text, just no longer spelled out in the legend row.
 - Verified with `npm run build` (clean, 1183 modules).
 - Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 56 — 2026-07-29
+**Input:** [image of the landing page showing a left sidebar with Fiscal Calendar/Planning Cycle/Holiday Calendar icons] remove the fiscal calender,planning cycle and holiday calender from the landing page
+
+**Action:**
+- `App.jsx`: `<PlanningSidebar />` (the 3-icon rail — Fiscal Calendar/Planning Cycle/Holiday Calendar) now renders only when `view !== 'landing'`, instead of unconditionally for every view. Still mounted once outside the page conditionals (not duplicated per business page), so its expand/collapse state keeps surviving switches between ESG/HES and Forecasting/Capacity Plan — only the landing tile screen itself no longer shows it.
+- Verified with `npm run build` (clean, 1183 modules).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

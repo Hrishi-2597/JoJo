@@ -180,9 +180,11 @@ export default function App() {
       {/* PlanningSidebar is mounted once here, outside the page conditionals below,
           so its expand/collapse state persists across every page/tab switch —
           this is what makes the Fiscal Calendar + Planning Cycle available on
-          every page via one shared instance instead of a copy per page. */}
+          every business page via one shared instance instead of a copy per page.
+          Hidden on the landing page itself (2026-07-29, per direct request) — it
+          only makes sense once a business's Forecasting/Capacity Plan view is open. */}
       <div style={{ display: 'flex' }}>
-        <PlanningSidebar />
+        {view !== 'landing' && <PlanningSidebar />}
         <div style={{ flex: 1, minWidth: 0 }}>
           {view === 'landing' && <LandingPage onSelect={setView} />}
           {view === 'msg' && (msgSubPage === 'forecasting' ? <ForecastingPage /> : <MsgCapacityPage />)}
