@@ -4,6 +4,7 @@ import TsaCapacityMetricCards from './TsaCapacityMetricCards'
 import HeadcountAttritionLayer from './HeadcountAttritionLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import WorkloadDistributionLayer from './WorkloadDistributionLayer'
+import WorkloadActPerformanceTable from './WorkloadActPerformanceTable'
 import TsaCapacityGeoMap from './TsaCapacityGeoMap'
 import SectionDivider from '../SectionDivider'
 
@@ -37,6 +38,7 @@ export default function TsaCapacityPage() {
         <HeadcountAttritionLayer filters={filters} granularity={granularity} />
         <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
         <WorkloadDistributionLayer filters={filters} granularity={granularity} />
+        <WorkloadActPerformanceTable filters={filters} />
         <TsaCapacityGeoMap filters={filters} />
       </div>
     </>

@@ -4,6 +4,7 @@ import TsaMetricCards from './TsaMetricCards'
 import AsuLayer from './AsuLayer'
 import SrLayer from './SrLayer'
 import AsuSrTrendLayer from './AsuSrTrendLayer'
+import AsuSrPerformanceTable from './AsuSrPerformanceTable'
 import TsaGeoMap from './TsaGeoMap'
 import SectionDivider from '../SectionDivider'
 
@@ -40,6 +41,7 @@ export default function TsaForecastingPage() {
         <AsuLayer filters={filters} granularity={granularity} />
         <SrLayer filters={filters} granularity={granularity} />
         <AsuSrTrendLayer filters={filters} granularity={granularity} />
+        <AsuSrPerformanceTable filters={filters} />
         <TsaGeoMap filters={filters} />
       </div>
     </>

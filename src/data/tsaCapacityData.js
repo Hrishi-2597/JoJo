@@ -346,6 +346,40 @@ export const TSA_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
   }
 })
 
+// ── Workload/ACT Performance table (above the Geo Map) — LOB × Fiscal Quarter matrix ─
+// Each in-scope LOB already has its own flat workloadPlan/workloadActual and
+// actHrsPlan/actHrsActual baseline on TSA_CAPACITY_LOBS — this turns that single
+// flat number into a 3-FY series (a modest deterministic YoY step, same shape as
+// this page's other FY baselines, e.g. BASE_FTE_PLAN) and expands it to quarters
+// via the SAME mockData.js helpers every other time-series selector on this app
+// already uses: the additive one for Workload (a volume, like ASU/SR), the
+// rate-preserving one for ACT (hours-per-case, a rate — same treatment actHrsByFY
+// already gives it).
+function workloadActFyRows(baseActual, basePlan) {
+  return FISCAL_YEARS.map((fy, i) => ({
+    period: fy,
+    actual: Math.round(baseActual * (0.94 + i * 0.05)),
+    plan: Math.round(basePlan * (0.94 + i * 0.05)),
+  }))
+}
+
+export function workloadActPerformanceByLob(filters = {}, metric = 'Workload', planName) {
+  const years = tsaEffectiveFiscalYears(filters)
+  const scale = planName ? (PLAN_SCALE_BY_NAME[planName] ?? 1) : 1
+  return filterCapacityLobs(filters).map(l => {
+    const [baseActual, basePlan] = metric === 'ACT' ? [l.actHrsActual, l.actHrsPlan] : [l.workloadActual, l.workloadPlan]
+    const fyRows = workloadActFyRows(baseActual, basePlan).filter(d => years.includes(d.period))
+    const expanded = metric === 'ACT'
+      ? expandRateToGranularity(fyRows, 'Quarter', ['actual', 'plan'])
+      : expandToGranularity(fyRows, 'Quarter', ['actual', 'plan'])
+    const quarters = expanded.map(q => {
+      const plan = Math.round(q.plan * scale)
+      return { period: q.period, actual: q.actual, plan, adherence: plan ? +((q.actual / plan) * 100).toFixed(1) : 0 }
+    })
+    return { lob: l.lob, quarters }
+  })
+}
+
 // ── Workload Impact on Headcount (Layer 3, replacing "Average Case Time Variance",
 // 2026-07-28) — per-CQN detail using the SAME real queue-name roster the adjacent
 // Workload Distribution Sankey draws from (TSA_ACTIVE_QUEUE_NAMES, sourced from

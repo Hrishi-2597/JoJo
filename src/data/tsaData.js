@@ -130,6 +130,48 @@ export function srPlanVsPlanByFY(filters = {}, granularity) {
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
+// ── ASU/SR Performance table (above the Geo Map) — LOB × Fiscal Quarter matrix ────
+// Each in-scope LOB's row is a deterministic per-LOB SHARE of the exact same
+// quarter-level ASU/SR totals asuByFY/srByFY already compute (at 'Quarter'
+// granularity) — so every LOB row sums back to the real quarterly total shown on
+// this page's own ASU/SR Trend charts, same "sums back to the real total" property
+// the region/sub-region share-weighted selectors elsewhere in this app already have.
+const PERFORMANCE_LOB_WEIGHTS = LOB_LIST.map((_, i) => 0.5 + ((i * 13) % 37) / 37 * 2.5)
+
+// Deterministic scale factor per named Plan (2026-07-29) — this page's own
+// AsuLayer/SrLayer Visual1 "Plan Name" dropdown is a KNOWN cosmetic exception (see
+// tech_spec.md Known Limitations, it never fed into asuByFY/srByFY); this new
+// table's own dropdown deliberately doesn't repeat that gap, so it genuinely
+// rescales the Plan column.
+function planPerformanceScale(planName) {
+  if (!planName) return 1
+  let hash = 0
+  for (let i = 0; i < planName.length; i++) hash = (hash * 31 + planName.charCodeAt(i)) % 97
+  return 0.88 + (hash / 96) * 0.24
+}
+
+export function asuSrPerformanceByLob(filters = {}, metric = 'ASU', planName) {
+  const quarters = metric === 'SR' ? srByFY(filters, 'Quarter') : asuByFY(filters, 'Quarter')
+  const scale = planPerformanceScale(planName)
+  const scoped = filterLobs(filters)
+  const lobs = scoped.length ? scoped : LOB_FACTS
+  // Weight total is computed over whichever LOBs are ACTUALLY in scope (not always
+  // all 33) so each row's share still sums back to asuByFY/srByFY's own total, which
+  // is itself already scaled down by the same in-scope LOB count (lobScopeRatio) —
+  // dividing by the full 33-LOB weight total here would under-count when filtered.
+  const weightTotal = lobs.reduce((sum, l) => sum + (PERFORMANCE_LOB_WEIGHTS[LOB_LIST.indexOf(l.lob)] ?? 1), 0) || 1
+  return lobs.map(l => {
+    const weight = PERFORMANCE_LOB_WEIGHTS[LOB_LIST.indexOf(l.lob)] ?? 1
+    const share = weight / weightTotal
+    const byQuarter = quarters.map(q => {
+      const actual = Math.round(q.actual * share)
+      const plan = Math.round(q.plan * share * scale)
+      return { period: q.period, actual, plan, adherence: plan ? +((actual / plan) * 100).toFixed(1) : 0 }
+    })
+    return { lob: l.lob, quarters: byQuarter }
+  })
+}
+
 // ── CPASU (= SR / ASU) ─────────────────────────────────────────────────────
 export function cpasuByFY(filters = {}, granularity) {
   const asu = asuByFY(filters, granularity)

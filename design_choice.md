@@ -4,6 +4,38 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## New Performance Tables Reuse This App's Own LOB Roster, Not the Screenshots' Literal Product Names (2026-07-29)
+
+**Decision:** The 4 new "Performance" tables (ASU/SR on HES Forecasting, Workload/ACT on HES Capacity) use each page's own existing `LOB_LIST`/`filterLobs` roster for rows — NOT the specific product names visible in the 4 reference screenshots (APEX, AVAMAR, AZURE, CENTERA, CLARIION, COMPELLENT, CONNECTRIX, DATADOMAIN, CELERRA, ATMOS, BSAFE, CLOUDIQ, CLOUDLINK, DLM, DATA PROTECTION ADVISOR, CLOUD SERVERS, CLOUD TIERING APPLIANCE, APPSYNC).
+
+**Why:** The screenshots read as a real BI-tool export (Power BI-style matrix, literal field names like `FISC_QTR_VAL`/`Key` leaking through as column headers on 2 of the 4) — treated as a STRUCTURAL reference for "build a table shaped like this," not literal row data to copy in, especially since each screenshot is a partial, scrolled view (Q4 cut off, more rows below the fold) that can't be faithfully reproduced in full anyway. Introducing those product names as a brand-new, disconnected roster would also mean the new tables' LOB filter wouldn't match the page's own existing LOB dropdown (still built on `LOB_LIST`), breaking the "every visual on a page shares one filter-integrated roster" convention this whole app already follows. Reusing `LOB_LIST` keeps these new tables genuinely filter-aware (LOB/Business Partner/Global Grouping/fiscal-period filters all narrow them, same as every other visual on the page) at the cost of not literally matching the screenshots' row names — flagged here explicitly since it's a real, consequential interpretation call, not an obvious one.
+
+## ASU/SR Performance Rows Are Share-Weighted From a Real Total; Workload/ACT Performance Rows Expand Each LOB's Own Baseline (2026-07-29)
+
+**Decision:** `asuSrPerformanceByLob` (HES Forecasting) derives each LOB's quarterly numbers as a deterministic SHARE of `asuByFY`/`srByFY`'s own quarter-level total, so every row sums back to the real page-level total (verified: LOB rows for FY25Q1 summed to 3,883 actual against the page total's 3,882 — a 1-unit rounding gap, same tolerance every other share-weighted selector in this app accepts). `workloadActPerformanceByLob` (HES Capacity) instead expands EACH LOB's own existing flat `workloadPlan`/`workloadActual`/`actHrsPlan`/`actHrsActual` baseline (already on `TSA_CAPACITY_LOBS`) into a 3-FY series with a modest YoY step, then to quarters.
+
+**Why:** The two pages' underlying data shapes are genuinely different, not an inconsistency to fix: TSA Forecasting already has a real page-level FY/quarter ASU and SR total (`ASU_BY_FY`/`SR_BY_FY`) worth reconciling against, so share-weighting preserves that "adds up to the real total" property, same as this app's region/sub-region share-weighted selectors elsewhere. TSA Capacity has no equivalent FY-level Workload or Headcount-hours total to reconcile against — only a flat per-LOB baseline — so there's nothing to share-weight FROM; expanding each LOB's own number directly is the more honest approach; inventing a fake page-level "Workload total" just to share-weight from it would be a needless extra layer of illustrative structure with nothing real underneath it.
+
+## New "Performance" Tables' Plan Name Dropdown Is Functional, Unlike This Page's Existing Cosmetic One (2026-07-29)
+
+**Decision:** Both HES Forecasting's ASU/SR Performance table and HES Capacity's Workload/ACT Performance table have a Plan Name dropdown that genuinely rescales the Plan column — HES Forecasting via a new deterministic `planPerformanceScale()` hash, HES Capacity via the page's own existing `PLAN_SCALE_BY_NAME` (already used by the Attrition/Plan-over-Plan Plan pickers). Neither reuses or extends the KNOWN, documented cosmetic Plan Name dropdown on `AsuLayer`/`SrLayer` Visual1 ("Actuals vs Plan Comparison"), which changes state but never actually feeds into `asuByFY`/`srByFY` (see `tech_spec.md` Known Limitations).
+
+**Why:** The user's own instruction was explicit that this dropdown should "adjust accordingly" per toggle position — a functional requirement, not a cosmetic one — and this app's established convention for every OTHER Plan dropdown (Capacity pages' `PlanSelect`/`PlanDropdowns`) is that it "genuinely changes displayed numbers, never decoratively." Building a 5th cosmetic Plan dropdown to match the one pre-existing cosmetic exception on this page would have been copying a known gap rather than the app's actual, intended convention.
+
+## New Performance Tables Share One Generic Component, No Numbered Layer Badge (2026-07-29)
+
+**Decision:** Built one shared `PerformanceMatrixTable.jsx` (LOB × Fiscal-Quarter matrix, metric toggle, Plan dropdown, RCA/CLCA pill column) consumed by both pages' thin per-page wrapper (`tsa/AsuSrPerformanceTable.jsx`, `tsaCapacity/WorkloadActPerformanceTable.jsx`), rather than writing the ~150-line table markup 4 times (2 metrics × 2 pages). Neither table carries a numbered layer badge (01/02/03/04) — it sits above the Geo Map with a plain title bar instead.
+
+**Why:** All 4 requested tables share the exact same shape (toggle → title change, Fiscal-Quarter-grouped Actual/Plan/Adherence% triplets, per-row RCA/CLCA popup) — a generic component avoids 4 near-identical copies drifting out of sync over time, same reasoning behind every other shared primitive in `ChartKit.jsx`. Skipping a numbered badge directly follows the precedent ESG Capacity's `QueuePerformanceTable.jsx` already set for "an extra table placed above the Geo Map" — that page's own 01-04 badges stayed untouched when it was added, and the same logic applies here: inserting a table shouldn't force renumbering an already-established badge sequence.
+
+## Two Reference Images' Table/Name Pairing Was Reconciled by Metric, Not Image Order (2026-07-29)
+
+**Decision:** The request paired image #14 with "Workload Performance" and image #15 with "ACT Performance," but image #14's own header literally reads "ACT (Actual vs Plan Comparison)" and image #15's reads "Workload (Actual vs Plan Comparison)" — the reverse. Built "Workload Performance" using this page's own `workloadPlan`/`workloadActual` fields and "ACT Performance" using `actHrsPlan`/`actHrsActual`, matching each NAME to its own already-established metric rather than to the (apparently swapped) image number.
+
+**Why:** Both reference images are structurally IDENTICAL templates (Fiscal Quarter groups × Actual/Plan/Adherence%, LOB rows) — the swap has zero effect on the resulting table's shape, only on which literal image number a metric's name happened to be attached to in the request text, almost certainly an incidental mix-up rather than an intentional instruction to rename the metrics themselves. Reconciling by metric name (which the rest of the request's own vocabulary — "Workload," "ACT" — and this page's existing data model already define unambiguously) is safer than reconciling by image index.
+
+---
+
 ## PlanningSidebar Hidden on the Landing Page, Still Shared Across Business Pages (2026-07-29)
 
 **Decision:** `PlanningSidebar` (Fiscal Calendar / Planning Cycle / Holiday Calendar) now renders only when `view !== 'landing'` in `App.jsx`, instead of unconditionally for every view.

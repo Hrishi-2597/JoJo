@@ -79,6 +79,12 @@ SPoG/
 │   │   │                         specifically because it can't collide with a chart's own bar-click-drill
 │   │   │                         behavior or its Plan/toggle controls — see design_choice.md. See
 │   │   │                         src/data/insightFactors.js below for what generates `table`'s content
+│   │   ├── PerformanceMatrixTable.jsx # (2026-07-29) Generic LOB × Fiscal-Quarter matrix table — 2-row header (quarter
+│   │   │                                groups, colSpan 3: Actual/Plan/Adherence%), BinaryToggle + PlanSelect above it,
+│   │   │                                a purple RCA/CLCA pill per row (same convention as msgCapacity/
+│   │   │                                QueuePerformanceTable.jsx) opening a contributingFactors-backed PopupTable.
+│   │   │                                Consumed by tsa/AsuSrPerformanceTable.jsx and tsaCapacity/
+│   │   │                                WorkloadActPerformanceTable.jsx — see those pages' own entries below
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
@@ -106,6 +112,9 @@ SPoG/
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28)
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Workload Impact on Headcount (2026-07-28, replaced Average Case Time Variance)
+│   │       ├── WorkloadActPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle Workload/ACT retitles
+│   │       │                                     "Workload Performance"/"ACT Performance"; wraps PerformanceMatrixTable.jsx +
+│   │       │                                     tsaCapacityData.js's workloadActPerformanceByLob()
 │   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide Headcount (2026-07-23, was SLO), Region/Sub-region toggle
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
@@ -117,6 +126,9 @@ SPoG/
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan, Plan Impact (region→LOB drill)
 │   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric
 │   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "ASU/UCR Impact on SR Analysis" — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
+│   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle ASU/SR retitles "ASU
+│   │       │                               Performance"/"SR Performance"; wraps PerformanceMatrixTable.jsx + tsaData.js's
+│   │       │                               asuSrPerformanceByLob()
 │   │       └── TsaGeoMap.jsx           # Layer 04 — choropleth by LOB adherence per region
 │   └── data/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
@@ -644,6 +656,16 @@ ASU_PLAN_VS_PLAN_BY_FY, SR_PLAN_VS_PLAN_BY_FY — {period, plan1, plan2, varianc
 asuByFY(filters) / srByFY(filters)                 — narrowed to tsaEffectiveFiscalYears, scaled by lobScopeRatio
 asuPlanVsPlanByFY(filters) / srPlanVsPlanByFY(filters) — same narrowing + scaling
 cpasuByFY(filters) — cpasu = sr.actual / asu.actual per period, rounded to 2 decimals (backs the CPASU card + drill-down)
+planPerformanceScale(planName) (2026-07-29, private) — deterministic scale factor for a named Plan, hashed from
+  the plan name string (~0.88x-1.12x) — backs asuSrPerformanceByLob's Plan Name dropdown, which genuinely
+  rescales the Plan column (unlike AsuLayer/SrLayer Visual1's own cosmetic Plan Name dropdown — see Known
+  Limitations, and design_choice.md for why this new table deliberately doesn't repeat that gap)
+asuSrPerformanceByLob(filters, metric='ASU'|'SR', planName) (2026-07-29) — {lob, quarters: [{period, actual, plan,
+  adherence}]} × every in-scope LOB (LOB_LIST via filterLobs, NOT the product names shown in this feature's
+  reference screenshots — see design_choice.md). Each LOB's quarterly numbers are a deterministic SHARE of
+  asuByFY/srByFY's own quarter-level total (weight total computed over whichever LOBs are actually in scope, so
+  narrowing by filter still sums back correctly) — backs the "ASU Performance"/"SR Performance" table above the
+  Geo Map (tsa/AsuSrPerformanceTable.jsx, wraps the shared PerformanceMatrixTable.jsx)
 ```
 
 ### UCR
@@ -852,6 +874,16 @@ workloadSankey(filters, mode='LOB')       — {nodes, links} recharts Sankey sha
 TSA_CAPACITY_LOBS                         — LOB_FACTS.map(...) + {region, subRegion, workloadPlan, workloadActual,
   actHrsPlan, actHrsActual, popPlan1, popPlan2, popVariance (getter)} — per-LOB fact table (spreads LOB_FACTS's own
   businessPartner/globalGrouping tags rather than re-deriving them); popPlan1/popPlan2 back planOverPlanLobVariance
+workloadActFyRows(baseActual, basePlan) (2026-07-29, private) — turns one LOB's flat workloadPlan/workloadActual or
+  actHrsPlan/actHrsActual baseline into a 3-FY series (a modest deterministic YoY step), so it can run through the
+  same mockData.js expand-to-quarter helpers every other time-series selector on this app already uses
+workloadActPerformanceByLob(filters, metric='Workload'|'ACT', planName) (2026-07-29) — {lob, quarters: [{period,
+  actual, plan, adherence}]} × every in-scope LOB (filterCapacityLobs). Workload uses the additive expansion (a
+  volume, like ASU/SR); ACT uses the rate-preserving one (hours-per-case, same treatment actHrsByFY already gives
+  it). No page-level FY total exists to share-weight from here (unlike asuSrPerformanceByLob on tsaData.js), so
+  each LOB's own already-established number is expanded directly instead — see design_choice.md. planName reuses
+  this page's own real PLAN_SCALE_BY_NAME. Backs the "Workload Performance"/"ACT Performance" table above the Geo
+  Map (tsaCapacity/WorkloadActPerformanceTable.jsx, wraps the shared PerformanceMatrixTable.jsx)
 CQN_LOB_ASSIGNMENTS (2026-07-28, private)  — TSA_ACTIVE_QUEUE_NAMES (tsaData.js, 71 real queues, the same roster
   workloadSankey's CQN mode draws from) each assigned to a LOB_LIST entry round-robin by index — no real queue-to-LOB
   mapping has been supplied, so this is the "real names, illustrative structure" placeholder (same convention
