@@ -4,6 +4,44 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Total Queues Card Face Shows Active Only; the Drill-Down Directories Were Left Alone (2026-07-30)
+
+**Decision:** Both ESG Forecasting's and HES Forecasting's "Total Queues" KPI card now shows just the active count (value + sublabel + sub-line all dropped "Inactive"). Neither page's drill-down modal was touched — HES Forecasting's directory already only listed active queues before this change; ESG Forecasting's "Queue Directory — Active & Inactive" modal (with its own Business Partner active/inactive split table) was left exactly as built.
+
+**Why:** The request named "the total queues card" specifically. ESG Forecasting's fuller active+inactive directory was a separate, deliberately-scoped feature built earlier in this project for a different reason (a real inactive-queue count is still operationally useful in a detail view) — removing it wholesale would undo real, working functionality nobody asked to remove, just to make the summary card's headline number consistent with what it now advertises.
+
+## SR Card's DB/OSP YTD Needed a Genuinely-Varying Split, Not Just a New Sub-Line (2026-07-30)
+
+**Decision:** Fixed the Service Requests card showing only one combined YTD % (no DB/OSP breakdown) by first changing `srDbOspByFY`'s DB/OSP split from a FIXED 70/30 ratio of the same total to a per-period VARYING share (~62-74%), before building the new sub-line.
+
+**Why:** Verified with real numbers before writing any UI: a fixed-ratio split of the same underlying total produces IDENTICAL year-over-year % change for DB, OSP, and the combined total (confirmed: all three came out to exactly 7.8% on a sample year) — a "bifurcation" that would show the same number twice under two different labels, not a real breakdown. The varying-share version gives DB and OSP genuinely independent trajectories (e.g. +17.4% / -12.4% on the same sample) while still summing to the exact same combined SR actual each period, so nothing else that reads `srDbOspByFY`'s totals (the existing DB vs OSP drill-down chart) changed.
+
+## Plan Name Dropdowns Became Multi-Select via the Existing Filter-Panel Widget, Not a New One (2026-07-30)
+
+**Decision:** Every chart-level "Plan Name" `PlanSelect` across the app was converted from a plain single-value `<select>` to a checkbox multi-select, by making `PlanSelect` a thin wrapper around the SAME `MultiSelectField` component the top filter panel already uses for LOB/Business Partner/etc. (adding one new `emptyLabel` prop, default `'All'`, overridden to `'Select Plan'` for this use).
+
+**Why:** Directly requested with a concrete visual example (a checkbox per option, defaulting to an unselected "Select Plan" placeholder rather than a pre-picked value). Building a second, bespoke multi-select widget from scratch would have produced a dropdown that looked and behaved slightly differently from the one already used everywhere else in the filter panel — reusing `MultiSelectField` guarantees identical interaction (search box, Select all/Clear, checkbox rows, click-outside-to-close) with a single, already-proven implementation, and the one-line `emptyLabel` addition doesn't affect any of the filter panel's own existing usages (their default stays `'All'`).
+
+## Multiple Selected Plans Render as Extra Series on Trend Charts, But Only the First Plan on Ranked Lists/Tables/Maps (2026-07-30)
+
+**Decision:** Selecting 2+ plans behaves differently depending on the chart shape: period-trend Bar+Line combo charts (ASU/SR Trend Visual1, Headcount/Attrition Visual1, Utilization Visual1, UCR Impact on SR, ESG Forecasting's Actual vs Plan Variation) render one additional "Plan" bar per selected plan (cycling a 2-hue rotation with stepped opacity via a new `planSeriesColor` helper) and drop any Adherence/Variation % line once more than one plan is shown. Ranked-by-queue/LOB horizontal bar charts, the two Performance matrix tables, and both Geo Maps instead use only the FIRST selected plan for calculation — the widget is genuinely multi-select everywhere, but the math only follows suit where "N plans" has an unambiguous visual answer.
+
+**Why:** A trend chart's Plan bar is a single, well-defined series per period — adding one more bar per selected plan is a direct, honest generalization with an obvious rendering (this is also how the existing Plan A/Plan B `PlanDropdowns` comparison charts already work, just extended from exactly-2 to N). A ranked queue list, a LOB × Fiscal-Quarter matrix, and a choropleth region color are each fundamentally ONE value per row/cell/region — "2 plans" has no single correct visual answer there (N sets of sub-columns? N bars per already-crowded queue row? which of 2 colors wins?) without a disproportionate redesign of features that were scoped and shipped for a different reason. Rather than guess an answer nobody asked for, these fall back to the first selected plan, clearly documented in each file's own comment, with the multi-select widget itself still available everywhere for consistency.
+
+## Adherence Line Drops When 2+ Plans Are Compared on a Trend Chart (2026-07-30)
+
+**Decision:** On every trend chart that gained multi-plan bars, the Adherence %/Variation % line (previously always shown) is now only rendered when exactly one plan is selected (or none, showing the baseline).
+
+**Why:** Adherence is defined against ONE plan (`actual ÷ plan × 100`) — with 2+ plans compared, "adherence" would need to become 2+ separate lines on the same secondary axis, which clutters fast and duplicates information already visible from comparing the bar heights directly. Dropping it only when genuinely ambiguous (N>1), while keeping it exactly as before for the single-plan case (the vast majority of real usage), preserves 100% of the original chart's behavior for anyone who picks one plan, which is functionally identical to today's default.
+
+## Two Long-Documented Cosmetic Plan Dropdowns Were Fixed as Part of This Rollout, Not Left As-Is (2026-07-30)
+
+**Decision:** While converting `AsuLayer`/`SrLayer` Visual1's Plan Name dropdown (`asuByFY`/`srByFY`), `msgCapacity/HeadcountLayer` Visual1 (`hcStaffingByFY`), and `AsuSrTrendLayer`'s "UCR Impact on SR" (`srBotsByFY`) to multi-select, each selector was ALSO given a genuine `planName` parameter — all three were previously documented Known Limitations where the dropdown changed UI state but never fed into the chart's numbers at all.
+
+**Why:** Building genuine multi-plan-series rendering on top of a dropdown that doesn't affect the data at all would have been actively misleading — selecting 2 plans would show 2 identical bars. Since the underlying fix (threading a plan-name-driven scale factor into the selector, reusing each page's own already-established scaling mechanism — `planPerformanceScale` on Forecasting, `planMultiplier` on Capacity) was a small, mechanical, low-risk addition once the pattern already existed elsewhere on the same page, it made no sense to ship a "multi-select" UI on top of a control that still silently did nothing.
+
+---
+
 ## Both Geo Maps' Choropleth Now Colors by Plan Adherence, Not a Plan-Blind Metric (2026-07-29)
 
 **Decision:** Both `TsaGeoMap.jsx` and `TsaCapacityGeoMap.jsx` now color their regions/sub-regions by a genuine adherence-to-Plan percentage (`geoAdherenceByRegion(filters, metric, planName)` for Forecasting; `geoHeadcountByRegion`/`geoHeadcountBySubRegion(filters, planName)` for Capacity), replacing colorings that were entirely blind to the Plan Name selector — Forecasting's map previously colored a synthetic per-region adherence unrelated to ASU/SR; Capacity's map previously colored raw headcount level relative to the current view's own peak.

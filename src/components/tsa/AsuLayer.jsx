@@ -6,7 +6,7 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import { asuByFY, asuPlanVsPlanByFY, asuRegionPlans, asuLobImpact, IMPACT_REGIONS } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './TsaChartKit'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -16,16 +16,30 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 // onto NAMER for that lookup, APJ/EMEA match directly, Global has no clean match.
 const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
 
-function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
+// `selectedPlans` (2026-07-30, was a single pre-picked plan name — see PlanSelect's
+// own comment for why the dropdown itself changed) — empty means "no override",
+// showing the baseline Plan numbers exactly as before. Selecting 1 plan renders
+// identically to the old single-select behavior (same color, same Adherence % line).
+// Selecting 2+ adds one additional Plan bar per plan (planSeriesColor cycles a
+// 2-hue rotation with stepped opacity) and drops the Adherence line, since "adherence
+// to which plan" stops being a single well-defined line once more than one is shown.
+function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
+  const plans = selectedPlans.length ? selectedPlans : [undefined]
+  const perPlan = useMemo(() => plans.map(p => asuByFY(filters, granularity, p)), [filters, granularity, plans])
+  const data = useMemo(() => perPlan[0].map((row, i) => {
+    const out = { period: row.period, actual: row.actual }
+    plans.forEach((p, pi) => { out[`plan_${pi}`] = perPlan[pi][i].plan })
+    if (plans.length === 1) out.adherence = perPlan[0][i].adherence
+    return out
+  }), [perPlan, plans])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
-      info="ASU actuals vs the selected plan by fiscal period, with percent adherence."
+    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
+      info="ASU actuals vs the selected plan(s) by fiscal period, with percent adherence shown when exactly one plan is selected."
       rca="ASU actuals are trending below plan in the most recent fiscal year."
       clca="Re-forecast ASU using the latest onboarding velocity before the next lock."
       table={table}>
@@ -41,9 +55,14 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 3" />
           <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan"   name="Plan"    fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %"
-            stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {plans.map((p, pi) => {
+            const { color, opacity } = planSeriesColor(pi)
+            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {plans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %"
+              stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
@@ -142,7 +161,9 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 
 export default function AsuLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
-  const [plan, setPlan] = useState('FY27 Q1 APR Plan')
+  // Visual1's own multi-select Plan Name (2026-07-30, was a single pre-picked
+  // string) — empty array shows "Select Plan" and the baseline, unscaled numbers.
+  const [selectedPlans, setSelectedPlans] = useState([])
   const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
@@ -158,7 +179,7 @@ export default function AsuLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
           <Visual2 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
           <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
         </div>

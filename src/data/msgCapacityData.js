@@ -109,11 +109,17 @@ export const HC_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   get adherence() { return +((this.actual / this.plan) * 100).toFixed(1) },
 }))
 
-export function hcStaffingByFY(filters = {}, granularity) {
+// `planSelection` (2026-07-30) closes a KNOWN cosmetic gap: Visual1's own Plan
+// dropdown used to change state without ever feeding into this selector. Reuses
+// planMultiplier — same mechanism slTrendByFY/slDefaulterQueues already use — so
+// every Plan-scaled selector on this page rescales "plan" via the identical
+// function. Omitting planSelection keeps every existing caller's output unchanged.
+export function hcStaffingByFY(filters = {}, granularity, planSelection) {
   const years = effectiveFiscalYears(filters)
   const ratio = capacityScopeRatio(filters)
+  const mult = planMultiplier(planSelection)
   const fyRows = HC_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio * mult), actual: Math.round(d.actual * ratio) }))
   return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }

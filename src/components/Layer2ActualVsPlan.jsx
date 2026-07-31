@@ -8,7 +8,7 @@ import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
   allBucketsQueues, BUCKET_TABLE_COLUMNS,
 } from '../data/insightFactors'
-import { GraphInsightButton, InfoButton, PopupTable } from './ChartKit'
+import { GraphInsightButton, InfoButton, PopupTable, PlanSelect } from './ChartKit'
 import { Modal } from './Modal'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -70,17 +70,6 @@ function Visual({ title, subtitle, children, controls, rca, clca, table, info })
   )
 }
 
-function PlanSelect({ value, onChange }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Plan</label>
-      <select value={value} onChange={e => onChange(e.target.value)} className="select-dark">
-        {PLANS.map(p => <option key={p}>{p}</option>)}
-      </select>
-    </div>
-  )
-}
-
 function truncate(str, n) {
   if (str.length <= n) return str
   const cut = str.slice(0, n)
@@ -94,7 +83,7 @@ function QueueTick({ x, y, payload }) {
   )
 }
 
-function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
+function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
   const data = useMemo(() => actualVsPlanByFY(filters, granularity), [filters, granularity])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
@@ -102,7 +91,7 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
       rca="Adherence dips concentrate in quarters with seasonal call spikes."
       clca="Build a seasonal overlay into the forecast model for those quarters."
       table={table}
@@ -128,7 +117,7 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   )
 }
 
-function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
+function Visual2({ filters, granularity, selectedPlans, onPlansChange }) {
   const data = useMemo(() => stackedAdherenceByFY(filters, granularity), [filters, granularity])
   // Same DB/OSP-agnostic queue count the Total Queues card uses — converts each
   // bucket's % into "how many queues" for the tooltip, since a bare % repeats what
@@ -163,7 +152,7 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
     )
   }
   return (
-    <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
+    <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
       rca="The >30% variance band has been growing year over year."
       clca="Audit queues in the >30% band first — they disproportionately hurt overall accuracy."
       table={table}
@@ -199,7 +188,11 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
 // Diverging bar: one bar per queue showing the actual-vs-plan variance itself, green
 // extending right (ahead), red extending left (behind) — same treatment as Layer 1's
 // CQN chart, so the two "highest variance" visuals read consistently across layers.
-function Visual3({ filters, selectedPlan, onPlanChange }) {
+// Multi-select Plan (2026-07-30) — this is a ranked queue list, not a period trend,
+// so it uses the FIRST selected plan for calculation (documented simplification,
+// same policy as every other ranked-list consumer in this rollout).
+function Visual3({ filters, selectedPlans, onPlansChange }) {
+  const selectedPlan = selectedPlans[0]
   const sorted = useMemo(() => cqnActualVariance(filters, 5, selectedPlan), [filters, selectedPlan])
   // Round to a clean step so axis ticks land on whole numbers (-10/-5/0/5/10, not
   // whatever odd value the raw max happens to be), then pad the plotted domain —
@@ -221,7 +214,7 @@ function Visual3({ filters, selectedPlan, onPlanChange }) {
   }, [filters, selectedPlan])
   return (
     <Visual title="Top Queues by Variance"
-      controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
+      controls={<PlanSelect value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
       rca="Actual-vs-plan misses cluster in a handful of high-volume queues."
       clca="Re-baseline those queues' plans using the last two quarters of actuals."
       table={table}
@@ -249,11 +242,15 @@ function Visual3({ filters, selectedPlan, onPlanChange }) {
 
 export default function Layer2ActualVsPlan({ filters, granularity }) {
   const [open, setOpen] = useState(true)
-  const [plan, setPlan] = useState('FY27 Q1 APR Plan')
+  // Multi-select Plan (2026-07-30, was a single pre-picked string; now defaults to
+  // empty/"Select Plan" like every other Plan dropdown in this rollout) — shared
+  // across all 3 visuals, same as before. Still syncs from the top filter panel's
+  // own Plan Name field when that's set, now wrapped in an array.
+  const [selectedPlans, setSelectedPlans] = useState([])
 
   useEffect(() => {
     const picked = filters.planName?.[0]
-    if (picked && PLANS.includes(picked)) setPlan(picked)
+    if (picked && PLANS.includes(picked)) setSelectedPlans([picked])
   }, [filters.planName])
 
   return (
@@ -273,9 +270,9 @@ export default function Layer2ActualVsPlan({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
-          <Visual2 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
-          <Visual3 filters={filters} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
+          <Visual2 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
+          <Visual3 filters={filters} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
         </div>
       )}
     </div>

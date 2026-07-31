@@ -283,23 +283,37 @@ function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
   return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
 }
 
+// Same "YTD <period>: ..." shape as ytdSub, but bifurcated into DB/OSP's OWN
+// period-over-period % change (2026-07-30) instead of one combined SR %, per direct
+// request — the single "▲ 18.6%" line didn't say whether DB or OSP was driving it.
+function srChannelYtdSub(metric) {
+  if (metric.yoyPct === null || metric.yoyPct === undefined) {
+    return { text: `YTD ${metric.period}: no prior year in scope`, trend: undefined }
+  }
+  const dbUp = metric.db.yoyPct >= 0
+  const ospUp = metric.osp.yoyPct >= 0
+  const dbText = metric.db.yoyPct == null ? 'n/a' : `${dbUp ? '▲' : '▼'} ${Math.abs(metric.db.yoyPct)}%`
+  const ospText = metric.osp.yoyPct == null ? 'n/a' : `${ospUp ? '▲' : '▼'} ${Math.abs(metric.osp.yoyPct)}%`
+  return { text: `YTD ${metric.period}: DB ${dbText} · OSP ${ospText}`, trend: metric.yoyPct >= 0 }
+}
+
 export default function TsaMetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
   const d = useMemo(() => tsaCardData(filters, granularity), [filters, granularity])
   const toggle = key => setActive(prev => prev === key ? null : key)
 
   const asuYtd = ytdSub(d.asuActuals, fmt(d.asuActuals.value))
-  const srYtd = ytdSub(d.srActuals, fmt(d.srActuals.value))
+  const srYtd = srChannelYtdSub(d.srActuals)
   const cpasuYtd = ytdSub(d.cpasu, d.cpasu.value.toFixed(2), { lowerIsBetter: true })
 
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="⬡" label="Total Queues" sublabel="Active / Inactive"
-          value={`${d.totalQueues.active} / ${d.totalQueues.active + d.totalQueues.inactive}`}
-          sub={`${d.totalQueues.inactive} inactive queues`}
+        <Card icon="⬡" label="Total Queues" sublabel="Active"
+          value={`${d.totalQueues.active}`}
+          sub="Active HES queues"
           onClick={() => toggle('totalQueues')} active={active === 'totalQueues'}
-          info="Count of active vs inactive HES queues by region." />
+          info="Count of active HES queues by region." />
         <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}

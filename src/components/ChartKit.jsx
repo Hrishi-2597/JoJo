@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Modal } from './Modal'
+import MultiSelectField from './MultiSelectField'
 
 // Shared chart primitives used across every page (Forecasting, TSA Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
@@ -14,6 +15,19 @@ export const C = {
   metric1: '#38bdf8', metric2: '#fb923c', trend: '#a78bfa',
   ahead: '#34d399', behind: '#f87171',
   grid: 'var(--chart-grid)', tick: '#4a6a85',
+}
+
+// Color for the Nth "extra Plan" series once a Plan Name dropdown allows selecting
+// more than one plan (2026-07-30) — cycles the SAME 2 non-status hues (metric2,
+// trend) rather than introducing new ones or reusing the reserved ahead/behind
+// status colors as generic series identity (which this app deliberately never does
+// — see design_choice.md). Opacity steps down each time the pair repeats, so an
+// open-ended number of selected plans stays visually distinguishable without
+// expanding the palette.
+export function planSeriesColor(index) {
+  const hue = index % 2 === 0 ? C.metric2 : C.trend
+  const opacity = Math.max(0.35, 0.85 - Math.floor(index / 2) * 0.25)
+  return { color: hue, opacity }
 }
 
 // Small per-graph RCA/CLCA popup (2026-07-10) — a lightweight "i" button, deliberately
@@ -238,15 +252,16 @@ export function PlanDropdowns({ planA, planB, onChange, options }) {
   )
 }
 
+// Multi-select checkbox dropdown (2026-07-30, was a plain single-value <select>) —
+// per direct request, reuses the SAME MultiSelectField the filter panel already uses
+// for LOB/Business Partner/etc., rather than a new bespoke widget, so this dropdown
+// looks and behaves identically to every other multi-select in the app (search box,
+// Select all/Clear, checkbox rows). `value`/`onChange` are now an ARRAY of selected
+// plan names (was a single string) — every caller was updated accordingly. Empty
+// selection shows "Select Plan" (MultiSelectField's own empty-state default is "All",
+// which doesn't make sense for a plan picker — overridden via emptyLabel).
 export function PlanSelect({ value, onChange, options, label = 'Plan' }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
-      <select value={value} onChange={e => onChange(e.target.value)} className="select-dark">
-        {options.map(p => <option key={p}>{p}</option>)}
-      </select>
-    </div>
-  )
+  return <MultiSelectField label={label} options={options} value={value} onChange={onChange} emptyLabel="Select Plan" />
 }
 
 // 3-way segmented pill for Region/Country-style toggles (used by every geo map and

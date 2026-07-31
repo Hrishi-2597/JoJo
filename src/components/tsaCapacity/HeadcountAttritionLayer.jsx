@@ -8,7 +8,7 @@ import {
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
+import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton, planSeriesColor } from '../ChartKit'
 
 // Plan A/B-style pickers exclude 'Actual' the same way Forecasting's plan dropdowns
 // already do (see mockData.js's CAPACITY_PLAN_NAMES comment) — this page's own bars
@@ -16,16 +16,27 @@ import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKi
 // vintages to compare it against.
 const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 
-function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => fteByFY(filters, granularity, selectedPlan), [filters, granularity, selectedPlan])
+// Multi-select Plan (2026-07-30) — same full N-series treatment as AsuLayer.jsx's
+// Visual1: empty selection shows the baseline Plan FTE; 1 plan renders identically
+// to the old single-select behavior; 2+ add one Plan FTE bar per plan and drop the
+// Variation % line.
+function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
+  const plans = selectedPlans.length ? selectedPlans : [undefined]
+  const perPlan = useMemo(() => plans.map(p => fteByFY(filters, granularity, p)), [filters, granularity, plans])
+  const data = useMemo(() => perPlan[0].map((row, i) => {
+    const out = { period: row.period, actual: row.actual }
+    plans.forEach((p, pi) => { out[`plan_${pi}`] = perPlan[pi][i].plan })
+    if (plans.length === 1) out.adherence = perPlan[0][i].adherence
+    return out
+  }), [perPlan, plans])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
-      info="Compares actual FTE staffing against a selected plan vintage, period by period."
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
+      info="Compares actual FTE staffing against the selected plan vintage(s), period by period, with a Variation % line shown when exactly one plan is selected."
       rca="Staffing variation widens in quarters right after a hiring freeze."
       clca="Smooth headcount ramp-up across quarters instead of freeze/unfreeze cycles."
       table={table}>
@@ -38,8 +49,13 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan" name="Plan FTE" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Variation %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {plans.map((p, pi) => {
+            const { color, opacity } = planSeriesColor(pi)
+            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan FTE (${p})` : 'Plan FTE'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {plans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="adherence" name="Variation %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
@@ -127,7 +143,7 @@ function Visual2({ filters, granularity }) {
 
 export default function HeadcountAttritionLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
-  const [plan, setPlan] = useState(PLANS[0])
+  const [selectedPlans, setSelectedPlans] = useState([])
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -141,7 +157,7 @@ export default function HeadcountAttritionLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
           <Visual2 filters={filters} granularity={granularity} />
         </div>
       )}

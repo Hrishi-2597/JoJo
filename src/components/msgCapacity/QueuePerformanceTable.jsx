@@ -76,7 +76,11 @@ const COLUMNS = [
 // what we took for other graphs in same capacity page."
 export default function QueuePerformanceTable({ filters }) {
   const [open, setOpen] = useState(true)
-  const [plan, setPlan] = useState(PLAN_NAMES[0])
+  // Multi-select Plan (2026-07-30) — this is a ranked queue list, not a period
+  // trend, so it uses the FIRST selected plan for calculation (documented
+  // simplification, same as UtilizationLayer's ranked-queue visuals).
+  const [selectedPlans, setSelectedPlans] = useState([])
+  const plan = selectedPlans[0]
   const [sortDir, setSortDir] = useState('desc')
 
   const rows = useMemo(() => {
@@ -104,7 +108,7 @@ export default function QueuePerformanceTable({ filters }) {
       {open && (
         <div style={{ padding: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-            <PlanSelect label="Plan" value={plan} onChange={setPlan} options={PLAN_NAMES} />
+            <PlanSelect label="Plan" value={selectedPlans} onChange={setSelectedPlans} options={PLAN_NAMES} />
           </div>
           <div style={{ maxHeight: 360, overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>

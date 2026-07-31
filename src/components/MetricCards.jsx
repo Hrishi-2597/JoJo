@@ -633,11 +633,11 @@ export default function MetricCards({ filters, granularity }) {
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
         <Card id="queues"
-          icon="⬡" label="Total Queues" sublabel="Active / Inactive"
-          value={`${d.totalQueues.active} / ${d.totalQueues.active + d.totalQueues.inactive}`}
-          sub={`${d.totalQueues.inactive} inactive queues`}
+          icon="⬡" label="Total Queues" sublabel="Active"
+          value={`${d.totalQueues.active}`}
+          sub="Active queues"
           onClick={() => toggle('queues')} active={active === 'queues'}
-          info="Count of active vs inactive queues in the current roster, broken down by region and business partner."
+          info="Count of active queues in the current roster, broken down by region and business partner."
         />
         <Card id="volume"
           icon="📞" label="Call Volume" sublabel="Offered & Handled"

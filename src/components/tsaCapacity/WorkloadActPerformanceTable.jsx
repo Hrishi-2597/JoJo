@@ -14,7 +14,10 @@ const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 // Forecasting's ASU/SR Performance table (shared PerformanceMatrixTable component).
 export default function WorkloadActPerformanceTable({ filters }) {
   const [metric, setMetric] = useState('Workload')
-  const [plan, setPlan] = useState(PLANS[0])
+  // Multi-select Plan (2026-07-30) — same first-selected-plan simplification as
+  // AsuSrPerformanceTable.jsx (matrix table, one Plan column per quarter).
+  const [selectedPlans, setSelectedPlans] = useState([])
+  const plan = selectedPlans[0]
 
   const rows = useMemo(() => workloadActPerformanceByLob(filters, metric, plan), [filters, metric, plan])
 
@@ -23,7 +26,7 @@ export default function WorkloadActPerformanceTable({ filters }) {
       title={metric === 'ACT' ? 'ACT Performance' : 'Workload Performance'}
       infoText="Real per-LOB Actual vs Plan (selected Plan Name), by fiscal quarter, with adherence %."
       leftMetric="Workload" rightMetric="ACT" metric={metric} onMetricChange={setMetric}
-      planOptions={PLANS} plan={plan} onPlanChange={setPlan}
+      planOptions={PLANS} plan={selectedPlans} onPlanChange={setSelectedPlans}
       actualLabel="Actual" planLabel="Plan"
       rows={rows}
     />

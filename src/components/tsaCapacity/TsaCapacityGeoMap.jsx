@@ -51,7 +51,11 @@ export default function TsaCapacityGeoMap({ filters }) {
   // Plan Name (2026-07-29) — drives BOTH the hover popup's per-LOB Actual vs Planned
   // headcount + variance AND the map's own choropleth coloring (geoHeadcountByRegion/
   // BySubRegion now take planName too, so switching plans genuinely repaints the map).
-  const [plan, setPlan] = useState(PLANS[0])
+  // Multi-select (2026-07-30) — a map region can only show one color, so this uses
+  // the FIRST selected plan (documented simplification, same policy as every other
+  // single-value-driven consumer in this rollout).
+  const [selectedPlans, setSelectedPlans] = useState([])
+  const plan = selectedPlans[0]
   const regionRows = useMemo(() => geoHeadcountByRegion(filters, plan), [filters, plan])
   const subRegionRows = useMemo(() => geoHeadcountBySubRegion(filters, plan), [filters, plan])
   const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r])), [regionRows])
@@ -81,7 +85,7 @@ export default function TsaCapacityGeoMap({ filters }) {
               rca="Headcount concentration mirrors where the largest LOBs are staffed, not necessarily where attrition risk is highest."
               clca="Cross-check thinly-staffed regions/sub-regions against the Attrition visual before rebalancing headcount." />
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
-              <PlanSelect label="Plan Name" value={plan} onChange={setPlan} options={PLANS} />
+              <PlanSelect label="Plan Name" value={selectedPlans} onChange={setSelectedPlans} options={PLANS} />
               <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
             </div>
           </div>
@@ -90,7 +94,7 @@ export default function TsaCapacityGeoMap({ filters }) {
             <InfoButton info="Headcount adherence (actual vs the selected Plan Name) by region or sub-region, colored from critical (red) to excellent (green). Hover a region/sub-region to see its LOBs' Actual vs Planned headcount and variance." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            Headcount Adherence % · {plan} · {viewMode} view
+            Headcount Adherence % · {plan || 'Baseline plan'} · {viewMode} view
             {selectedKey && (
               <> · Showing <strong style={{ color: 'var(--accent)' }}>{selectedKey}</strong>{' '}
                 <span onClick={() => setSelectedKey(null)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>

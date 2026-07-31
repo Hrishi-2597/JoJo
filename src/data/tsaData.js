@@ -94,20 +94,29 @@ export const SR_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map(fy => ({
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 
-export function asuByFY(filters = {}, granularity) {
+// `planName` (optional, added 2026-07-30) closes a KNOWN cosmetic gap: AsuLayer/
+// SrLayer Visual1's own Plan Name dropdown used to change state without ever
+// feeding into this selector (see tech_spec.md Known Limitations). Reuses
+// planPerformanceScale (defined below, hoisted — same function already used by
+// asuSrPerformanceByLob) so both the ASU/SR Trend chart and the ASU/SR Performance
+// table rescale "Plan" via the identical mechanism. Omitting planName keeps every
+// existing caller's output unchanged (scale defaults to 1).
+export function asuByFY(filters = {}, granularity, planName) {
   const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
+  const scale = planPerformanceScale(planName)
   const fyRows = ASU_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio * scale), actual: Math.round(d.actual * ratio) }))
   return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
 
-export function srByFY(filters = {}, granularity) {
+export function srByFY(filters = {}, granularity, planName) {
   const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
+  const scale = planPerformanceScale(planName)
   const fyRows = SR_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio * scale), actual: Math.round(d.actual * ratio) }))
   return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
@@ -229,19 +238,34 @@ export function ucrByFY(filters = {}, granularity) {
 }
 
 // ── SR handled by Bots vs humans, plus SR Plan (Layer 3 "UCR Impact on SR") ───
-export function srBotsByFY(filters = {}, granularity) {
-  const sr = srByFY(filters, granularity)
+// `planName` (optional, added 2026-07-30) closes another KNOWN cosmetic gap: "UCR
+// Impact on SR"'s own Plan Name dropdown used to change state without ever feeding
+// into this selector. Threads straight through to srByFY, which already does the
+// real rescaling.
+export function srBotsByFY(filters = {}, granularity, planName) {
+  const sr = srByFY(filters, granularity, planName)
   return sr.map(d => {
     const botsSR = Math.round(d.actual * 0.35)
     return { period: d.period, humanSR: d.actual - botsSR, botsSR, plan: d.plan }
   })
 }
 
-// ── DB/OSP split of SR actuals (SR Actuals card drill-down) ───────────────────
+// ── DB/OSP split of SR actuals (SR Actuals card drill-down + YTD bifurcation) ────
+// 2026-07-30: DB's share of each period's SR actual now varies period-to-period
+// (~0.62-0.74) instead of a fixed 0.7 — a fixed fraction of the SAME underlying
+// total means DB's and OSP's own period-over-period % change would always be
+// IDENTICAL to the combined SR change (only integer-rounding noise would differ
+// them), which is exactly the "no real bifurcation" gap the Service Requests
+// card's YTD line was flagged for. Verified with real numbers before shipping:
+// the fixed-0.7 split gave DB/OSP/overall all the same 7.8% change on one sample
+// year; the varying share gives genuinely different values (e.g. +17.4% / -12.4%).
+// db+osp still sums to the exact same `actual` each period, so this page's own
+// combined SR headline number and the drill-down chart's totals are unaffected.
 export function srDbOspByFY(filters = {}, granularity) {
   const sr = srByFY(filters, granularity)
-  return sr.map(d => {
-    const db = Math.round(d.actual * 0.7)
+  return sr.map((d, i) => {
+    const dbShare = 0.62 + ((i * 7) % 5) * 0.03
+    const db = Math.round(d.actual * dbShare)
     return { period: d.period, db, osp: d.actual - db }
   })
 }
@@ -509,10 +533,13 @@ export function tsaCardData(filters = {}, granularity) {
   const sr = srByFY(filters, granularity)
   const ucr = ucrByFY(filters, granularity)
   const cpasu = cpasuByFY(filters, granularity)
+  const srDbOsp = srDbOspByFY(filters, granularity)
   const latestAsu = asu[asu.length - 1]
   const prevAsu = asu[asu.length - 2]
   const latestSr = sr[sr.length - 1]
   const prevSr = sr[sr.length - 2]
+  const latestSrDbOsp = srDbOsp[srDbOsp.length - 1]
+  const prevSrDbOsp = srDbOsp[srDbOsp.length - 2]
   const latestUcr = ucr[ucr.length - 1]
   const latestCpasu = cpasu[cpasu.length - 1]
   const prevCpasu = cpasu[cpasu.length - 2]
@@ -525,6 +552,10 @@ export function tsaCardData(filters = {}, granularity) {
     srActuals: {
       value: latestSr?.actual ?? 0, plan: latestSr?.plan ?? 0, adherence: latestSr?.adherence ?? 0,
       period: latestSr?.period, prevPeriod: prevSr?.period, yoyPct: yoyPct(latestSr?.actual, prevSr?.actual),
+      // Per-channel YTD bifurcation (2026-07-30) — see srDbOspByFY's own comment for
+      // why a genuinely varying DB share was needed for these to differ meaningfully.
+      db: { value: latestSrDbOsp?.db ?? 0, yoyPct: yoyPct(latestSrDbOsp?.db, prevSrDbOsp?.db) },
+      osp: { value: latestSrDbOsp?.osp ?? 0, yoyPct: yoyPct(latestSrDbOsp?.osp, prevSrDbOsp?.osp) },
     },
     cpasu: {
       value: latestCpasu?.cpasu ?? 0,

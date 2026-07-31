@@ -36,9 +36,12 @@ export default function TsaGeoMap({ filters }) {
   // Metric + Plan Name (2026-07-29) — drive BOTH the hover popup's per-LOB breakdown
   // AND the map's own choropleth coloring (geoAdherenceByRegion now takes metric/
   // planName too, so switching either genuinely repaints the map, not just the
-  // hover text).
+  // hover text). Plan Name is multi-select (2026-07-30) but a map region can only
+  // show one color, so this uses the FIRST selected plan (documented simplification,
+  // same policy as every other single-value-driven consumer in this rollout).
   const [metric, setMetric] = useState('ASU')
-  const [plan, setPlan] = useState(PLANS[0])
+  const [selectedPlans, setSelectedPlans] = useState([])
+  const plan = selectedPlans[0]
   const rows = useMemo(() => geoAdherenceByRegion(filters, metric, plan), [filters, metric, plan])
   const accuracyByRegion = useMemo(() => Object.fromEntries(rows.map(r => [r.region, r.adherence])), [rows])
   const hoveredLobs = useMemo(
@@ -65,7 +68,7 @@ export default function TsaGeoMap({ filters }) {
               clca="Prioritize ramp-up support for recently onboarded queues in low-adherence regions." />
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
               <BinaryToggle leftLabel="ASU" rightLabel="SR" value={metric} onChange={setMetric} />
-              <PlanSelect label="Plan Name" value={plan} onChange={setPlan} options={PLANS} />
+              <PlanSelect label="Plan Name" value={selectedPlans} onChange={setSelectedPlans} options={PLANS} />
             </div>
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
@@ -73,7 +76,7 @@ export default function TsaGeoMap({ filters }) {
             <InfoButton info="Choropleth of LOB adherence percentage by region, colored from critical (red) to excellent (green). Hover a region to see its LOBs' ASU/SR actual vs plan and adherence." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            {metric} Adherence % · {plan} · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}
+            {metric} Adherence % · {plan || 'Baseline plan'} · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}
             {selectedKey && (
               <> · Showing <strong style={{ color: 'var(--accent)' }}>{selectedKey}</strong>{' '}
                 <span onClick={() => setSelectedKey(null)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>

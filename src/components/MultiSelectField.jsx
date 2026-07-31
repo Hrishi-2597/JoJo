@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-export default function MultiSelectField({ label, options, value, onChange, mono }) {
+export default function MultiSelectField({ label, options, value, onChange, mono, emptyLabel = 'All' }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const rootRef = useRef(null)
@@ -30,7 +30,7 @@ export default function MultiSelectField({ label, options, value, onChange, mono
     onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt])
   }
 
-  const display = selected.length === 0 ? 'All'
+  const display = selected.length === 0 ? emptyLabel
     : selected.length === 1 ? selected[0]
     : `${selected.length} selected`
 

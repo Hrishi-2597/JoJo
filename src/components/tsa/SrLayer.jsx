@@ -6,7 +6,7 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import { srByFY, srPlanVsPlanByFY, srRegionPlans, srLobImpact } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './TsaChartKit'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -17,16 +17,27 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 // directly, Global has no clean match.
 const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
 
-function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => srByFY(filters, granularity), [filters, granularity])
+// See AsuLayer.jsx's Visual1 for the full rationale — same multi-select Plan Name
+// treatment (2026-07-30): empty selection shows the baseline Plan; 1 selected plan
+// renders identically to the old single-select behavior; 2+ add one Plan bar per
+// plan (planSeriesColor) and drop the Adherence line.
+function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
+  const plans = selectedPlans.length ? selectedPlans : [undefined]
+  const perPlan = useMemo(() => plans.map(p => srByFY(filters, granularity, p)), [filters, granularity, plans])
+  const data = useMemo(() => perPlan[0].map((row, i) => {
+    const out = { period: row.period, actual: row.actual }
+    plans.forEach((p, pi) => { out[`plan_${pi}`] = perPlan[pi][i].plan })
+    if (plans.length === 1) out.adherence = perPlan[0][i].adherence
+    return out
+  }), [perPlan, plans])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
-      info="SR actuals vs the selected plan by fiscal period, with percent adherence."
+    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlans} onChange={onPlansChange} options={PLANS} />}
+      info="SR actuals vs the selected plan(s) by fiscal period, with percent adherence shown when exactly one plan is selected."
       rca="SR actuals are outpacing plan as case complexity rises."
       clca="Add a complexity-adjusted buffer to the SR plan."
       table={table}>
@@ -42,9 +53,14 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 3" />
           <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan"   name="Plan"    fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %"
-            stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {plans.map((p, pi) => {
+            const { color, opacity } = planSeriesColor(pi)
+            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {plans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %"
+              stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
@@ -140,7 +156,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 
 export default function SrLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
-  const [plan, setPlan] = useState('FY27 Q1 APR Plan')
+  const [selectedPlans, setSelectedPlans] = useState([])
   const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
@@ -156,7 +172,7 @@ export default function SrLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
           <Visual2 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
           <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
         </div>

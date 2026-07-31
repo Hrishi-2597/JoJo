@@ -79,6 +79,11 @@ SPoG/
 │   │   │                         specifically because it can't collide with a chart's own bar-click-drill
 │   │   │                         behavior or its Plan/toggle controls — see design_choice.md. See
 │   │   │                         src/data/insightFactors.js below for what generates `table`'s content
+│   │   │                         PlanSelect (2026-07-30, signature change) — was a plain single-value <select>,
+│   │   │                         now a thin wrapper around MultiSelectField.jsx (`value`/`onChange` are now an
+│   │   │                         ARRAY of plan names, emptyLabel="Select Plan" override) — see design_choice.md.
+│   │   │                         New planSeriesColor(index) cycles metric2/trend with stepped opacity for the
+│   │   │                         Nth selected plan on charts that render one extra series per plan.
 │   │   ├── PerformanceMatrixTable.jsx # (2026-07-29) Generic LOB × Fiscal-Quarter matrix table — 2-row header (quarter
 │   │   │                                groups, colSpan 3: Actual/Plan/Adherence%), BinaryToggle + PlanSelect above it,
 │   │   │                                a purple RCA/CLCA pill per row (same convention as msgCapacity/
@@ -466,7 +471,7 @@ No external state library. All state is local React `useState`:
 
 All 12 filters funnel into a small set of selector functions that take `filters` and return the exact data a chart/card needs. Static exports (all-caps) are the underlying datasets; lowercase functions are the live selectors components actually call.
 
-**Filter value shape:** every filter except `dbOsp` is multi-select — its value is an array (`[]` = no selection = matches everything). `dbOsp` alone stays a plain string (`'DB'|'OSP'|'All'`) since it's a 3-way segmented pill (`FilterPanel.jsx`), not a searchable dropdown (`MultiSelectField.jsx`). `matchesMulti(selected, value)` in `mockData.js` is the shared "is this row in scope" check for array-valued filters.
+**Filter value shape:** every filter except `dbOsp` is multi-select — its value is an array (`[]` = no selection = matches everything). `dbOsp` alone stays a plain string (`'DB'|'OSP'|'All'`) since it's a 3-way segmented pill (`FilterPanel.jsx`), not a searchable dropdown (`MultiSelectField.jsx`). `matchesMulti(selected, value)` in `mockData.js` is the shared "is this row in scope" check for array-valued filters. `MultiSelectField.jsx` gained an `emptyLabel` prop (2026-07-30, default `'All'`, every existing filter-panel caller unaffected) — `ChartKit.jsx`'s `PlanSelect` now wraps this same component with `emptyLabel="Select Plan"` instead of maintaining a separate single-value `<select>`.
 
 ### Constants
 ```
@@ -655,7 +660,13 @@ lobScopeRatio(filters) — filterLobs(filters).length / LOB_LIST.length, used to
 ```
 ASU_BY_FY, SR_BY_FY               — {period, plan, actual, adherence (getter)} × 3 FYs, static
 ASU_PLAN_VS_PLAN_BY_FY, SR_PLAN_VS_PLAN_BY_FY — {period, plan1, plan2, variance (getter)} × 3 FYs, static
-asuByFY(filters) / srByFY(filters)                 — narrowed to tsaEffectiveFiscalYears, scaled by lobScopeRatio
+asuByFY(filters, granularity, planName) / srByFY(filters, granularity, planName) — narrowed to
+  tsaEffectiveFiscalYears, scaled by lobScopeRatio. `planName` (2026-07-30) closes a formerly-documented
+  cosmetic gap — AsuLayer/SrLayer Visual1's own Plan Name dropdown used to change state without ever
+  feeding into this selector; now rescales `plan` via planPerformanceScale (reused from
+  asuSrPerformanceByLob). Omitting planName keeps every other caller's output unchanged.
+srBotsByFY(filters, granularity, planName) — {period, humanSR, botsSR, plan} — same 2026-07-30 fix,
+  threads planName straight through to srByFY
 asuPlanVsPlanByFY(filters) / srPlanVsPlanByFY(filters) — same narrowing + scaling
 cpasuByFY(filters) — cpasu = sr.actual / asu.actual per period, rounded to 2 decimals (backs the CPASU card + drill-down)
 planPerformanceScale(planName) (2026-07-29, private) — deterministic scale factor for a named Plan, hashed from
@@ -681,8 +692,11 @@ ucrByFY(filters, granularity) — narrowed to tsaEffectiveFiscalYears, then expa
 srBotsByFY(filters, granularity) — {period, humanSR, botsSR (~35% of actual), plan} — rendered as "SR's" /
   "UCR Handled SR's" in AsuSrTrendLayer Visual2 (display names only; data keys unchanged). Granularity
   flows through via srByFY(filters, granularity) internally; no separate expansion needed here.
-srDbOspByFY(filters) — {period, db (~70% of actual), osp} — backs the Service Requests card's drill-down,
-  rendered as grouped columns (not stacked)
+srDbOspByFY(filters, granularity) — {period, db, osp} — backs the Service Requests card's drill-down
+  (grouped columns, not stacked) AND its card-face YTD bifurcation (2026-07-30). DB's share of `actual`
+  now VARIES per period (~62-74%, was a fixed 70%) — a fixed ratio of the same total makes DB's/OSP's own
+  YoY% identical to the combined %, verified to give a real, independent DB vs OSP YTD split instead
+  (see design_choice.md); db+osp still sums to the exact same `actual` each period
 topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × count, sorted ascending by
   runrate (worst first). Backs the "UCR Runrate with Target" year-click modal (AsuSrTrendLayer Visual3).
   Replaced the old ucrNonAdherentQueues() (queue-level, removed 2026-07-02) now that the drill-down is
@@ -749,11 +763,15 @@ geoAdherenceByRegion(filters, metric='ASU'|'SR', planName) (2026-07-29, signatur
 tsaCardData(filters, granularity) → { totalQueues, asuActuals, srActuals, cpasu, currentUcr }, each the
   latest-period snapshot (asu[asu.length-1] etc., where asu = asuByFY(filters, granularity)) off the
   selector functions above, except totalQueues ({ active, inactive } = TSA_ACTIVE_QUEUE_NAMES.length/
-  TSA_INACTIVE_QUEUE_NAMES.length), which ignores filters entirely. asuActuals/srActuals/cpasu
+  TSA_INACTIVE_QUEUE_NAMES.length — `inactive` still computed, only the CARD FACE stopped displaying it
+  2026-07-30, see design_choice.md), which ignores filters entirely. asuActuals/srActuals/cpasu
   additionally carry { period, prevPeriod, yoyPct } — yoyPct is the % change vs the prior in-scope
   period AT WHATEVER GRANULARITY THE PAGE IS SET TO (2026-07-20 fix — previously always ignored
   granularity and compared FY-over-FY regardless of the toggle), null if there isn't a prior period,
-  backing each card's "YTD <period>: ... vs <prevPeriod>" sub-message.
+  backing each card's "YTD <period>: ... vs <prevPeriod>" sub-message. srActuals additionally carries
+  { db: {value, yoyPct}, osp: {value, yoyPct} } (2026-07-30) — per-channel YTD bifurcation from
+  srDbOspByFY, backing the Service Requests card's own "DB ▲x% · OSP ▲y%" sub-line instead of one
+  combined %.
 ```
 
 ---
@@ -779,8 +797,10 @@ shareByKey(rows, key) — deterministic {key: share} distribution of a queue set
 ```
 
 ```
-hcStaffingByFY(filters, granularity)       — {period, actual, plan, adherence} — HeadcountLayer Visual1 ("Actual vs Plan
-                                              Variation") + FTE/Staffing card modal
+hcStaffingByFY(filters, granularity, planSelection) — {period, actual, plan, adherence} — HeadcountLayer Visual1
+  ("Actual vs Plan Variation") + FTE/Staffing card modal. planSelection (2026-07-30) closes a formerly-
+  cosmetic gap (the dropdown changed state without affecting the chart) — reuses planMultiplier, the
+  same mechanism slTrendByFY/slDefaulterQueues already use on this page
 attritionByFY(filters, granularity, lens)  — {period, headcount, attrition} — still backs the Attrition card's own Modal
                                               popup only (unchanged, "pop up view is good"); NOT used by HeadcountLayer
                                               Visual2 anymore, which uses the dimension selectors below instead
@@ -1102,3 +1122,4 @@ Steps:
 22. ~~`tsaUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math~~ — moot: `tsaUtilByFY` and the "Utilization Variance" visual it backed were removed entirely 2026-07-28
 23. All 4 Geo Maps' `<ComposableMap projectionConfig>` is `{ scale: 100, center: [10, 0] }` (2026-07-28, was `{ scale: 140, center: [10, 20] }` — the old values clipped everything north of ~80°N off the top of the fixed 800×600 viewBox; see `design_choice.md`). Keep these 4 in sync if either ever changes — there's no shared Geo Map component, each page's map duplicates this config independently
 24. HES Capacity's Geo Map headcount (via `geoHeadcountEmphasis()`, 2026-07-28) is now deliberately scaled DIFFERENTLY from the plain headcount `tsaAttritionByDimension` returns for the same region/sub-region key — intentional, and safe, since nothing else in the app displays that same "headcount by region" value for a side-by-side comparison (grep-confirmed); don't reuse `geoHeadcountByRegion`/`geoHeadcountBySubRegion`'s output for anything other than this one map without accounting for the emphasis multiplier
+25. Every "Plan Name" dropdown is multi-select (2026-07-30), but only period-trend Bar+Line charts actually render one series per selected plan — ranked-by-queue/LOB charts (`UtilizationLayer` Visual2/3, both `QueuePerformanceTable`s, `Layer2ActualVsPlan` Visual3), both Performance matrix tables, and both Geo Maps all use only `selectedPlans[0]` for calculation regardless of how many plans are checked; see design_choice.md for why full N-way support wasn't built for these chart shapes
