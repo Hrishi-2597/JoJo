@@ -10,7 +10,7 @@ import {
 import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
 } from '../../data/insightFactors'
-import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick, PlanDropdowns } from '../ChartKit'
+import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick, PlanDropdowns, planVsPlanSeriesColor } from '../ChartKit'
 
 // Real, user-selectable Plan A/Plan B (2026-07-23) — uses the same PLAN_NAMES list as
 // Headcount and SL%'s "Actual vs Plan Variation" dropdown (2026-07-23 follow-up — was
@@ -23,15 +23,55 @@ const PLANS = PLAN_NAMES
 // the base chart, none of which apply to TSA Capacity's simpler plan-vs-plan layer,
 // so it was built as its own component rather than growing the shared one with
 // MSG-only branches (see design_choice.md).
-function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
+// `plansA`/`plansB` (2026-07-31, was a single planA/planB string pair) — same
+// multi-select treatment as the TSA Capacity counterpart. planOverPlanByDimension/
+// planOverPlanTrendByDimension apply planMultiplier(planA)/planMultiplier(planB)
+// fully independently (no "both must be set" gate, unlike the TSA Capacity
+// selectors), and planMultiplier(undefined) safely returns 1 — so the untouched
+// slot in each extraction call can simply stay `undefined`, no placeholder needed.
+function MainChart({ filters, granularity, plansA, plansB, onPlansChange }) {
   const [dimension, setDimension] = useState('Region')
   const [selectedKey, setSelectedKey] = useState(null)
   const dimLabel = dimension === 'SubRegion' ? 'Sub-region' : 'Region'
-  const dimData = useMemo(() => planOverPlanByDimension(filters, dimension, planA, planB), [filters, dimension, planA, planB])
-  const trendData = useMemo(
-    () => (selectedKey ? planOverPlanTrendByDimension(filters, selectedKey, dimension, granularity, planA, planB) : []),
-    [filters, selectedKey, dimension, granularity, planA, planB]
+  const aPlans = plansA.length ? plansA : [undefined]
+  const bPlans = plansB.length ? plansB : [undefined]
+
+  const dimDataA = useMemo(() => aPlans.map(p => planOverPlanByDimension(filters, dimension, p, undefined)), [filters, dimension, aPlans])
+  const dimDataB = useMemo(() => bPlans.map(p => planOverPlanByDimension(filters, dimension, undefined, p)), [filters, dimension, bPlans])
+  const dimData = useMemo(() => {
+    const base = dimDataA[0] || []
+    return base.map(row => {
+      const out = { key: row.key }
+      aPlans.forEach((p, pi) => { out[`planA_${pi}`] = dimDataA[pi].find(d => d.key === row.key)?.plan1 ?? 0 })
+      bPlans.forEach((p, pi) => { out[`planB_${pi}`] = dimDataB[pi].find(d => d.key === row.key)?.plan2 ?? 0 })
+      if (aPlans.length === 1 && bPlans.length === 1) {
+        out.variance = out.planA_0 ? +((out.planB_0 - out.planA_0) / out.planA_0 * 100).toFixed(1) : 0
+      }
+      return out
+    })
+  }, [dimDataA, dimDataB, aPlans, bPlans])
+
+  const trendDataA = useMemo(
+    () => (selectedKey ? aPlans.map(p => planOverPlanTrendByDimension(filters, selectedKey, dimension, granularity, p, undefined)) : []),
+    [filters, selectedKey, dimension, granularity, aPlans]
   )
+  const trendDataB = useMemo(
+    () => (selectedKey ? bPlans.map(p => planOverPlanTrendByDimension(filters, selectedKey, dimension, granularity, undefined, p)) : []),
+    [filters, selectedKey, dimension, granularity, bPlans]
+  )
+  const trendData = useMemo(() => {
+    if (!selectedKey) return []
+    return trendDataA[0].map((row, i) => {
+      const out = { period: row.period }
+      aPlans.forEach((p, pi) => { out[`planA_${pi}`] = trendDataA[pi][i].plan1 })
+      bPlans.forEach((p, pi) => { out[`planB_${pi}`] = trendDataB[pi][i].plan2 })
+      if (aPlans.length === 1 && bPlans.length === 1) {
+        out.variance = out.planA_0 ? +((out.planB_0 - out.planA_0) / out.planA_0 * 100).toFixed(1) : 0
+      }
+      return out
+    })
+  }, [trendDataA, trendDataB, selectedKey, aPlans, bPlans])
+
   const handleDimensionChange = val => {
     setDimension(val === 'Sub-region' ? 'SubRegion' : 'Region')
     setSelectedKey(null)
@@ -67,11 +107,11 @@ function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
       controls={
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />
+          <PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} options={PLANS} />
           {selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
         </div>
       }
-      info="Plan A vs Plan B headcount by region or sub-region; click a bar to drill into that key's own trend."
+      info="Plan A/Plan B headcount by region or sub-region; click a bar to drill into that key's own trend. Percent variance shown when exactly one plan is selected on each side."
       rca="Headcount plan variance is widest in the regions with the newest queues."
       clca="Re-baseline those regions' plans using actual ramp data before the next lock."
       table={table}>
@@ -84,12 +124,20 @@ function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name={planA} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
-            onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
-          <Bar yAxisId="l" dataKey="plan2" name={planB} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
-            onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
-          <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}
-            strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {aPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(pi)
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={50}
+              onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
+          })}
+          {bPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={50}
+              onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
+          })}
+          {aPlans.length === 1 && bPlans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}
+              strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
@@ -100,7 +148,14 @@ function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
 // make it worth") — a diverging bar per queue (not two bars to compare by eye),
 // value-labeled at the bar end, same polished convention as Forecasting's own
 // "Top Queues by Variance" charts (Layer1PlanOverPlan.jsx).
-function QueueVarianceChart({ filters, planA, planB }) {
+// First-selected-plan-only (2026-07-31) — same policy as every other ranked/impact
+// chart in this rollout; the widget stays genuinely multi-select, only the
+// calculation simplifies to the first pick on each side.
+function QueueVarianceChart({ filters, plansA, plansB }) {
+  const planA = plansA[0]
+  const planB = plansB[0]
+  const planALabel = planA || 'Plan A'
+  const planBLabel = planB || 'Plan B'
   const data = useMemo(() => planOverPlanQueueVariance(filters, 8, planA, planB), [filters, planA, planB])
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(1, ...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])
   const domainMax = niceMax * 1.3
@@ -125,14 +180,14 @@ function QueueVarianceChart({ filters, planA, planB }) {
     return (
       <div className="chart-tooltip">
         <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', marginBottom: 5 }}>{label}</p>
-        <p style={{ fontSize: 11, color: C.metric1 }}>{planA}: <span style={{ fontWeight: 600 }}>{row.plan1}</span></p>
-        <p style={{ fontSize: 11, color: C.metric2 }}>{planB}: <span style={{ fontWeight: 600 }}>{row.plan2}</span></p>
+        <p style={{ fontSize: 11, color: C.metric1 }}>{planALabel}: <span style={{ fontWeight: 600 }}>{row.plan1}</span></p>
+        <p style={{ fontSize: 11, color: C.metric2 }}>{planBLabel}: <span style={{ fontWeight: 600 }}>{row.plan2}</span></p>
       </div>
     )
   }
 
   return (
-    <Visual title="Queues with Highest Variation" subtitle={`${planA} vs ${planB}, worst variance first`}
+    <Visual title="Queues with Highest Variation" subtitle={`${planALabel} vs ${planBLabel}, worst variance first`}
       info="Queues with the largest Plan A vs Plan B headcount swing, worst first."
       rca="A small number of queues account for most of the plan-to-plan swing."
       clca="Review these queues' plans first — they carry the most headcount risk."
@@ -164,7 +219,10 @@ export default function PlanOverPlanVariationLayer({ filters, granularity }) {
   // the same two chosen plans, so they read one selection here rather than each
   // keeping an independent copy (unlike UtilizationLayer's 3 visuals, which are
   // deliberately independent).
-  const [plans, setPlans] = useState({ planA: PLANS[0], planB: PLANS[1] || PLANS[0] })
+  // Plan A/Plan B (2026-07-31, was a single pre-picked string pair) — empty arrays
+  // fall back to planMultiplier's own undefined-safe default (1x, i.e. 'Actual'),
+  // matching the empty-selection convention used everywhere else.
+  const [plans, setPlans] = useState({ planA: [], planB: [] })
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
   return (
@@ -179,8 +237,8 @@ export default function PlanOverPlanVariationLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <MainChart filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
-          <QueueVarianceChart filters={filters} planA={plans.planA} planB={plans.planB} />
+          <MainChart filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <QueueVarianceChart filters={filters} plansA={plans.planA} plansB={plans.planB} />
         </div>
       )}
     </div>

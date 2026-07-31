@@ -556,10 +556,24 @@ export const PLAN_VS_PLAN_BY_REGION = REGIONS.map((r, i) => ({
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 
-export function planOverPlanByFY(filters = {}, granularity) {
+// Deterministic scale factor per named Plan (2026-07-31) — same hash-based approach
+// as tsaData.js's planPerformanceScale, reimplemented here since mockData.js (ESG
+// Forecasting) had no equivalent helper yet. Closes a KNOWN cosmetic gap:
+// Layer1PlanOverPlan's Plan A/Plan B dropdowns used to change state without ever
+// feeding into planOverPlanByFY.
+function planNameScale(planName) {
+  if (!planName) return 1
+  let hash = 0
+  for (let i = 0; i < planName.length; i++) hash = (hash * 31 + planName.charCodeAt(i)) % 97
+  return 0.88 + (hash / 96) * 0.24
+}
+
+export function planOverPlanByFY(filters = {}, granularity, planA, planB) {
   const years = effectiveFiscalYears(filters)
+  const scaleA = planNameScale(planA)
+  const scaleB = planNameScale(planB)
   const rows = PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: d.plan1, plan2: d.plan2 }))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * scaleA), plan2: Math.round(d.plan2 * scaleB) }))
   return expandToGranularity(rows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }

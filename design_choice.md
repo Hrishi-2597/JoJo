@@ -42,6 +42,32 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Plan A / Plan B Dropdowns Extended to Multi-Select, Same Pattern as Plan Name (2026-07-31)
+
+**Decision:** Every "Plan A / Plan B" `PlanDropdowns` across the app (`AsuLayer`/`SrLayer`, `Layer1PlanOverPlan`, both Capacity pages' `PlanOverPlanVariationLayer`) was converted from two plain single-value `<select>`s to two `MultiSelectField`s, mirroring the prior day's `PlanSelect` rollout exactly: `planA`/`planB` are now arrays, `onChange(key, val)`'s signature stayed the same so no call site needed to change how it invokes the handler. A new `planVsPlanSeriesColor(index)` cycles all 3 non-status hues (`metric1`/`metric2`/`trend`) rather than reusing `planSeriesColor`'s 2-hue rotation, since a pure Plan A vs Plan B context has no competing "Actual" series reserving `metric1`.
+
+**Why:** Direct follow-up request ("give multiselect options for plan A and Plan B as well, wherever applicable across graphs") explicitly generalizing the prior day's accepted `PlanSelect` treatment to the other dropdown family in the app. No new clarification was needed — the shape of the problem (multi-select widget + full-N-series-on-trend-charts / first-plan-only-on-ranked-charts) had already been decided and validated for `PlanSelect`; extending the identical reasoning to a two-sided A/B picker was the reasonable, consistent continuation rather than a decision requiring fresh input.
+
+## Plan A/B Multi-Series Uses a Combined A-then-B Color Index, Not Separate "A-Family"/"B-Family" Hue Sets (2026-07-31)
+
+**Decision:** When N plans are selected on the A side and M on the B side, all N+M bars draw their color from one running index (`planVsPlanSeriesColor(0..N+M-1)`) — all A-side bars first, then all B-side bars — rather than giving each side its own independent hue rotation.
+
+**Why:** The safe non-status palette only has 3 hues (`metric1`/`metric2`/`trend`) before colors start repeating; splitting them into a 1.5-hue "A-family" and a 1.5-hue "B-family" would run out of visual distinctness even faster than the combined approach, and would make an A-side bar and a B-side bar accidentally share the exact same color at low selection counts (e.g. 1 A-plan and 1 B-plan both landing on the same hue). A single combined index guarantees the first A-plan and first B-plan always get visually distinct colors, which matters far more than preserving a strict "blue-ish is always A" convention that breaks down after 2 selections anyway.
+
+## Closed the Plan A/B Cosmetic Gap Only Where the Chart's Entire Purpose IS the Comparison (2026-07-31)
+
+**Decision:** `asuPlanVsPlanByFY`/`srPlanVsPlanByFY` (`tsaData.js`) and a new `planNameScale()` (`mockData.js`, mirroring `tsaData.js`'s `planPerformanceScale`) now genuinely rescale `plan1`/`plan2` by `planA`/`planB` — closing a cosmetic gap where these dropdowns previously only relabeled fixed bars. This was done for `AsuLayer`/`SrLayer` Visual2 ("Plan vs Plan Comparison") and `Layer1PlanOverPlan` Visual1 ("PoP Variation") specifically. The sibling region/impact/ranked charts in the SAME files (`AsuLayer`/`SrLayer` Visual3 "Plan Impact", `Layer1PlanOverPlan` Visual2/3) were deliberately left static/cosmetic, receiving only the multi-select widget and array-safe labels.
+
+**Why:** Same "cheap, directly relevant, in-scope" bar the prior day's rollout used for its 3 cosmetic-gap fixes — a chart literally titled "Plan vs Plan Comparison" showing two identical bars regardless of which two plans are picked is actively misleading, and the fix reuses each page's own already-established scale mechanism, so the risk is low. The region/impact/ranked charts, by contrast, are already governed by the separate "first-selected-plan-only, no new selector wiring" policy for ranked/impact chart shapes (see the 2026-07-30 entry above) — rewiring their underlying static datasets would be new, non-trivial selector work outside that established boundary, not a cheap while-I'm-here fix.
+
+## Capacity Pages' Already-Functional Plan A/B Selectors Use a Placeholder Argument to Extract One Side at a Time (2026-07-31)
+
+**Decision:** Both Capacity pages' `PlanOverPlanVariationLayer.jsx` `MainChart`s call their already-plan-reactive selectors (`tsaPlanOverPlanByDimension`/`tsaPlanOverPlanTrendByDimension`, `planOverPlanByDimension`/`planOverPlanTrendByDimension`) once per selected plan on each side, passing a placeholder value for the untouched slot and keeping only the field that slot's real argument controls (`plan1` for `planA`, `plan2` for `planB`). TSA Capacity's selectors need a real, valid plan name as the placeholder (`PLAN_PLACEHOLDER`, a fixed constant) because they only apply named-plan scaling when BOTH `planA` and `planB` are non-null; MSG Capacity's selectors have no such gate (`planMultiplier(undefined)` safely returns a 1x no-op), so plain `undefined` works there.
+
+**Why:** Confirmed via source that each selector's `plan1`/`plan2` fields are computed fully independently (`planFyValue(fy, planA)` / `planFyValue(fy, planB)`, or `planMultiplier(planA)` / `planMultiplier(planB)`) — changing the untouched slot's argument never affects the field being extracted, so this avoids having to modify either selector's signature to accept arrays directly, at the cost of one "wasted" field per call. Verified with a Node smoke test that both selectors' region/sub-region key ORDER stays identical across different `planA`/`planB` values (both selectors sort by a share-weighted magnitude that a single scalar multiplier can't reorder), which is what makes it safe to merge each per-plan result back together by matching `key`.
+
+---
+
 ## Both Geo Maps' Choropleth Now Colors by Plan Adherence, Not a Plan-Blind Metric (2026-07-29)
 
 **Decision:** Both `TsaGeoMap.jsx` and `TsaCapacityGeoMap.jsx` now color their regions/sub-regions by a genuine adherence-to-Plan percentage (`geoAdherenceByRegion(filters, metric, planName)` for Forecasting; `geoHeadcountByRegion`/`geoHeadcountBySubRegion(filters, planName)` for Capacity), replacing colorings that were entirely blind to the Plan Name selector — Forecasting's map previously colored a synthetic per-region adherence unrelated to ASU/SR; Capacity's map previously colored raw headcount level relative to the current view's own peak.

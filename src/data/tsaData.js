@@ -121,20 +121,31 @@ export function srByFY(filters = {}, granularity, planName) {
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
 
-export function asuPlanVsPlanByFY(filters = {}, granularity) {
+// `planA`/`planB` (optional, added 2026-07-31) close a KNOWN cosmetic gap: Visual2
+// "Plan vs Plan Comparison"'s own Plan A/Plan B dropdowns used to change state
+// without ever feeding into this selector (they only relabeled the legend). Reuses
+// planPerformanceScale independently per side — plan1 depends only on planA, plan2
+// only on planB — same mechanism asuByFY/srByFY already use for their Plan Name
+// dropdown, so this stays consistent with the rest of the page rather than
+// inventing a second scaling function.
+export function asuPlanVsPlanByFY(filters = {}, granularity, planA, planB) {
   const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
+  const scaleA = planPerformanceScale(planA)
+  const scaleB = planPerformanceScale(planB)
   const fyRows = ASU_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio * scaleA), plan2: Math.round(d.plan2 * ratio * scaleB) }))
   return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
-export function srPlanVsPlanByFY(filters = {}, granularity) {
+export function srPlanVsPlanByFY(filters = {}, granularity, planA, planB) {
   const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
+  const scaleA = planPerformanceScale(planA)
+  const scaleB = planPerformanceScale(planB)
   const fyRows = SR_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio * scaleA), plan2: Math.round(d.plan2 * ratio * scaleB) }))
   return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }

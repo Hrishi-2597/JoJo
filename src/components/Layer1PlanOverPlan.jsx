@@ -7,7 +7,7 @@ import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } f
 import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
 } from '../data/insightFactors'
-import { GraphInsightButton, InfoButton, PopupTable } from './ChartKit'
+import { GraphInsightButton, InfoButton, PopupTable, PlanDropdowns, planVsPlanSeriesColor } from './ChartKit'
 import { Modal } from './Modal'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -16,22 +16,10 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 // green/red are reserved for the diverging chart, where they mean ahead/behind.
 const C = { plan1: '#38bdf8', plan2: '#fb923c', variance: '#a78bfa', ahead: '#34d399', behind: '#f87171', grid: 'var(--chart-grid)', tick: '#4a6a85' }
 
-function PlanDropdowns({ planA, planB, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-      {[['planA', planA, 'A'], ['planB', planB, 'B']].map(([key, val, lbl]) => (
-        <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Plan {lbl}
-          </label>
-          <select value={val} onChange={e => onChange(key, e.target.value)} className="select-dark">
-            {PLANS.map(p => <option key={p}>{p}</option>)}
-          </select>
-        </div>
-      ))}
-    </div>
-  )
-}
+// Local PlanDropdowns duplicate removed 2026-07-31 in favor of the shared,
+// now-multi-select ChartKit.jsx PlanDropdowns (same precedent as Layer2ActualVsPlan's
+// PlanSelect cleanup) — the local `Visual`/`Tip`/`C` above still stay local since they
+// predate the ChartKit.jsx promotion and are unrelated to this task.
 
 const Tip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -91,19 +79,37 @@ function QueueTick({ x, y, payload }) {
 }
 
 
-function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
-  const data = useMemo(() => planOverPlanByFY(filters, granularity), [filters, granularity])
+// `plansA`/`plansB` (2026-07-31, was a single planA/planB string pair) — same
+// multi-select treatment as AsuLayer.jsx's Visual2: planOverPlanByFY now takes
+// planA/planB independently (plan1 only depends on planA, plan2 only on planB —
+// see mockData.js), called once per selected plan on each side using `undefined` as
+// a no-op placeholder for the other slot. Variance % line only when exactly one
+// plan is selected on each side.
+function Visual1({ filters, granularity, plansA, plansB, onPlansChange }) {
+  const aPlans = plansA.length ? plansA : [undefined]
+  const bPlans = plansB.length ? plansB : [undefined]
+  const perA = useMemo(() => aPlans.map(p => planOverPlanByFY(filters, granularity, p, undefined)), [filters, granularity, aPlans])
+  const perB = useMemo(() => bPlans.map(p => planOverPlanByFY(filters, granularity, undefined, p)), [filters, granularity, bPlans])
+  const data = useMemo(() => perA[0].map((row, i) => {
+    const out = { period: row.period }
+    aPlans.forEach((p, pi) => { out[`planA_${pi}`] = perA[pi][i].plan1 })
+    bPlans.forEach((p, pi) => { out[`planB_${pi}`] = perB[pi][i].plan2 })
+    if (aPlans.length === 1 && bPlans.length === 1) {
+      out.variance = out.planA_0 ? +((out.planB_0 - out.planA_0) / out.planA_0 * 100).toFixed(1) : 0
+    }
+    return out
+  }), [perA, perB, aPlans, bPlans])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, period: d.period, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="PoP Variation" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
+    <Visual title="PoP Variation" controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} />}
       rca="Plan-to-plan gaps widen most in quarters with late AOP updates."
       clca="Lock plan revisions earlier in the quarter to shrink the variance window."
       table={table}
-      info="Plan A vs Plan B volume by fiscal year (or sub-period), with the resulting variance % line.">
+      info="Plan A vs Plan B volume by fiscal year (or sub-period), with percent variance shown when exactly one plan is selected on each side.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -115,17 +121,30 @@ function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name={planA} fill={C.plan1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan2" name={planB} fill={C.plan2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.variance}
-            strokeWidth={2} dot={{ r: 3, fill: C.variance, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {aPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(pi)
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {bPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {aPlans.length === 1 && bPlans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.variance}
+              strokeWidth={2} dot={{ r: 3, fill: C.variance, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
   )
 }
 
-function Visual2({ filters, planA, planB, onPlanChange }) {
+// planOverPlanByRegion is confirmed cosmetic (static per-region table, ignores any
+// plan argument) — same first-selected-plan-only policy as ranked/impact charts
+// elsewhere in this rollout, used here purely for the legend labels.
+function Visual2({ filters, plansA, plansB, onPlansChange }) {
+  const planA = plansA[0]
+  const planB = plansB[0]
   const data = useMemo(() => planOverPlanByRegion(filters), [filters])
   const table = useMemo(() => ({
     title: 'What contributed, by region',
@@ -133,7 +152,7 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
     rows: data.flatMap(d => contributingFactors(d.region, d.region, 1).map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Regional Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
+    <Visual title="Regional Plan Variance" controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} />}
       rca="LATAM and APJ tend to show the largest regional swings against Plan A."
       clca="Add a region-specific buffer to Plan B for the regions swinging most."
       table={table}
@@ -149,8 +168,8 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name={planA} fill={C.plan1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
-          <Bar yAxisId="l" dataKey="plan2" name={planB} fill={C.plan2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
+          <Bar yAxisId="l" dataKey="plan1" name={planA || 'Plan A'} fill={C.plan1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
+          <Bar yAxisId="l" dataKey="plan2" name={planB || 'Plan B'} fill={C.plan2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
           <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.variance}
             strokeWidth={2} dot={{ r: 3, fill: C.variance, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
@@ -162,7 +181,12 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
 // Diverging bar: one bar per queue showing the variance itself (not two bars the
 // reader has to compare) — green extends right (ahead of Plan A), red extends left
 // (behind). Full plan1/plan2 values and the queue's full name are in the tooltip.
-function Visual3({ filters, planA, planB, onPlanChange }) {
+// cqnPlanVariance is confirmed cosmetic (each queue's plan1/plan2/planVariance are
+// precomputed static fields, no plan argument) — first-selected-plan-only, same as
+// Visual2 above.
+function Visual3({ filters, plansA, plansB, onPlansChange }) {
+  const planA = plansA[0]
+  const planB = plansB[0]
   const data = useMemo(() => cqnPlanVariance(filters), [filters])
   // Round to a clean step so axis ticks land on whole numbers (-10/-5/0/5/10, not
   // whatever odd value the raw max happens to be), then pad the plotted domain —
@@ -185,7 +209,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   }, [filters])
   return (
     <Visual title="Top Queues by Variance"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
+      controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} />}
       rca="A small set of queues accounts for most of the plan-to-plan swing."
       clca="Prioritize a plan review for the queues topping this list before broader changes."
       table={table}
@@ -212,7 +236,10 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 }
 
 export default function Layer1PlanOverPlan({ filters, granularity }) {
-  const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
+  // Plan A/Plan B (2026-07-31, was a single pre-picked string pair) — empty arrays
+  // show generic "Plan A"/"Plan B" baseline (unscaled) bars, matching the same
+  // empty-selection convention as every other multi-select Plan dropdown.
+  const [plans, setPlans] = useState({ planA: [], planB: [] })
   const [open, setOpen] = useState(true)
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
@@ -223,8 +250,8 @@ export default function Layer1PlanOverPlan({ filters, granularity }) {
     const picked = filters.planName?.[0]
     if (picked && PLANS.includes(picked)) {
       setPlans(p => ({
-        planA: picked,
-        planB: p.planB !== picked ? p.planB : PLANS.find(pl => pl !== picked) || p.planB,
+        planA: [picked],
+        planB: p.planB[0] !== picked ? p.planB : [PLANS.find(pl => pl !== picked) || picked],
       }))
     }
   }, [filters.planName])
@@ -246,9 +273,9 @@ export default function Layer1PlanOverPlan({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
-          <Visual2 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
-          <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
+          <Visual1 filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <Visual2 filters={filters} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <Visual3 filters={filters} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
         </div>
       )}
     </div>

@@ -84,6 +84,11 @@ SPoG/
 │   │   │                         ARRAY of plan names, emptyLabel="Select Plan" override) — see design_choice.md.
 │   │   │                         New planSeriesColor(index) cycles metric2/trend with stepped opacity for the
 │   │   │                         Nth selected plan on charts that render one extra series per plan.
+│   │   │                         PlanDropdowns (2026-07-31, same signature change) — was two plain single-value
+│   │   │                         <select>s, now two MultiSelectFields (planA/planB are ARRAYs, onChange(key, val)
+│   │   │                         unchanged). New planVsPlanSeriesColor(index) cycles all 3 non-status hues
+│   │   │                         (metric1/metric2/trend — no competing "Actual" series in a pure Plan A vs Plan
+│   │   │                         B context, unlike planSeriesColor) across the combined A-then-B series list.
 │   │   ├── PerformanceMatrixTable.jsx # (2026-07-29) Generic LOB × Fiscal-Quarter matrix table — 2-row header (quarter
 │   │   │                                groups, colSpan 3: Actual/Plan/Adherence%), BinaryToggle + PlanSelect above it,
 │   │   │                                a purple RCA/CLCA pill per row (same convention as msgCapacity/
@@ -1123,3 +1128,4 @@ Steps:
 23. All 4 Geo Maps' `<ComposableMap projectionConfig>` is `{ scale: 100, center: [10, 0] }` (2026-07-28, was `{ scale: 140, center: [10, 20] }` — the old values clipped everything north of ~80°N off the top of the fixed 800×600 viewBox; see `design_choice.md`). Keep these 4 in sync if either ever changes — there's no shared Geo Map component, each page's map duplicates this config independently
 24. HES Capacity's Geo Map headcount (via `geoHeadcountEmphasis()`, 2026-07-28) is now deliberately scaled DIFFERENTLY from the plain headcount `tsaAttritionByDimension` returns for the same region/sub-region key — intentional, and safe, since nothing else in the app displays that same "headcount by region" value for a side-by-side comparison (grep-confirmed); don't reuse `geoHeadcountByRegion`/`geoHeadcountBySubRegion`'s output for anything other than this one map without accounting for the emphasis multiplier
 25. Every "Plan Name" dropdown is multi-select (2026-07-30), but only period-trend Bar+Line charts actually render one series per selected plan — ranked-by-queue/LOB charts (`UtilizationLayer` Visual2/3, both `QueuePerformanceTable`s, `Layer2ActualVsPlan` Visual3), both Performance matrix tables, and both Geo Maps all use only `selectedPlans[0]` for calculation regardless of how many plans are checked; see design_choice.md for why full N-way support wasn't built for these chart shapes
+26. Same as #25 but for every "Plan A / Plan B" `PlanDropdowns` (2026-07-31): full N-series rendering only on the charts whose entire purpose IS the Plan A/B comparison (`AsuLayer`/`SrLayer` Visual2, `Layer1PlanOverPlan` Visual1, both Capacity pages' `PlanOverPlanVariationLayer` `MainChart`s) — the region/impact/ranked-variance charts sharing those same widgets (`AsuLayer`/`SrLayer` Visual3, `Layer1PlanOverPlan` Visual2/3, `LobVarianceChart`, `QueueVarianceChart`) use only `plansA[0]`/`plansB[0]` regardless of how many plans are checked on either side, same rationale as #25

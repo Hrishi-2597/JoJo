@@ -30,6 +30,20 @@ export function planSeriesColor(index) {
   return { color: hue, opacity }
 }
 
+// Color for the Nth series in a pure Plan A vs Plan B comparison (2026-07-31), used
+// once PlanDropdowns above allows multi-selecting each side. Unlike planSeriesColor
+// (single-Plan-Name vs a fixed "Actual" series, which reserves metric1 for Actual),
+// there's no competing Actual series here, so metric1 joins the cycle too — 3 safe
+// hues instead of 2. Callers pass one running index across the combined A-then-B
+// list (all selected Plan A entries first, then all selected Plan B entries) so two
+// adjacent series never collide even across the A/B boundary.
+export function planVsPlanSeriesColor(index) {
+  const hues = [C.metric1, C.metric2, C.trend]
+  const hue = hues[index % hues.length]
+  const opacity = Math.max(0.35, 0.85 - Math.floor(index / hues.length) * 0.25)
+  return { color: hue, opacity }
+}
+
 // Small per-graph RCA/CLCA popup (2026-07-10) — a lightweight "i" button, deliberately
 // not a full sidebar-style panel: one RCA sentence + one CLCA sentence, since the
 // request was explicit about keeping this small ("don't exaggerate it"). Lives in its
@@ -235,19 +249,17 @@ export function CategoryTick({ x, y, payload }) {
   )
 }
 
+// Multi-select Plan A / Plan B (2026-07-30, was two plain single-value <select>s) —
+// per direct follow-up request, each side is now its own MultiSelectField (same
+// widget PlanSelect above and the filter panel already use), value/onChange for
+// both `planA`/`planB` are now ARRAYS. `onChange(key, val)`'s signature is
+// unchanged, so no call site needed to change how it invokes onChange — only what
+// `planA`/`planB` themselves hold.
 export function PlanDropdowns({ planA, planB, onChange, options }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-      {[['planA', planA, 'A'], ['planB', planB, 'B']].map(([key, val, lbl]) => (
-        <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Plan {lbl}
-          </label>
-          <select value={val} onChange={e => onChange(key, e.target.value)} className="select-dark">
-            {options.map(p => <option key={p}>{p}</option>)}
-          </select>
-        </div>
-      ))}
+      <MultiSelectField label="Plan A" options={options} value={planA} onChange={val => onChange('planA', val)} emptyLabel="Select Plan A" />
+      <MultiSelectField label="Plan B" options={options} value={planB} onChange={val => onChange('planB', val)} emptyLabel="Select Plan B" />
     </div>
   )
 }

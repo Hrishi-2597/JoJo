@@ -6,7 +6,7 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import { srByFY, srPlanVsPlanByFY, srRegionPlans, srLobImpact } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor } from './TsaChartKit'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor, planVsPlanSeriesColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -67,16 +67,33 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
   )
 }
 
-function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
-  const data = useMemo(() => srPlanVsPlanByFY(filters, granularity), [filters, granularity])
+// See AsuLayer.jsx's Visual2 for the full rationale — same multi-select Plan A/
+// Plan B treatment (2026-07-31): each side calls srPlanVsPlanByFY independently
+// (plan1 depends only on planA, plan2 only on planB), one extra bar per selected
+// plan on each side, Variance % line only when exactly one plan is selected on
+// each side.
+function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
+  const aPlans = plansA.length ? plansA : [undefined]
+  const bPlans = plansB.length ? plansB : [undefined]
+  const perA = useMemo(() => aPlans.map(p => srPlanVsPlanByFY(filters, granularity, p, undefined)), [filters, granularity, aPlans])
+  const perB = useMemo(() => bPlans.map(p => srPlanVsPlanByFY(filters, granularity, undefined, p)), [filters, granularity, bPlans])
+  const data = useMemo(() => perA[0].map((row, i) => {
+    const out = { period: row.period }
+    aPlans.forEach((p, pi) => { out[`planA_${pi}`] = perA[pi][i].plan1 })
+    bPlans.forEach((p, pi) => { out[`planB_${pi}`] = perB[pi][i].plan2 })
+    if (aPlans.length === 1 && bPlans.length === 1) {
+      out.variance = out.planA_0 ? +((out.planB_0 - out.planA_0) / out.planA_0 * 100).toFixed(1) : 0
+    }
+    return out
+  }), [perA, perB, aPlans, bPlans])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
-      info="SR compared between two selected plans by fiscal period, with percent variance."
+    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} options={PLANS} />}
+      info="SR compared between the selected Plan A/Plan B plans by fiscal period, with percent variance shown when exactly one plan is selected on each side."
       rca="Plan variance for SR is widest in the most recent quarter."
       clca="Reconcile plans against the latest actuals before the next AOP cycle."
       table={table}>
@@ -91,17 +108,30 @@ function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name={planA} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="plan2" name={planB} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}
-            strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          {aPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(pi)
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {bPlans.map((p, pi) => {
+            const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+          })}
+          {aPlans.length === 1 && bPlans.length === 1 && (
+            <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}
+              strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
   )
 }
 
-function Visual3({ filters, planA, planB, onPlanChange }) {
+// See AsuLayer.jsx's Visual3 for the full rationale — srRegionPlans/srLobImpact are
+// confirmed cosmetic (static, no plan dependency), so this stays
+// first-selected-plan-only for labels only.
+function Visual3({ filters, plansA, plansB, onPlansChange }) {
+  const planA = plansA[0]
+  const planB = plansB[0]
   const [selectedRegion, setSelectedRegion] = useState(null)
   const data = useMemo(() => srRegionPlans(filters), [filters])
   const lobImpact = useMemo(() => selectedRegion ? srLobImpact(selectedRegion) : [], [selectedRegion])
@@ -113,7 +143,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} options={PLANS} />}
       info="Each region's SR gap between the two selected plans; click a region to see contributing LOBs."
       rca="SR impact concentrates in a small number of LOBs per region."
       clca="Prioritize staffing reviews for the top LOBs in the highest-impact region."
@@ -126,9 +156,9 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="planA" name={planA} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
+          <Bar dataKey="planA" name={planA || 'Plan A'} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
             onClick={d => setSelectedRegion(prev => prev === d.region ? null : d.region)} style={{ cursor: 'pointer' }} />
-          <Bar dataKey="planB" name={planB} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
+          <Bar dataKey="planB" name={planB || 'Plan B'} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
             onClick={d => setSelectedRegion(prev => prev === d.region ? null : d.region)} style={{ cursor: 'pointer' }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -157,7 +187,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 export default function SrLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [selectedPlans, setSelectedPlans] = useState([])
-  const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
+  const [plans, setPlans] = useState({ planA: [], planB: [] })
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
   return (
@@ -173,8 +203,8 @@ export default function SrLayer({ filters, granularity }) {
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
-          <Visual2 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
-          <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
+          <Visual2 filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <Visual3 filters={filters} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
         </div>
       )}
     </div>
