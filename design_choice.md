@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Forecasting Layer 03 Renamed "CPASU/UCR Trend" (2026-07-31)
+
+**Decision:** `AsuSrTrendLayer.jsx`'s layer header — "ASU/UCR Impact on SR Analysis" → "CPASU/UCR Trend". Subtitle ("— CPASU & UCR runrate"), badge "03", and all 3 visuals underneath are unchanged.
+
+**Why:** Direct rename request with a screenshot — a plain relabeling, no structural or data change implied.
+
+---
+
 ## Total Queues Card Face Shows Active Only; the Drill-Down Directories Were Left Alone (2026-07-30)
 
 **Decision:** Both ESG Forecasting's and HES Forecasting's "Total Queues" KPI card now shows just the active count (value + sublabel + sub-line all dropped "Inactive"). Neither page's drill-down modal was touched — HES Forecasting's directory already only listed active queues before this change; ESG Forecasting's "Queue Directory — Active & Inactive" modal (with its own Business Partner active/inactive split table) was left exactly as built.

@@ -135,7 +135,7 @@ SPoG/
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan, Plan Impact (region→LOB drill)
 │   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric
-│   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "ASU/UCR Impact on SR Analysis" — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
+│   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis") — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle ASU/SR retitles "ASU
 │   │       │                               Performance"/"SR Performance"; wraps PerformanceMatrixTable.jsx + tsaData.js's
 │   │       │                               asuSrPerformanceByLob()
@@ -197,7 +197,7 @@ TsaForecastingPage
 │   └── Visual3 "Plan Impact"                 — ComposedChart: asuRegionPlans(filters) grouped bars (AMER/APJ/EMEA/Global);
 │                                                clicking a region bar renders asuLobImpact(region) as an inline delta list
 ├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 3-visual structure/names as AsuLayer, SR metric
-├── AsuSrTrendLayer(filters) — "ASU/UCR Impact on SR Analysis", collapsible, badge "03"
+├── AsuSrTrendLayer(filters) — "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis"), collapsible, badge "03"
 │   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByRegion(filters) grouped bars/line by default (one group per
 │   │                           IMPACT_REGIONS entry); clicking a region switches to cpasuTrendByRegion(filters, region)
 │   │                           at whichever granularity regionTrendGranularity(filters) resolves to (Week > Quarter > Year)

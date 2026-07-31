@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting Layer 03 Renamed to "CPASU/UCR Trend" (2026-07-31)
+
+- `AsuSrTrendLayer.jsx`'s layer header — "ASU/UCR Impact on SR Analysis" → "CPASU/UCR Trend", per direct request with a screenshot. Subtitle ("— CPASU & UCR runrate") and the badge/visuals underneath are unchanged.
+- **Verified**: `npm run build` clean.
+
 ## Multi-Select Plan A / Plan B Dropdowns, App-Wide (2026-07-31)
 
 Direct follow-up to the prior day's single "Plan Name" multi-select rollout: extended the same treatment to every "Plan A / Plan B" comparison dropdown (`PlanDropdowns`) across all 4 pages.

@@ -858,3 +858,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Every `plans.planA`/`plans.planB` (or equivalent) state converted from a pre-picked string to an empty array, matching the established empty-selection convention.
 - Verified with `npm run build` (clean, 1186 modules), a grep sweep confirming no remaining `PlanDropdowns` call site still passes a bare string, and Node smoke tests confirming `asuPlanVsPlanByFY`/`srPlanVsPlanByFY`/`planOverPlanByFY` now vary independently per side, and that both Capacity pages' region/sub-region key order stays stable across different `planA`/`planB` choices (needed for the safe key-based series merge).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 66 — 2026-07-31
+**Input:** change the layer name to - CPASU/UCR Trend *(screenshot of HES Forecasting Layer 03's header, "ASU/UCR IMPACT ON SR ANALYSIS — CPASU & UCR runrate")*
+
+**Action:**
+- `AsuSrTrendLayer.jsx`'s layer header text changed from "ASU/UCR Impact on SR Analysis" to "CPASU/UCR Trend" — subtitle, badge, and visuals untouched.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
