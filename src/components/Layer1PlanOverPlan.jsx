@@ -7,7 +7,7 @@ import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } f
 import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
 } from '../data/insightFactors'
-import { GraphInsightButton, InfoButton, PopupTable, PlanDropdowns, planVsPlanSeriesColor } from './ChartKit'
+import { GraphInsightButton, InfoButton, PopupTable, PlanDropdowns, planVsPlanSeriesColor, ComingSoonOverlay } from './ChartKit'
 import { Modal } from './Modal'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -58,7 +58,7 @@ function Visual({ title, subtitle, children, controls, rca, clca, table, info })
       {children}
       {table && tableOpen && (
         <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
-          <PopupTable table={table} />
+          <ComingSoonOverlay><PopupTable table={table} /></ComingSoonOverlay>
         </Modal>
       )}
     </div>

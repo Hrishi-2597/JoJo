@@ -42,7 +42,7 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
       info="ASU actuals vs the selected plan(s) by fiscal period, with percent adherence shown when exactly one plan is selected."
       rca="ASU actuals are trending below plan in the most recent fiscal year."
       clca="Re-forecast ASU using the latest onboarding velocity before the next lock."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -100,7 +100,7 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
       info="ASU compared between the selected Plan A/Plan B plans by fiscal period, with percent variance shown when exactly one plan is selected on each side."
       rca="Plan B consistently understates ASU relative to Plan A."
       clca="Reconcile the two plans against actuals before selecting a primary."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -158,7 +158,7 @@ function Visual3({ filters, plansA, plansB, onPlansChange }) {
       info="Each region's ASU gap between the two selected plans; click a region to see contributing LOBs."
       rca="A few LOBs drive most of each region's ASU impact."
       clca="Focus region reviews on the top-contributing LOBs shown here."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

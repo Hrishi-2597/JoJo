@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "Coming Soon" Overlay on ESG/HES Forecasting Graph Pop-Ups (2026-07-31)
+
+- Every graph's existing click-title-for-details pop-up on ESG Forecasting (`Layer1PlanOverPlan.jsx`, `Layer2ActualVsPlan.jsx`) and HES Forecasting (`AsuLayer.jsx`, `SrLayer.jsx`, `AsuSrTrendLayer.jsx` — including its separate bar-click "Top 5 Non-Adherent LOBs" modal) now shows a professional dark+blur overlay layered on top of the real content, with a large "COMING SOON" pill centered at the top. The real table/data underneath is NOT hidden — it stays fully rendered, just darkened and blurred through the overlay.
+- New shared `ComingSoonOverlay` component in `ChartKit.jsx` — wraps `children`, renders them normally, then an absolutely-positioned `rgba(4,10,18,0.62)` + `backdrop-filter: blur(5px)` layer on top with the "Coming Soon" pill.
+- Scoped via a new opt-in `comingSoon` prop on the shared `Visual` component (default `false`) — set only on HES Forecasting's `Visual` call sites that have a `table` prop. ESG Forecasting's `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx` have their own local `Visual` duplicates (pre-date the shared `ChartKit.jsx`), so those wrap unconditionally. Every Capacity page and every KPI-card drill-down modal is completely untouched — same shared `Modal`/`PopupTable` components, no overlay.
+- Per direct follow-up clarification: the click-target widening ("click anywhere on the graph, not just the title") was explicitly discarded — existing click-to-drill bars, Plan/Region dropdowns, and toggles keep working exactly as before; only the popup's own content changed.
+- **Verified**: `npm run build` clean (1186 modules); no browser-automation tool was available this session to visually click through the change, same known gap as other UI-only work earlier in this project — verified via a full code-level review of every graph-popup call site instead (grepped for every `PopupTable`/`Modal` usage across the two Forecasting pages to confirm nothing was missed and nothing out-of-scope was touched).
+
 ## HES Forecasting Layer 03 Renamed to "CPASU/UCR Trend" (2026-07-31)
 
 - `AsuSrTrendLayer.jsx`'s layer header — "ASU/UCR Impact on SR Analysis" → "CPASU/UCR Trend", per direct request with a screenshot. Subtitle ("— CPASU & UCR runrate") and the badge/visuals underneath are unchanged.

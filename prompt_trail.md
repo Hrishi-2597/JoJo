@@ -868,3 +868,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `AsuSrTrendLayer.jsx`'s layer header text changed from "ASU/UCR Impact on SR Analysis" to "CPASU/UCR Trend" — subtitle, badge, and visuals untouched.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 67 — 2026-07-31
+**Input:** For both ESG and HES for graphs only - when we click on the title of the graphs it shows pop-up. It should be like when i click on any part of the graph it should show the pop-up and also give a disclaimer or a note to let the users know that a graph is clickable. Also on the pop-up Add a professional overlay over the visual/page. At the top center display a large title: COMING SOON. Do NOT completely hide the visual. Keep all original elements: Charts, Tables, Cards, Legends, Filters, Icons, Buttons, Titles. Only apply the blur and dark overlay. Do this for all the visuals.
+
+**Action:**
+- Asked 2 clarifying questions before touching ~10 files, since the request could otherwise conflict with existing click behavior or fully replace real data with a placeholder: (1) whether widening the click target to "anywhere on the graph" should override existing drill-down-bar-clicks/Plan-dropdowns/toggles; (2) whether the pop-up should show real content blurred, or a dedicated no-data placeholder.
+- User's answers: discard the click-widening idea entirely (title-only clicking stays exactly as it already worked, no disclaimer added) — focus only on the pop-up content: real content, blurred + darkened.
+- New shared `ComingSoonOverlay` in `ChartKit.jsx` — wraps a pop-up's real children (rendered exactly as before, nothing removed), then layers a dark (`rgba(4,10,18,0.62)`) + blurred (`backdrop-filter: blur(5px)`) overlay on top with a large "Coming Soon" pill centered at the top.
+- Applied to every ESG/HES Forecasting graph's title-click pop-up: `Visual` (`ChartKit.jsx`) gained an opt-in `comingSoon` prop (default `false`), set on `AsuLayer.jsx`/`SrLayer.jsx`/`AsuSrTrendLayer.jsx`'s `Visual` calls (HES Forecasting); `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx`'s own local `Visual` duplicates (ESG Forecasting) wrap unconditionally, since those files are Forecasting-only already. Also wrapped `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal. Every Capacity page and every KPI card drill-down is untouched — same shared `Modal`/`PopupTable`, no overlay.
+- Deliberately left the per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files) alone — a different, pre-existing interaction shared with Capacity pages, not "click the graph's title."
+- Verified with `npm run build` (clean, 1186 modules) and a grep sweep of every `PopupTable`/`Modal` usage across both Forecasting pages to confirm complete, correctly-scoped coverage; no browser-automation tool was available this session to click through it visually (same known gap noted elsewhere in this project).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

@@ -89,6 +89,13 @@ SPoG/
 │   │   │                         unchanged). New planVsPlanSeriesColor(index) cycles all 3 non-status hues
 │   │   │                         (metric1/metric2/trend — no competing "Actual" series in a pure Plan A vs Plan
 │   │   │                         B context, unlike planSeriesColor) across the combined A-then-B series list.
+│   │   │                         New ComingSoonOverlay (2026-07-31) — wraps a popup's real children in a dark+blur
+│   │   │                         layer with a large "Coming Soon" pill, without removing the content underneath.
+│   │   │                         Visual gained an opt-in `comingSoon` prop (default false, wraps table's PopupTable
+│   │   │                         when true) — set on HES Forecasting's Visual call sites only (AsuLayer/SrLayer/
+│   │   │                         AsuSrTrendLayer); ESG Forecasting's local Visual duplicates (Layer1PlanOverPlan.jsx/
+│   │   │                         Layer2ActualVsPlan.jsx) wrap unconditionally instead, since those files are
+│   │   │                         Forecasting-only already. Every Capacity page's Visual usage is unaffected.
 │   │   ├── PerformanceMatrixTable.jsx # (2026-07-29) Generic LOB × Fiscal-Quarter matrix table — 2-row header (quarter
 │   │   │                                groups, colSpan 3: Actual/Plan/Adherence%), BinaryToggle + PlanSelect above it,
 │   │   │                                a purple RCA/CLCA pill per row (same convention as msgCapacity/
@@ -1129,3 +1136,4 @@ Steps:
 24. HES Capacity's Geo Map headcount (via `geoHeadcountEmphasis()`, 2026-07-28) is now deliberately scaled DIFFERENTLY from the plain headcount `tsaAttritionByDimension` returns for the same region/sub-region key — intentional, and safe, since nothing else in the app displays that same "headcount by region" value for a side-by-side comparison (grep-confirmed); don't reuse `geoHeadcountByRegion`/`geoHeadcountBySubRegion`'s output for anything other than this one map without accounting for the emphasis multiplier
 25. Every "Plan Name" dropdown is multi-select (2026-07-30), but only period-trend Bar+Line charts actually render one series per selected plan — ranked-by-queue/LOB charts (`UtilizationLayer` Visual2/3, both `QueuePerformanceTable`s, `Layer2ActualVsPlan` Visual3), both Performance matrix tables, and both Geo Maps all use only `selectedPlans[0]` for calculation regardless of how many plans are checked; see design_choice.md for why full N-way support wasn't built for these chart shapes
 26. Same as #25 but for every "Plan A / Plan B" `PlanDropdowns` (2026-07-31): full N-series rendering only on the charts whose entire purpose IS the Plan A/B comparison (`AsuLayer`/`SrLayer` Visual2, `Layer1PlanOverPlan` Visual1, both Capacity pages' `PlanOverPlanVariationLayer` `MainChart`s) — the region/impact/ranked-variance charts sharing those same widgets (`AsuLayer`/`SrLayer` Visual3, `Layer1PlanOverPlan` Visual2/3, `LobVarianceChart`, `QueueVarianceChart`) use only `plansA[0]`/`plansB[0]` regardless of how many plans are checked on either side, same rationale as #25
+27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request

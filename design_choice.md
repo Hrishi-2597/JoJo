@@ -4,6 +4,24 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Graph Pop-Ups Get a "Coming Soon" Overlay That Obscures, Not Removes, the Real Content (2026-07-31)
+
+**Decision:** Every ESG/HES Forecasting graph's existing click-title pop-up (and `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) now renders its real content exactly as before, then layers a dark (`rgba(4,10,18,0.62)`) + blurred (`backdrop-filter: blur(5px)`) overlay on top with a large "Coming Soon" pill centered at the top. New shared `ComingSoonOverlay` in `ChartKit.jsx` wraps `children` rather than replacing them.
+
+**Why:** Directly requested, explicitly and repeatedly: "Do NOT completely hide the visual... Keep all original elements... Only apply the blur and dark overlay." A dedicated placeholder card (no real data rendered at all) was considered and rejected via a direct follow-up question — the user chose "real content, blurred + darkened" specifically. Layering the overlay as a sibling on top of the untouched children (rather than conditionally swapping what renders) is also the simplest implementation that can't accidentally regress the real content's own behavior (scrolling, sticky headers, etc.) since nothing about the wrapped content itself changed.
+
+## "Coming Soon" Overlay Is Opt-In Per Visual, Not a Global Default (2026-07-31)
+
+**Decision:** The shared `Visual` component (`ChartKit.jsx`) gained a new `comingSoon` prop, default `false`. It's only set to `true` on HES Forecasting's `Visual` call sites (`AsuLayer.jsx`, `SrLayer.jsx`, `AsuSrTrendLayer.jsx`). ESG Forecasting's `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx` have their own local `Visual` duplicates (pre-dating the shared `ChartKit.jsx` promotion) and wrap unconditionally instead, since those files are exclusively ESG Forecasting already. Every Capacity page, and every KPI card's own drill-down `Modal`, is completely unaffected.
+
+**Why:** The request explicitly scoped this to "ESG and HES" (this session's established shorthand for the MSG/TSA Forecasting pages specifically, distinct from "ESG Capacity"/"HES Capacity") "for graphs only" — not KPI cards, and not the Capacity Plan pages, which share the exact same `Visual`/`Modal`/`PopupTable` components. An opt-in prop (rather than a blanket change to `Visual`'s default behavior) is the only way to apply this to some `Visual` consumers and not others without forking the shared component or touching files nobody asked to change.
+
+## Click-Target Widening Was Explicitly Discarded Mid-Request (2026-07-31)
+
+**Decision:** The original request also asked to widen the click target from "the title only" to "any part of the graph," plus a visible "this graph is clickable" disclaimer. Both were dropped after a direct follow-up question surfaced the conflict: several charts already have their OWN click behavior on non-title areas (drill-down bars, Plan/Region dropdowns, `BinaryToggle`s) that widening the click target would have overridden or collided with. The user chose to discard that half of the request entirely and keep title-only clicking exactly as it already worked.
+
+**Why:** Guessing an implementation here risked silently breaking already-shipped, working interactions (region drill-down, Plan pickers) that were never mentioned as something to change. Surfacing the conflict directly, rather than picking a side unilaterally, let the user make the call with an actual regression risk. The rest of the original request (the pop-up's own content getting the "Coming Soon" treatment) proceeded on its own merits, independent of this discarded half.
+
 ## HES Forecasting Layer 03 Renamed "CPASU/UCR Trend" (2026-07-31)
 
 **Decision:** `AsuSrTrendLayer.jsx`'s layer header — "ASU/UCR Impact on SR Analysis" → "CPASU/UCR Trend". Subtitle ("— CPASU & UCR runrate"), badge "03", and all 3 visuals underneath are unchanged.

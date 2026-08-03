@@ -141,12 +141,40 @@ export function PopupTable({ table, topMargin = 0, maxHeight = 380 }) {
   )
 }
 
+// "Coming Soon" overlay (2026-07-31) — layered OVER a popup's real content rather
+// than replacing it, per direct request: the table/chart underneath stays fully
+// rendered (nothing removed from the DOM), just darkened + blurred, with a large
+// centered title on top. Opt-in via Visual's `comingSoon` prop (default false) so
+// this only affects the ESG/HES Forecasting graph pop-ups it was requested for —
+// every other page's popups (Capacity, KPI card drill-downs) are unaffected.
+export function ComingSoonOverlay({ children }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      {children}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 6, borderRadius: 8,
+        background: 'rgba(4,10,18,0.62)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)',
+        display: 'flex', justifyContent: 'center', paddingTop: 22,
+      }}>
+        <span style={{
+          fontSize: 19, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: '#fff', background: 'rgba(56,189,248,0.16)', border: '1px solid rgba(56,189,248,0.5)',
+          padding: '8px 22px', borderRadius: 999, textShadow: '0 1px 8px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.35)', height: 'fit-content',
+        }}>
+          Coming Soon
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // `table` (2026-07-27) opens in a full Modal when the user clicks the GRAPH itself —
 // specifically the title text, the one click target that can never collide with an
 // existing interactive element (bars with their own click-to-drill, dropdowns,
 // toggles, the RCA/CLCA button). RCA/CLCA stays exactly what it was — a separate,
 // small "i" popup — per direct request that the two not be the same button.
-export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca, table, info }) {
+export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca, table, info, comingSoon = false }) {
   const [tableOpen, setTableOpen] = useState(false)
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
@@ -167,7 +195,7 @@ export function Visual({ title, subtitle, children, controls, cornerControls, rc
       {children}
       {table && tableOpen && (
         <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
-          <PopupTable table={table} />
+          {comingSoon ? <ComingSoonOverlay><PopupTable table={table} /></ComingSoonOverlay> : <PopupTable table={table} />}
         </Modal>
       )}
     </div>

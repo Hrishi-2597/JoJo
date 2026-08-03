@@ -40,7 +40,7 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
       info="SR actuals vs the selected plan(s) by fiscal period, with percent adherence shown when exactly one plan is selected."
       rca="SR actuals are outpacing plan as case complexity rises."
       clca="Add a complexity-adjusted buffer to the SR plan."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -96,7 +96,7 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
       info="SR compared between the selected Plan A/Plan B plans by fiscal period, with percent variance shown when exactly one plan is selected on each side."
       rca="Plan variance for SR is widest in the most recent quarter."
       clca="Reconcile plans against the latest actuals before the next AOP cycle."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -147,7 +147,7 @@ function Visual3({ filters, plansA, plansB, onPlansChange }) {
       info="Each region's SR gap between the two selected plans; click a region to see contributing LOBs."
       rca="SR impact concentrates in a small number of LOBs per region."
       clca="Prioritize staffing reviews for the top LOBs in the highest-impact region."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

@@ -9,7 +9,7 @@ import {
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, Modal, PillButton, planSeriesColor } from './TsaChartKit'
+import { C, Visual, Tip, PlanSelect, Modal, PillButton, planSeriesColor, ComingSoonOverlay } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -74,7 +74,7 @@ function Visual1({ filters, granularity: pageGranularity }) {
       info="ASU, SR, and CPASU by region; click a region to drill into its trend over time."
       rca="CPASU is rising fastest in regions with the lowest bot deflection."
       clca="Expand bot-deflection coverage in the regions driving the CPASU increase."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -120,7 +120,7 @@ function Visual2({ filters, granularity }) {
       info="Human-handled vs bot (UCR) handled SR volume against the selected SR plan(s), by period."
       rca="Bot-handled SR's are growing faster than the plan assumed."
       clca="Fold observed bot deflection into next quarter's SR plan."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -184,7 +184,7 @@ function Visual3({ filters, granularity }) {
       info="UCR runrate against target by period; click a bar to see that period's top non-adherent LOBs."
       rca="Non-adherent LOBs share a common low bot-deflection profile."
       clca="Prioritize automation coverage for the LOBs on the non-adherent list."
-      table={table}>
+      table={table} comingSoon>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -201,19 +201,21 @@ function Visual3({ filters, granularity }) {
 
       {modalPeriod && (
         <Modal title={`${modalPeriod} — Top 5 Non-Adherent LOBs`} onClose={() => setModalPeriod(null)} width={420}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {topLobs.map((l, i) => (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '5px 8px',
-                background: i % 2 ? 'transparent' : 'rgba(255,255,255,0.03)', borderRadius: 5,
-              }}>
-                <span style={{ color: 'var(--text-secondary)' }}>{l.lob}</span>
-                <span style={{ fontWeight: 600, color: C.behind }}>
-                  {l.runrate}% <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>vs {l.target}%</span>
-                </span>
-              </div>
-            ))}
-          </div>
+          <ComingSoonOverlay>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {topLobs.map((l, i) => (
+                <div key={i} style={{
+                  display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '5px 8px',
+                  background: i % 2 ? 'transparent' : 'rgba(255,255,255,0.03)', borderRadius: 5,
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>{l.lob}</span>
+                  <span style={{ fontWeight: 600, color: C.behind }}>
+                    {l.runrate}% <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>vs {l.target}%</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </ComingSoonOverlay>
         </Modal>
       )}
     </Visual>
