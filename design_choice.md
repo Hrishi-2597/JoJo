@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "Coming Soon" Overlay's Blur/Tint Turned Down — First Version Made the Content Fully Illegible (2026-07-31)
+
+**Decision:** `ComingSoonOverlay`'s dark tint went from `rgba(4,10,18,0.62)` to `rgba(4,10,18,0.28)`, and its `backdrop-filter` blur from `5px` to `1.5px`.
+
+**Why:** Reported with a screenshot — at the original strength, the "Coming Soon" pill was the ONLY thing legible; the table underneath was a uniform dark blur, not "a little blur" over readable content. That's a stronger effect than "keep all original elements... only apply the blur and dark overlay" called for — the whole point of layering rather than replacing was for the real content to still read as present and roughly legible, just visually deemphasized. A much lighter tint/blur keeps that intent intact.
+
 ## Graph Pop-Ups Get a "Coming Soon" Overlay That Obscures, Not Removes, the Real Content (2026-07-31)
 
 **Decision:** Every ESG/HES Forecasting graph's existing click-title pop-up (and `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) now renders its real content exactly as before, then layers a dark (`rgba(4,10,18,0.62)`) + blurred (`backdrop-filter: blur(5px)`) overlay on top with a large "Coming Soon" pill centered at the top. New shared `ComingSoonOverlay` in `ChartKit.jsx` wraps `children` rather than replacing them.

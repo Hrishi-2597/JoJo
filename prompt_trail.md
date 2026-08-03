@@ -882,3 +882,21 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Deliberately left the per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files) alone — a different, pre-existing interaction shared with Capacity pages, not "click the graph's title."
 - Verified with `npm run build` (clean, 1186 modules) and a grep sweep of every `PopupTable`/`Modal` usage across both Forecasting pages to confirm complete, correctly-scoped coverage; no browser-automation tool was available this session to click through it visually (same known gap noted elsewhere in this project).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 68 — 2026-08-03
+**Input:** "I cant see the changes in the dashboard" — followed by confirming they were checking the live GitHub Pages URL.
+
+**Action:**
+- Root-caused via `WebFetch`/`git ls-remote`: the GitHub repo had been renamed `ISG-SPoG` → `JoJo` (every push this session had warned "This repository moved," easy to miss). The OLD Pages URL now 404s; the correct live URL is `https://hrishi-2597.github.io/JoJo/` (matches `vite.config.js`'s `base: '/JoJo/'`, already correctly set). Confirmed the live page's actual JS bundle hash matched the latest deploy — no redeploy was needed, just pointed the user at the right URL.
+
+---
+
+## Prompt 69 — 2026-08-03
+**Input:** "Its coming like this - [screenshot] only coming soon is appearing — the inside comments should also be seen little blur — you made whole blur"
+
+**Action:**
+- `ComingSoonOverlay`'s dark tint (`rgba(4,10,18,0.62)` → `0.28`) and blur (`5px` → `1.5px`) both turned down — the reported screenshot showed the table underneath fully illegible, only the "Coming Soon" pill readable, stronger than "a little blur over legible content" called for.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `design_choice.md`, `prompt_trail.md`; committed, pushed to `main`, and redeployed.

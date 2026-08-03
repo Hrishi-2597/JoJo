@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "Coming Soon" Overlay Lightened — Underlying Content Was Fully Illegible (2026-07-31)
+
+- Reported with a screenshot: the overlay's `rgba(4,10,18,0.62)` tint + `blur(5px)` made the table underneath completely unreadable — just the "Coming Soon" pill was visible, not "a little blur" over legible content.
+- `ComingSoonOverlay` (`ChartKit.jsx`) tint dropped to `rgba(4,10,18,0.28)`, blur dropped to `1.5px` — the table's text/numbers stay legible-but-dimmed underneath, matching "keep all original elements visible, only apply the blur and dark overlay" rather than obscuring them entirely.
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## "Coming Soon" Overlay on ESG/HES Forecasting Graph Pop-Ups (2026-07-31)
 
 - Every graph's existing click-title-for-details pop-up on ESG Forecasting (`Layer1PlanOverPlan.jsx`, `Layer2ActualVsPlan.jsx`) and HES Forecasting (`AsuLayer.jsx`, `SrLayer.jsx`, `AsuSrTrendLayer.jsx` — including its separate bar-click "Top 5 Non-Adherent LOBs" modal) now shows a professional dark+blur overlay layered on top of the real content, with a large "COMING SOON" pill centered at the top. The real table/data underneath is NOT hidden — it stays fully rendered, just darkened and blurred through the overlay.

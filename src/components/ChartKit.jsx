@@ -153,7 +153,7 @@ export function ComingSoonOverlay({ children }) {
       {children}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 6, borderRadius: 8,
-        background: 'rgba(4,10,18,0.62)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)',
+        background: 'rgba(4,10,18,0.28)', backdropFilter: 'blur(1.5px)', WebkitBackdropFilter: 'blur(1.5px)',
         display: 'flex', justifyContent: 'center', paddingTop: 22,
       }}>
         <span style={{
