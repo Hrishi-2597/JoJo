@@ -900,3 +900,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `ComingSoonOverlay`'s dark tint (`rgba(4,10,18,0.62)` → `0.28`) and blur (`5px` → `1.5px`) both turned down — the reported screenshot showed the table underneath fully illegible, only the "Coming Soon" pill readable, stronger than "a little blur over legible content" called for.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `design_choice.md`, `prompt_trail.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 70 — 2026-08-03
+**Input:** "a little readable please" *(screenshot of the region-impact pop-up, table text still hard to read under the overlay)*
+
+**Action:**
+- `ComingSoonOverlay`'s dark tint dropped again (`rgba(4,10,18,0.28)` → `0.16`) and blur (`1.5px` → `0.6px`) — table text now reads clearly at a glance while the tint/blur still visibly signals it's layered content, and "Coming Soon" stays the focal point.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `design_choice.md`, `prompt_trail.md`; committed, pushed to `main`, and redeployed.

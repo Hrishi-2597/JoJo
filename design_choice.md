@@ -4,11 +4,11 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
-## "Coming Soon" Overlay's Blur/Tint Turned Down — First Version Made the Content Fully Illegible (2026-07-31)
+## "Coming Soon" Overlay's Blur/Tint Turned Down Twice — Two Rounds of Screenshot Feedback (2026-07-31, 2026-08-03)
 
-**Decision:** `ComingSoonOverlay`'s dark tint went from `rgba(4,10,18,0.62)` to `rgba(4,10,18,0.28)`, and its `backdrop-filter` blur from `5px` to `1.5px`.
+**Decision:** `ComingSoonOverlay`'s dark tint/blur went through 2 reductions: `rgba(4,10,18,0.62)` + `blur(5px)` → `rgba(4,10,18,0.28)` + `blur(1.5px)` → `rgba(4,10,18,0.16)` + `blur(0.6px)`.
 
-**Why:** Reported with a screenshot — at the original strength, the "Coming Soon" pill was the ONLY thing legible; the table underneath was a uniform dark blur, not "a little blur" over readable content. That's a stronger effect than "keep all original elements... only apply the blur and dark overlay" called for — the whole point of layering rather than replacing was for the real content to still read as present and roughly legible, just visually deemphasized. A much lighter tint/blur keeps that intent intact.
+**Why:** Each round was reported with a screenshot showing the table underneath still too hard to read. The first pass (0.62/5px) left only the "Coming Soon" pill legible — a uniform dark blur, not "a little blur" over readable content. The second pass (0.28/1.5px) was still judged too strong ("a little readable please"). Settled at 0.16/0.6px, where the table's text reads clearly at a glance while the tint/blur still visibly signals "this is layered on top of, not the same as, the live content" and the "Coming Soon" pill stays the focal point.
 
 ## Graph Pop-Ups Get a "Coming Soon" Overlay That Obscures, Not Removes, the Real Content (2026-07-31)
 

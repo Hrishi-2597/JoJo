@@ -1,5 +1,10 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "Coming Soon" Overlay Lightened Again, Per Follow-Up Screenshot (2026-08-03)
+
+- Still too dark/blurred per a second screenshot — tint dropped further to `rgba(4,10,18,0.16)`, blur to `0.6px` (was `0.28`/`1.5px`). Table text now reads clearly through the overlay while the "Coming Soon" pill stays the visual focal point.
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## "Coming Soon" Overlay Lightened — Underlying Content Was Fully Illegible (2026-07-31)
 
 - Reported with a screenshot: the overlay's `rgba(4,10,18,0.62)` tint + `blur(5px)` made the table underneath completely unreadable — just the "Coming Soon" pill was visible, not "a little blur" over legible content.
