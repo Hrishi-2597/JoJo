@@ -4,6 +4,24 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Forecasting's New Queue Filter Genuinely Narrows the Page, via a Round-Robin Queue→LOB Map (2026-08-04)
+
+**Decision:** Rather than adding a Queue Name dropdown that changes filter state without affecting any chart (a "cosmetic" gap this project has repeatedly hunted down and fixed for Plan dropdowns), the new filter is backed by `QUEUE_LOB_ASSIGNMENTS` — a deterministic round-robin assignment of each of the 78 real active queue names to one of the 33 real LOBs — feeding directly into the page's existing `filterLobs()`/`lobScopeRatio()` mechanism that every FY-level chart already scales off of.
+
+**Why:** HES Forecasting's data model is LOB-based (`LOB_FACTS`), not per-queue like ESG Forecasting's `filterQueues()` — there is no real per-queue LOB/region/businessPartner tag to narrow by, and inventing full new per-queue fact rows (region, businessPartner, channel, etc., to mirror ESG's queue table exactly) would be a much larger, riskier change than the request asked for. A deterministic queue→LOB assignment is the SAME "real names, illustrative structure" convention this exact page already uses in 3 other places (`LOB_FACTS`'s own businessPartner/globalGrouping tags, `LOB_REGION_ASSIGNMENTS` for the Geo Map, `GEO_LOB_REGIONS`) — reusing an established, accepted pattern rather than inventing a new one, while still making the filter genuinely affect the page's numbers rather than sitting there decoratively.
+
+## Total Queues Card Now Honors the New Queue Filter Too (2026-08-04)
+
+**Decision:** `tsaCardData()`'s `totalQueues.active` count, and the card's own drill-down list/region donut (`TotalQueuesSection`), both narrow to the selected queue names when the new filter is used — not just the page's charts.
+
+**Why:** The request specifically said to source the new filter's options "from the total queues card" — leaving that same card's own headline count NOT reflect a queue selection would create exactly the kind of visible inconsistency (select 2 queues in the filter, but the card still proudly says "78 Active") this project's own prior work has repeatedly flagged and fixed as a real bug, not a nitpick. Since `filters` already flowed into `TsaMetricCards`/`tsaCardData` unchanged, this was a cheap, directly-relevant addition alongside the main ask, not scope creep.
+
+## The New Queue Filter Is Opt-In on a Shared Filter Panel, Not a Global Addition (2026-08-04)
+
+**Decision:** `TsaFilterPanel.jsx` — reused unmodified by TSA Capacity Plan's own page — gained a new `includeQueue` prop (default `false`). Only `TsaForecastingPage.jsx` passes `includeQueue`; `TsaCapacityPage.jsx`'s call site is untouched.
+
+**Why:** The request named "HES Forecasting" specifically. Since `TsaFilterPanel.jsx` is a single shared, stateless component reused directly by TSA Capacity Plan, adding a `queue` field to its `defs` unconditionally would have put a functionally-live Queue Name filter on TSA Capacity Plan too — one whose selection would have genuinely (if confusingly) narrowed TSA Capacity's own charts as well, since `tsaCapacityData.js` reuses the exact same `filterLobs()` this change modified. An opt-in prop (matching the precedent already set for `ChartKit.jsx`'s `comingSoon` prop) confines the new behavior to exactly the one page it was requested for.
+
 ## "Coming Soon" Overlay's Blur/Tint Turned Down Twice — Two Rounds of Screenshot Feedback (2026-07-31, 2026-08-03)
 
 **Decision:** `ComingSoonOverlay`'s dark tint/blur went through 2 reductions: `rgba(4,10,18,0.62)` + `blur(5px)` → `rgba(4,10,18,0.28)` + `blur(1.5px)` → `rgba(4,10,18,0.16)` + `blur(0.6px)`.

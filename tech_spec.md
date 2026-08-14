@@ -136,7 +136,12 @@ SPoG/
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
-│   │       │                            reused directly (unmodified) by tsaCapacity/TsaCapacityPage.jsx — identical field set
+│   │       │                            reused, mostly unmodified, by tsaCapacity/TsaCapacityPage.jsx. New `includeQueue` prop
+│   │       │                            (2026-08-04, default false, opt-in) adds an 8th filter — "Queue Name", options
+│   │       │                            TSA_ACTIVE_QUEUE_NAMES (same roster as the Total Queues card) — leading the Scope
+│   │       │                            cluster; only TsaForecastingPage.jsx passes `includeQueue`, so TSA Capacity's own
+│   │       │                            filter bar/data are unaffected. See tsaData.js's filterLobs()/QUEUE_LOB_ASSIGNMENTS
+│   │       │                            below for how the selection genuinely narrows the page, not just decorative.
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
@@ -153,7 +158,12 @@ SPoG/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
 │       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
 │       │                         (2026-07-03), and other primitives tsaData.js/msgCapacityData.js/tsaCapacityData.js reuse
-│       ├── tsaData.js          # TSA Forecasting page's data model (LOB list, ASU/SR/UCR series, LOB_QUEUES, region-impact deltas)
+│       ├── tsaData.js          # TSA Forecasting page's data model (LOB list, ASU/SR/UCR series, LOB_QUEUES, region-impact deltas).
+│       │                         New QUEUE_LOB_ASSIGNMENTS (2026-08-04) — deterministic round-robin queue→LOB map (each of
+│       │                         TSA_ACTIVE_QUEUE_NAMES' 78 real names assigned one of the 33 real LOBs) backing the new
+│       │                         Queue Name filter; filterLobs() now also checks it via matchesQueueFilter(), so every
+│       │                         selector already scaling off filterLobs()'s in-scope count (via lobScopeRatio) reacts to
+│       │                         it automatically. tsaCardData()'s totalQueues.active also narrows to the selection.
 │       ├── msgCapacityData.js  # MSG Capacity Plan's data model (queue-level HC/utilization/SL/leaves fact table)
 │       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly)
 ├── index.html                  # Vite entry HTML
@@ -1137,3 +1147,4 @@ Steps:
 25. Every "Plan Name" dropdown is multi-select (2026-07-30), but only period-trend Bar+Line charts actually render one series per selected plan — ranked-by-queue/LOB charts (`UtilizationLayer` Visual2/3, both `QueuePerformanceTable`s, `Layer2ActualVsPlan` Visual3), both Performance matrix tables, and both Geo Maps all use only `selectedPlans[0]` for calculation regardless of how many plans are checked; see design_choice.md for why full N-way support wasn't built for these chart shapes
 26. Same as #25 but for every "Plan A / Plan B" `PlanDropdowns` (2026-07-31): full N-series rendering only on the charts whose entire purpose IS the Plan A/B comparison (`AsuLayer`/`SrLayer` Visual2, `Layer1PlanOverPlan` Visual1, both Capacity pages' `PlanOverPlanVariationLayer` `MainChart`s) — the region/impact/ranked-variance charts sharing those same widgets (`AsuLayer`/`SrLayer` Visual3, `Layer1PlanOverPlan` Visual2/3, `LobVarianceChart`, `QueueVarianceChart`) use only `plansA[0]`/`plansB[0]` regardless of how many plans are checked on either side, same rationale as #25
 27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request
+28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship

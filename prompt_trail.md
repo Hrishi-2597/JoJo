@@ -910,3 +910,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `ComingSoonOverlay`'s dark tint dropped again (`rgba(4,10,18,0.28)` → `0.16`) and blur (`1.5px` → `0.6px`) — table text now reads clearly at a glance while the tint/blur still visibly signals it's layered content, and "Coming Soon" stays the focal point.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `design_choice.md`, `prompt_trail.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 71 — 2026-08-04
+**Input:** Can you add a filter for Queues in HES Forecasting tab as well - use queues from the total queues card
+
+**Action:**
+- Delegated research to an Explore agent to map `TsaFilterPanel.jsx`'s existing filter pattern, `TsaForecastingPage.jsx`'s filter state shape, the Total Queues card's real active-queue roster (`TSA_ACTIVE_QUEUE_NAMES`, 78 real names from `LOB_QUEUES['High End Storage']`), and ESG Forecasting's own "Queue Name" (`cqn`) filter as the closest precedent — confirming HES's data model is LOB-based (no per-queue fact table), unlike ESG's per-queue one.
+- New "Queue Name" multi-select added to `TsaFilterPanel.jsx`'s Scope cluster, options = `TSA_ACTIVE_QUEUE_NAMES` (same roster the Total Queues card shows), per direct request ("use queues from the total queues card").
+- Made it genuinely narrow the page rather than a decorative dropdown: new `QUEUE_LOB_ASSIGNMENTS` in `tsaData.js` (deterministic round-robin queue→LOB map, same illustrative-structure convention as `LOB_FACTS`'s own tags) feeds a new `matchesQueueFilter()` inside `filterLobs()` — every FY chart already scaling off `filterLobs()`'s in-scope count via `lobScopeRatio` reacts automatically.
+- Total Queues card itself now honors the filter too: `tsaCardData()`'s `totalQueues.active` narrows to the selected count, and the card's own drill-down list/donut (`TotalQueuesSection`) narrows to match — closing what would otherwise be a new headline-vs-drill-down mismatch.
+- Caught and avoided a scope leak before it shipped: `TsaFilterPanel.jsx` is shared, unmodified, by TSA Capacity Plan's own page — adding `queue` unconditionally would have put a functionally-live (and confusingly page-crossing) Queue filter there too, since `tsaCapacityData.js` reuses the same `filterLobs()`. Added an opt-in `includeQueue` prop (default `false`), set only by `TsaForecastingPage.jsx`.
+- Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming: the queue→LOB map covers all 33 LOBs, `filterLobs`/`asuByFY`/`tsaCardData` all genuinely narrow when queues are selected, AND-semantics with an existing LOB filter work, and TSA Capacity's own filtering is unaffected.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

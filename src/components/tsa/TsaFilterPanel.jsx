@@ -1,6 +1,6 @@
 import React from 'react'
 import {
-  LOB_LIST, GLOBAL_GROUPING_LIST, FISCAL_MONTH_LIST,
+  LOB_LIST, GLOBAL_GROUPING_LIST, FISCAL_MONTH_LIST, TSA_ACTIVE_QUEUE_NAMES,
 } from '../../data/tsaData'
 import { FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS } from '../../data/mockData'
 import MultiSelectField from '../MultiSelectField'
@@ -35,10 +35,18 @@ function ClusterDivider() {
   return <div style={{ width: 1, alignSelf: 'stretch', background: 'linear-gradient(180deg, transparent, rgba(56,189,248,0.18) 30%, rgba(56,189,248,0.18) 70%, transparent)', margin: '0 14px' }} />
 }
 
-export default function TsaFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
+// `includeQueue` (2026-08-04, default false) — this panel is shared, unmodified,
+// by tsaCapacity/TsaCapacityPage.jsx (see that file's own comment). The new Queue
+// filter was requested for HES Forecasting specifically, and its options come from
+// TSA Forecasting's own Total Queues card roster (tsaData.js's TSA_ACTIVE_QUEUE_NAMES)
+// — not something TSA Capacity's own filters/cards have any relationship to — so it's
+// opt-in rather than added to the shared `defs` unconditionally, same "opt-in prop,
+// not a new default for every consumer" precedent as ChartKit.jsx's `comingSoon`.
+export default function TsaFilterPanel({ filters, onChange, granularity, onGranularityChange, includeQueue = false }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
   const defs = {
+    ...(includeQueue ? { queue: { label: 'Queue Name', options: TSA_ACTIVE_QUEUE_NAMES, mono: true } } : {}),
     lob:             { label: 'LOB',             options: LOB_LIST, mono: true },
     fiscalYear:      { label: 'Fiscal Year',     options: FISCAL_YEARS },
     fiscalQuarter:   { label: 'Fiscal Quarter',  options: FISCAL_QUARTERS },
@@ -63,7 +71,7 @@ export default function TsaFilterPanel({ filters, onChange, granularity, onGranu
       padding: '11px 18px 12px',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-        <Cluster icon="scope" cols={1}>{field('lob')}</Cluster>
+        <Cluster icon="scope" cols={includeQueue ? 2 : 1}>{includeQueue && field('queue')}{field('lob')}</Cluster>
         <ClusterDivider />
         <Cluster icon="time" cols={4}>
           {field('fiscalYear')}{field('fiscalQuarter')}{field('fiscalMonth')}{field('fiscalWeek')}

@@ -225,12 +225,16 @@ function QueueTable({ rows }) {
   )
 }
 
-function TotalQueuesSection() {
+// `filters` (2026-08-04) — narrows the drill-down list/donut to the selected Queue
+// filter, matching the card's own headline count (tsaCardData's totalQueues.active)
+// so the two never disagree once a queue selection is in scope.
+function TotalQueuesSection({ filters }) {
   const [selectedRegion, setSelectedRegion] = useState(null)
-  const filteredRows = selectedRegion ? TSA_ACTIVE_QUEUES.filter(q => q.region === selectedRegion) : TSA_ACTIVE_QUEUES
+  const scopedQueues = filters.queue?.length ? TSA_ACTIVE_QUEUES.filter(q => filters.queue.includes(q.name)) : TSA_ACTIVE_QUEUES
+  const filteredRows = selectedRegion ? scopedQueues.filter(q => q.region === selectedRegion) : scopedQueues
   return (
     <>
-      <QueuesByRegionChart rows={TSA_ACTIVE_QUEUES} selectedRegion={selectedRegion}
+      <QueuesByRegionChart rows={scopedQueues} selectedRegion={selectedRegion}
         onSelectRegion={r => setSelectedRegion(prev => prev === r ? null : r)} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 6px' }}>
         <p style={{ fontSize: 10, color: 'var(--text-faint)' }}>
@@ -262,7 +266,7 @@ const MODAL_TITLES = {
 function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
-      {type === 'totalQueues' && <TotalQueuesSection />}
+      {type === 'totalQueues' && <TotalQueuesSection filters={filters} />}
       {type === 'asu' && <AsuTrendChart filters={filters} granularity={granularity} />}
       {type === 'sr' && <SrDbOspChart filters={filters} granularity={granularity} />}
       {type === 'cpasu' && <CpasuChart filters={filters} granularity={granularity} />}

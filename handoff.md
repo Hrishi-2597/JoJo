@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## New "Queue Name" Filter on HES Forecasting, Sourced from the Total Queues Card (2026-08-04)
+
+- HES Forecasting's filter panel (`TsaFilterPanel.jsx`) gained a "Queue Name" multi-select, leading the Scope cluster (mirroring ESG Forecasting's own Queue Name filter's position/label) — options are `TSA_ACTIVE_QUEUE_NAMES`, the exact same 78-name active roster the Total Queues KPI card already shows.
+- Made it genuinely narrow the page, not just decorative: new `QUEUE_LOB_ASSIGNMENTS` in `tsaData.js` — a deterministic round-robin queue→LOB mapping (same "real names, illustrative structure" convention as `LOB_FACTS`' own businessPartner/globalGrouping tags, since no real per-queue LOB tag exists) — feeds a new `matchesQueueFilter()` check inside `filterLobs()`. Every FY-level chart on the page (`asuByFY`, `srByFY`, `cpasuByFY`, `ucrByFY`, etc.) already scales off `filterLobs()`'s in-scope LOB count via `lobScopeRatio`, so selecting queues now genuinely shrinks their numbers — no per-chart changes needed.
+- Total Queues card itself now honors the new filter too: `tsaCardData()`'s `totalQueues.active` count narrows to the selected queue count (was a fixed 78 regardless of filters), and the card's own drill-down list/region donut (`TotalQueuesSection` in `TsaMetricCards.jsx`) narrows to match — so the headline number and the drill-down list can never disagree.
+- Scoped to HES Forecasting only: `TsaFilterPanel.jsx` is shared, unmodified, with TSA Capacity Plan's own page — added a new `includeQueue` prop (default `false`, opt-in) rather than adding `queue` to the panel's `defs` unconditionally, so TSA Capacity's filter bar and data are completely unaffected.
+- **Verified**: `npm run build` clean (1186 modules); Node smoke tests confirming the queue→LOB mapping covers all 33 LOBs, `filterLobs`/`asuByFY`/`tsaCardData` all genuinely narrow when queues are selected, AND-semantics with an existing LOB filter behave correctly, and TSA Capacity's own `filterLobs` calls are unaffected (its filters object never carries a `queue` key).
+
 ## "Coming Soon" Overlay Lightened Again, Per Follow-Up Screenshot (2026-08-03)
 
 - Still too dark/blurred per a second screenshot — tint dropped further to `rgba(4,10,18,0.16)`, blur to `0.6px` (was `0.28`/`1.5px`). Table text now reads clearly through the overlay while the "Coming Soon" pill stays the visual focal point.

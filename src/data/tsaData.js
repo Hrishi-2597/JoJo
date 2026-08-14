@@ -51,7 +51,17 @@ export const LOB_FACTS = LOB_LIST.map((lob, i) => ({
 export function filterLobs(filters = {}) {
   return LOB_FACTS.filter(l =>
     TSA_FILTER_KEYS.every(key => matchesMulti(filters[key], l[TSA_FIELD_BY_KEY[key]]))
+    && matchesQueueFilter(filters.queue, l.lob)
   )
+}
+
+// Queue filter (2026-08-04) — checks the new Queue dropdown's selection against
+// QUEUE_LOB_ASSIGNMENTS (defined below, near TSA_ACTIVE_QUEUE_NAMES) rather than
+// matchesMulti/TSA_FIELD_BY_KEY, since a LOB has a SET of assigned queues, not one
+// scalar field. An empty selection matches everything, same as every other filter.
+function matchesQueueFilter(selectedQueues, lob) {
+  if (!selectedQueues?.length) return true
+  return QUEUE_LOB_ASSIGNMENTS.some(q => q.lob === lob && selectedQueues.includes(q.name))
 }
 
 // Scale factor applied to every FY-level metric below: shrinks proportionally to how
@@ -385,6 +395,14 @@ export const LOB_QUEUES = {
 export const TSA_ACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].active
 export const TSA_INACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].inactive
 
+// Deterministic queue → LOB assignment (2026-08-04, round-robin over LOB_LIST) — no
+// real per-queue LOB tag exists, only the real queue NAMES themselves (this roster).
+// Same "real names, illustrative structure" convention as LOB_FACTS' own
+// businessPartner/globalGrouping tags above, so the new Queue filter (sourced from
+// this same active roster, per direct request) has something genuine to narrow
+// rather than being a decorative dropdown.
+export const QUEUE_LOB_ASSIGNMENTS = TSA_ACTIVE_QUEUE_NAMES.map((name, i) => ({ name, lob: LOB_LIST[i % LOB_LIST.length] }))
+
 // Region tagged via the same name-prefix inference mockData.js uses for its own
 // queue fact table (APJ/EMEA/LATAM/NAMER prefixes, else 'Global') — reused rather
 // than duplicated, since the naming convention is identical across both queue lists.
@@ -536,9 +554,10 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // Latest in-scope fiscal year's snapshot for each of the 5 KPI cards, plus a
 // YTD-vs-prior-year delta for the 3 cards that show a YTD message (ASU/SR/CPASU).
-// totalQueues doesn't depend on filters — the TSA queue roster has no per-queue
-// lob/businessPartner/globalGrouping tags to narrow by, same reasoning as why
-// "UCR Runrate with Target" ignores Quarter/Week filters.
+// totalQueues doesn't depend on lob/businessPartner/globalGrouping (the TSA queue
+// roster has no per-queue tags for those, same reasoning as why "UCR Runrate with
+// Target" ignores Quarter/Week filters) but DOES honor the new Queue filter itself
+// (2026-08-04) — selecting specific queues narrows the count to just those.
 export function tsaCardData(filters = {}, granularity) {
   const asu = asuByFY(filters, granularity)
   const sr = srByFY(filters, granularity)
@@ -554,8 +573,9 @@ export function tsaCardData(filters = {}, granularity) {
   const latestUcr = ucr[ucr.length - 1]
   const latestCpasu = cpasu[cpasu.length - 1]
   const prevCpasu = cpasu[cpasu.length - 2]
+  const activeQueueCount = filters.queue?.length ? filters.queue.length : TSA_ACTIVE_QUEUE_NAMES.length
   return {
-    totalQueues: { active: TSA_ACTIVE_QUEUE_NAMES.length, inactive: TSA_INACTIVE_QUEUE_NAMES.length },
+    totalQueues: { active: activeQueueCount, inactive: TSA_INACTIVE_QUEUE_NAMES.length },
     asuActuals: {
       value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0,
       period: latestAsu?.period, prevPeriod: prevAsu?.period, yoyPct: yoyPct(latestAsu?.actual, prevAsu?.actual),
