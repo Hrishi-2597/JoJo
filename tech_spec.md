@@ -135,7 +135,11 @@ SPoG/
 │   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28)
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
-│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Workload Impact on Headcount (2026-07-28, replaced Average Case Time Variance)
+│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), "ASU/SR HC Impact"
+│   │       │                                   (2026-08-16, was "Workload Impact on Headcount", 2026-07-28 replaced Average
+│   │       │                                   Case Time Variance) — gained an ASU bar/column alongside the existing SR one,
+│   │       │                                   plus its own chart-local LOB MultiSelectField (independent of, and further
+│   │       │                                   narrowing on top of, the page-level LOB filter)
 │   │       ├── WorkloadActPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle Workload/ACT retitles
 │   │       │                                     "Workload Performance"/"ACT Performance"; wraps PerformanceMatrixTable.jsx +
 │   │       │                                     tsaCapacityData.js's workloadActPerformanceByLob()
@@ -188,7 +192,10 @@ SPoG/
 │       │                         TsaFilterPanel.jsx's cascading LOB/Queue dropdown OPTIONS (distinct from filterLobs(),
 │       │                         which narrows chart DATA) using the same LOB_FACTS/QUEUE_LOB_ASSIGNMENTS relationships.
 │       ├── msgCapacityData.js  # MSG Capacity Plan's data model (queue-level HC/utilization/SL/leaves fact table)
-│       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly)
+│       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly).
+│                                 workloadImpactOnHeadcount() (2026-08-16) gained `asu` (scaled off tsaData.js's own
+│                                 ASU_BY_FY, independent variation formula from `sr`) and an optional `localLobs` 3rd
+│                                 param (intersects the page-level in-scope LOB set, backing the chart's own LOB dropdown)
 ├── index.html                  # Vite entry HTML
 ├── vite.config.js              # base: '/TSG-SPoG/' for GitHub Pages paths
 ├── tailwind.config.js          # Custom navy color palette

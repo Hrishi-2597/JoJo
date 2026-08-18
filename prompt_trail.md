@@ -981,3 +981,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Only `PerformanceMatrixTable.jsx` touched — it's HES-only (ASU/SR Performance on HES Forecasting, Workload/ACT Performance on HES Capacity Plan), so both benefit.
 - Verified with `npm run build` (clean, 1186 modules); no browser-automation tool was available this session to visually confirm the popover no longer clips.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 77 — 2026-08-16
+**Input:** For workload Impact on Headcount graph add ASU Column as well..and give a LOB selection dropdown for the graph.change the name to ASU/SR HC Impact
+
+**Action:**
+- Renamed `WorkloadDistributionLayer.jsx`'s Visual2 (HES Capacity Plan, Layer 03) "Workload Impact on Headcount" → "ASU/SR HC Impact".
+- Added an `asu` field to `workloadImpactOnHeadcount()` (`tsaCapacityData.js`), scaled off TSA Forecasting's own `ASU_BY_FY` plan (same convention `sr` already uses off `SR_BY_FY`), with a deliberately different per-queue index/modulus formula than `sr` so the two vary independently rather than by a fixed ratio — the same class of bug already caught once this session on `srDbOspByFY`. Rendered as a 2nd grouped bar sharing SR's blue hue at a lower opacity (the chart's 3-hue safe palette was already fully spoken for) and added to the drill-down table.
+- Added a chart-local "LOB" `MultiSelectField`, independent of the page-level LOB filter — `workloadImpactOnHeadcount()` gained an optional `localLobs` 3rd param that intersects (not replaces) whatever the page-level filters already scope to, same layering every per-chart Plan Name dropdown elsewhere in the app already uses relative to its page's own filters.
+- Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming ASU/SR vary independently per row, the chart-local LOB dropdown narrows correctly standalone, and correctly intersects rather than overrides an active page-level LOB filter.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

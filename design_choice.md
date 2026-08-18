@@ -4,6 +4,24 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## ASU Reuses SR's Bar Color at a Different Opacity, Rather Than a New Hue (2026-08-16)
+
+**Decision:** The new ASU bar shares `metric1` (blue) with the existing SR bar, at a lower opacity (0.45 vs SR's 0.85), instead of introducing a 4th distinct color.
+
+**Why:** This chart already uses all 3 of the app's safe non-status hues — `metric1` for the SR bar, `metric2` for the Workload Actual/Plan line pair, `trend` for the Headcount line — so a genuinely new 4th series has no untouched safe hue available without either reusing the reserved `ahead`/`behind` status colors (never done in this app) or inventing a new one outside the established palette. Pairing ASU and SR as two opacities of the same hue mirrors the exact convention this same chart already uses for Workload Actual vs Plan (one hue, two treatments — solid/dashed there, two opacities here) rather than introducing a one-off exception.
+
+## ASU Varies Independently From SR, Not by a Fixed Ratio (2026-08-16)
+
+**Decision:** ASU's per-queue value uses a different index/modulus formula (`i * 11 + q.name.length, % 13`) than SR's (`i * 7 + q.name.length, % 11`), so the two numbers move independently per queue rather than always sitting at the same ratio to each other.
+
+**Why:** This exact failure mode — two fields derived from the same per-key formula ending up perfectly correlated, making a "second metric" mathematically redundant with the first — was already found and fixed once this session, in TSA Forecasting's `srDbOspByFY` DB/OSP split. Verified this time with a Node smoke test up front (ratios differ per row) rather than discovering it after the fact.
+
+## The Chart's Own LOB Dropdown Narrows On Top of the Page Filter, Not Instead Of It (2026-08-16)
+
+**Decision:** "ASU/SR HC Impact"'s new LOB `MultiSelectField` is local chart state (`selectedLobs`), separate from the page-level LOB filter. When both are set, the chart shows the INTERSECTION — a LOB has to pass both to appear.
+
+**Why:** The page already has its own LOB filter that every other chart on the page respects; replacing that relationship for just this one chart (i.e., having its local dropdown override the page filter entirely) would make this chart behave inconsistently with its neighbors and make the two controls fight over which one "wins." Every existing per-chart dropdown elsewhere in this app (Plan Name, Plan A/B) works as an additional layer on top of the page's own filters, never a full override — extending that same relationship to a per-chart LOB control keeps the mental model consistent app-wide: page filters always apply; a chart's own controls only ever narrow further, never widen back out or bypass them.
+
 ## Performance Table's Clipped Dropdown Fixed by Removing `overflow: hidden`, Not Raising z-index (2026-08-16)
 
 **Decision:** `PerformanceMatrixTable.jsx`'s outer panel wrapper no longer sets `overflow: 'hidden'`. The rounded-corner look it existed for is now achieved by giving `.layer-header` its own matching `border-radius` (top corners always, bottom corners only while the panel is collapsed) instead.

@@ -6,7 +6,7 @@
 // are new.
 import {
   LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, tsaEffectiveFiscalYears,
-  SR_BY_FY, TSA_ACTIVE_QUEUE_NAMES,
+  SR_BY_FY, ASU_BY_FY, TSA_ACTIVE_QUEUE_NAMES,
 } from './tsaData'
 import {
   FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
@@ -463,35 +463,52 @@ export function workloadActPerformanceByLob(filters = {}, metric = 'Workload', p
 // an arbitrary one.
 const CQN_LOB_ASSIGNMENTS = TSA_ACTIVE_QUEUE_NAMES.map((name, i) => ({ name, lob: LOB_LIST[i % LOB_LIST.length] }))
 
-function cqnsForFilters(filters) {
-  const inScope = new Set(filterLobs(filters).map(l => l.lob))
+// `localLobs` (2026-08-16, optional) — the "ASU/SR HC Impact" chart's OWN LOB
+// dropdown, independent of the page-level LOB filter above it. When set, further
+// intersects the page-level in-scope LOB set rather than replacing it, so the
+// chart's own picker narrows on TOP of whatever the page filters already scope to,
+// the same layering every per-chart Plan Name dropdown elsewhere in this app already
+// does relative to the page's own filters.
+function cqnsForFilters(filters, localLobs) {
+  let inScope = new Set(filterLobs(filters).map(l => l.lob))
+  if (localLobs?.length) inScope = new Set([...inScope].filter(l => localLobs.includes(l)))
   const scoped = CQN_LOB_ASSIGNMENTS.filter(q => inScope.has(q.lob))
   return scoped.length ? scoped : CQN_LOB_ASSIGNMENTS
 }
 
-// SR/Workload/Headcount scaled off this page's own existing conventions rather than
-// invented outright: SR off TSA Forecasting's own SR_BY_FY plan (tsaData.js, same
-// magnitude as the SR chart on that page), Workload off TSA_CAPACITY_LOBS' own
-// workloadPlan/workloadActual per LOB, Headcount off TSA_CAPACITY_LOBS' popPlan1
-// (already documented there as the Plan-over-Plan headcount-per-LOB field) — each
-// queue takes a deterministic sub-share of its assigned LOB's totals. `cap` (default
-// 8) keeps the chart legible when unfiltered; the click-popup table calls with a
-// much higher cap to show the full in-scope roster. A single-LOB filter typically
-// narrows to 2-3 queues, well under the default cap either way.
-export function workloadImpactOnHeadcount(filters = {}, cap = 8) {
+// ASU/SR/Workload/Headcount scaled off this page's own existing conventions rather
+// than invented outright: ASU and SR both off TSA Forecasting's own ASU_BY_FY/
+// SR_BY_FY plan (tsaData.js, same magnitude as those charts on that page), Workload
+// off TSA_CAPACITY_LOBS' own workloadPlan/workloadActual per LOB, Headcount off
+// TSA_CAPACITY_LOBS' popPlan1 (already documented there as the Plan-over-Plan
+// headcount-per-LOB field) — each queue takes a deterministic sub-share of its
+// assigned LOB's totals. ASU uses a DIFFERENT index/modulus combination than SR
+// (`i * 11 + q.name.length, % 13` vs SR's `i * 7 + q.name.length, % 11`) so the two
+// vary independently per queue rather than moving in lockstep — the exact "two
+// supposedly-independent metrics come out identical/correlated by construction"
+// failure mode already fixed once on TSA Forecasting's own DB/OSP split (see
+// srDbOspByFY in tsaData.js). `cap` (default 8) keeps the chart legible when
+// unfiltered; the click-popup table calls with a much higher cap to show the full
+// in-scope roster. A single-LOB filter typically narrows to 2-3 queues, well under
+// the default cap either way. `localLobs` threads through to cqnsForFilters — see
+// its own comment above.
+export function workloadImpactOnHeadcount(filters = {}, cap = 8, localLobs) {
   const years = tsaEffectiveFiscalYears(filters)
   const latestFy = years[years.length - 1] || 'FY27'
   const srRow = SR_BY_FY.find(d => d.period === latestFy) || SR_BY_FY[SR_BY_FY.length - 1]
+  const asuRow = ASU_BY_FY.find(d => d.period === latestFy) || ASU_BY_FY[ASU_BY_FY.length - 1]
   const srPerQueueBase = srRow.plan / TSA_ACTIVE_QUEUE_NAMES.length
+  const asuPerQueueBase = asuRow.plan / TSA_ACTIVE_QUEUE_NAMES.length
 
-  return cqnsForFilters(filters).slice(0, cap).map((q, i) => {
+  return cqnsForFilters(filters, localLobs).slice(0, cap).map((q, i) => {
     const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
     const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
     const sr = Math.round(srPerQueueBase * (0.7 + ((i * 7 + q.name.length) % 11) * 0.04))
+    const asu = Math.round(asuPerQueueBase * (0.7 + ((i * 11 + q.name.length) % 13) * 0.03))
     const workloadPlan = Math.round((lobRow?.workloadPlan ?? 620) / queueCount)
     const workloadActual = Math.round((lobRow?.workloadActual ?? workloadPlan) / queueCount)
     const headcount = Math.max(1, Math.round((lobRow?.popPlan1 ?? 10) / queueCount))
-    return { cqn: q.name, lob: q.lob, sr, workloadActual, workloadPlan, headcount }
+    return { cqn: q.name, lob: q.lob, asu, sr, workloadActual, workloadPlan, headcount }
   })
 }
 

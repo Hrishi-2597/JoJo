@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity's "Workload Impact on Headcount" Renamed "ASU/SR HC Impact", Gained an ASU Column and Its Own LOB Dropdown (2026-08-16)
+
+- `WorkloadDistributionLayer.jsx`'s Visual2 (Layer 03, HES Capacity Plan) renamed "Workload Impact on Headcount" → "ASU/SR HC Impact", per direct request.
+- **New ASU column/bar**: `workloadImpactOnHeadcount()` (`tsaCapacityData.js`) now also returns `asu` per CQN, scaled off TSA Forecasting's own `ASU_BY_FY` plan (same magnitude convention the existing `sr` field already uses off `SR_BY_FY`). ASU uses a deliberately different index/modulus formula than SR so the two vary independently per queue rather than moving in lockstep — verified with a Node smoke test that their ratio isn't constant across rows, the same class of bug already fixed once this session for `srDbOspByFY`'s DB/OSP split. Rendered as a second grouped bar sharing SR's blue hue at a lower opacity (this app's 3-hue safe palette was already fully spoken for — bars/Workload-lines/Headcount-line — so a 4th distinct series reuses an existing hue at a different shade, same convention as `planSeriesColor`). New `asu` column added to the drill-down table too.
+- **New per-chart LOB dropdown**: a `MultiSelectField` "LOB" control, local to just this chart (`selectedLobs` state), independent of the page-level LOB filter above it. `workloadImpactOnHeadcount()` gained an optional `localLobs` param that further narrows whatever the page-level filters already scope to (intersection, not replacement) — same layering every per-chart Plan Name dropdown elsewhere in the app already does relative to its page's own filters.
+- **Verified**: `npm run build` clean (1186 modules); Node smoke tests confirming ASU/SR vary independently per row, the chart-local LOB dropdown narrows correctly on its own, and correctly intersects (rather than overrides) an active page-level LOB filter.
+
 ## Fixed: ASU/SR Performance Table's "Select Plan" Dropdown Clipped When Filtered Down to Few Rows (2026-08-16)
 
 - Reported bug: filtering to a single queue (which narrows to very few LOB rows via the queue→LOB cascade) and scrolling to the section made the "Select Plan" `PlanSelect` popover get cut off partway.

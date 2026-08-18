@@ -4,7 +4,9 @@ import {
   Tooltip, Legend, ResponsiveContainer, Rectangle,
 } from 'recharts'
 import { workloadSankey, workloadImpactOnHeadcount } from '../../data/tsaCapacityData'
+import { LOB_LIST } from '../../data/tsaData'
 import { C, Visual, Tip, BinaryToggle, truncate } from '../ChartKit'
+import MultiSelectField from '../MultiSelectField'
 
 // Recharts' default Sankey node renders as a plain unlabeled rect — this custom
 // node paints the real LOB/queue name next to it so the diagram is legible without
@@ -153,30 +155,37 @@ function CqnTick({ x, y, payload }) {
 const WORKLOAD_HC_COLUMNS = [
   { key: 'cqn', label: 'CQN', wrap: true },
   { key: 'lob', label: 'LOB' },
+  { key: 'asu', label: 'ASU', align: 'right' },
   { key: 'sr', label: 'SR', align: 'right' },
   { key: 'workloadActual', label: 'Workload Actual', align: 'right' },
   { key: 'workloadPlan', label: 'Workload Plan', align: 'right' },
   { key: 'headcount', label: 'Headcount', align: 'right' },
 ]
 
-// Replaces "Average Case Time Variance" (2026-07-28) per direct request — SR as a
-// column, Workload Actual/Plan as a solid/dashed line pair sharing one hue (same
-// actual/plan line convention as this page's own metric cards), Headcount as a line
-// on the secondary axis (this page's established role for a secondary-axis line).
-// X-axis is CQN, reusing the real queue-name roster the Sankey's CQN mode draws
-// from; workloadImpactOnHeadcount narrows those CQNs to the selected LOB(s) via the
-// same filterLobs the rest of this page already uses.
+// Renamed "ASU/SR HC Impact" (2026-08-16, was "Workload Impact on Headcount") per
+// direct request, which also asked for an ASU column/bar alongside the existing SR
+// one, and a LOB dropdown scoped to just this chart. `selectedLobs` is this chart's
+// OWN multi-select (independent of the page-level LOB filter above it) — it further
+// narrows whatever the page-level filters already scope to (see
+// workloadImpactOnHeadcount's `localLobs` param), the same layering every per-chart
+// Plan Name dropdown elsewhere in this app already does. ASU and SR are grouped bars
+// sharing metric1 (blue) at two opacities — same "closely-related pair shares one hue"
+// convention as the Workload Actual/Plan solid/dashed line pair below, since a 4th
+// distinct data series has no untouched safe hue left in this app's 3-hue palette
+// (metric1=bars, metric2=Workload lines, trend=Headcount line are already spoken for).
 function Visual2({ filters }) {
-  const data = useMemo(() => workloadImpactOnHeadcount(filters), [filters])
+  const [selectedLobs, setSelectedLobs] = useState([])
+  const data = useMemo(() => workloadImpactOnHeadcount(filters, 8, selectedLobs), [filters, selectedLobs])
   const table = useMemo(() => ({
-    title: 'Workload Impact on Headcount — CQN detail',
+    title: 'ASU/SR HC Impact — CQN detail',
     columns: WORKLOAD_HC_COLUMNS,
-    rows: workloadImpactOnHeadcount(filters, 999),
-  }), [filters])
+    rows: workloadImpactOnHeadcount(filters, 999, selectedLobs),
+  }), [filters, selectedLobs])
   return (
-    <Visual title="Workload Impact on Headcount"
-      subtitle="SR, workload and headcount by CQN — narrows to the selected LOB's queues"
-      info="Service requests, workload actual/plan and headcount for each CQN in scope."
+    <Visual title="ASU/SR HC Impact"
+      subtitle="ASU, SR, workload and headcount by CQN — narrows to the selected LOB's queues"
+      controls={<MultiSelectField label="LOB" options={LOB_LIST} value={selectedLobs} onChange={setSelectedLobs} mono />}
+      info="ASU, service requests, workload actual/plan and headcount for each CQN in scope."
       rca="A handful of CQNs carry most of the workload relative to their assigned headcount."
       clca="Rebalance headcount toward the CQNs running heaviest on workload vs plan."
       table={table}>
@@ -188,6 +197,7 @@ function Visual2({ filters }) {
           <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={C.metric1} opacity={0.45} radius={[3,3,0,0]} maxBarSize={30} />
           <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30} />
           <Line yAxisId="l" type="monotone" dataKey="workloadActual" name="Workload Actual" stroke={C.metric2} strokeWidth={2} dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
           <Line yAxisId="l" type="monotone" dataKey="workloadPlan" name="Workload Plan" stroke={C.metric2} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -207,7 +217,7 @@ export default function WorkloadDistributionLayer({ filters }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#fb923c', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>03</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Workload Distribution</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— LOB/queue flow &amp; workload impact on headcount</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— LOB/queue flow &amp; ASU/SR HC impact</span>
         </div>
         <span style={{ fontSize: 11, color: '#fb923c', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
