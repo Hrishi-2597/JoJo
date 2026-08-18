@@ -64,6 +64,26 @@ function matchesQueueFilter(selectedQueues, lob) {
   return QUEUE_LOB_ASSIGNMENTS.some(q => q.lob === lob && selectedQueues.includes(q.name))
 }
 
+// Cascading filter-panel OPTIONS (2026-08-16, TsaFilterPanel.jsx) — one-directional,
+// matching the panel's own Business Partner & Group -> LOB & Queue left-to-right
+// order: picking a Business Partner/Global Grouping narrows which LOBs show up as
+// pickable, and picking a LOB (directly, or indirectly via Business Partner/Global
+// Grouping) narrows which Queues show up as pickable. The reverse never happens —
+// picking a LOB/Queue doesn't narrow Business Partner/Global Grouping's own options
+// — same reasoning `matchesQueueFilter`'s AND-together `filterLobs()` doesn't need:
+// this is about which OPTIONS a dropdown offers, not which rows a chart's data
+// includes (that narrowing already happens, symmetrically, via filterLobs above).
+export function lobOptionsForFilters(filters = {}) {
+  return LOB_FACTS
+    .filter(l => matchesMulti(filters.businessPartner, l.businessPartner) && matchesMulti(filters.globalGrouping, l.globalGrouping))
+    .map(l => l.lob)
+}
+
+export function queueOptionsForFilters(filters = {}) {
+  const validLobs = new Set(filters.lob?.length ? filters.lob : lobOptionsForFilters(filters))
+  return QUEUE_LOB_ASSIGNMENTS.filter(q => validLobs.has(q.lob)).map(q => q.name)
+}
+
 // Scale factor applied to every FY-level metric below: shrinks proportionally to how
 // many LOBs the current filters leave in scope, same "volume tracks queue count" logic
 // Forecasting's callVolumeByFY uses.

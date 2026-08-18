@@ -1,5 +1,14 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Filter Panel Dropdowns Now Cascade (2026-08-16)
+
+- Per direct request, picking a Business Partner and/or Global Grouping now narrows which LOBs show up as pickable options in the LOB dropdown; picking a LOB (directly, or indirectly via Business Partner/Global Grouping) narrows which Queues show up as pickable — matching the panel's own Business Partner & Group → LOB & Queue left-to-right order.
+- New `lobOptionsForFilters(filters)`/`queueOptionsForFilters(filters)` in `tsaData.js` compute each dropdown's OPTIONS list dynamically from `LOB_FACTS`/`QUEUE_LOB_ASSIGNMENTS` (the same relationships `filterLobs()` already uses to narrow chart data) — `TsaFilterPanel.jsx`'s `lob`/`queue` `defs` entries now use these instead of the static full lists.
+- Auto-prunes stale selections: if a user already has a LOB (or Queue) selected and then picks a Business Partner/Global Grouping that excludes it, that selection is automatically dropped from the filter so it never sits "selected but invisible" in a now-narrower dropdown. Widening a filter (clearing it) never removes an existing narrower selection.
+- One-directional only, per the request's own example ("if I pick a Business Partner... the NEXT dropdowns should narrow") — picking a LOB or Queue does not narrow Business Partner/Global Grouping's own options.
+- Applies to both `TsaFilterPanel` consumers (HES Forecasting + HES Capacity Plan) for the Business-Partner/Group → LOB cascade; the LOB → Queue cascade only applies where `includeQueue` is set (HES Forecasting).
+- **Verified**: `npm run build` clean (1186 modules); Node smoke tests confirming narrowed LOB/Queue option sets match the real `LOB_FACTS`/`QUEUE_LOB_ASSIGNMENTS` relationships exactly, an explicit LOB pick further narrows Queue options beyond what Business Partner alone implies, and a stale LOB selection gets pruned when a new, incompatible Business Partner is picked.
+
 ## HES Filter Panel Reordered for Better Flow (2026-08-16)
 
 - `TsaFilterPanel.jsx`'s 3 filter clusters reordered per direct request — was Scope (LOB/Queue) → Time (fiscal periods) → People (Business Partner/Global Grouping); now **Business Partner & Group → LOB & Queue → Calendars**. `GranularityToggle` stays at the end, after the fiscal/Calendars cluster it's most related to.

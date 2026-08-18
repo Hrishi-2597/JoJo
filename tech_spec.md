@@ -152,7 +152,12 @@ SPoG/
 │   │       │                            MsgCapacityFilterPanel.jsx were not touched. Cluster order (2026-08-16,
 │   │       │                            per direct request) is now Business Partner & Group -> LOB & Queue ->
 │   │       │                            Calendars (fiscal periods), was Scope -> Time -> People; GranularityToggle
-│   │       │                            stays last, after Calendars.
+│   │       │                            stays last, after Calendars. Cascading dropdowns (2026-08-16) — lob/queue
+│   │       │                            defs now source `options` from tsaData.js's lobOptionsForFilters()/
+│   │       │                            queueOptionsForFilters() (computed per-render from current filters) instead
+│   │       │                            of the static LOB_LIST/TSA_ACTIVE_QUEUE_NAMES; `set()` also prunes stale
+│   │       │                            lob/queue selections when an upstream Business Partner/Global Grouping/LOB
+│   │       │                            changes makes them invalid. One-directional (see design_choice.md).
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
@@ -175,6 +180,9 @@ SPoG/
 │       │                         Queue Name filter; filterLobs() now also checks it via matchesQueueFilter(), so every
 │       │                         selector already scaling off filterLobs()'s in-scope count (via lobScopeRatio) reacts to
 │       │                         it automatically. tsaCardData()'s totalQueues.active also narrows to the selection.
+│       │                         New lobOptionsForFilters()/queueOptionsForFilters() (2026-08-16) — power
+│       │                         TsaFilterPanel.jsx's cascading LOB/Queue dropdown OPTIONS (distinct from filterLobs(),
+│       │                         which narrows chart DATA) using the same LOB_FACTS/QUEUE_LOB_ASSIGNMENTS relationships.
 │       ├── msgCapacityData.js  # MSG Capacity Plan's data model (queue-level HC/utilization/SL/leaves fact table)
 │       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly)
 ├── index.html                  # Vite entry HTML
@@ -1159,3 +1167,4 @@ Steps:
 26. Same as #25 but for every "Plan A / Plan B" `PlanDropdowns` (2026-07-31): full N-series rendering only on the charts whose entire purpose IS the Plan A/B comparison (`AsuLayer`/`SrLayer` Visual2, `Layer1PlanOverPlan` Visual1, both Capacity pages' `PlanOverPlanVariationLayer` `MainChart`s) — the region/impact/ranked-variance charts sharing those same widgets (`AsuLayer`/`SrLayer` Visual3, `Layer1PlanOverPlan` Visual2/3, `LobVarianceChart`, `QueueVarianceChart`) use only `plansA[0]`/`plansB[0]` regardless of how many plans are checked on either side, same rationale as #25
 27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request
 28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
+29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships

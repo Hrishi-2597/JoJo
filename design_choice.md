@@ -4,6 +4,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Cascading Dropdowns Are One-Directional, Following the Panel's Own Left-to-Right Order (2026-08-16)
+
+**Decision:** Picking a Business Partner/Global Grouping narrows LOB's options; picking a LOB (directly or via Business Partner/Global Grouping) narrows Queue's options. The reverse never happens — Business Partner/Global Grouping's own option lists are always the full, unfiltered set, regardless of what's picked in LOB or Queue.
+
+**Why:** The request's own example was explicitly directional: "if I pick a specific Business Partner or Group, the NEXT dropdowns should only show..." — describing a drill-down flow, not a fully bidirectional faceted-search experience where every filter narrows every other filter's options. That also matches the panel's own recently-established left-to-right cluster order (Business Partner & Group → LOB & Queue → Calendars), so the cascade direction and the visual layout tell the same story. A bidirectional version would need to answer harder questions the request didn't raise — e.g. does picking a LOB collapse Business Partner down to just the one partner tied to it, and if so, does clearing that LOB re-expand Business Partner, and in what order do simultaneous changes resolve — so scoping to the one direction that was actually asked for avoids inventing behavior nobody requested.
+
+## Stale Downstream Selections Are Auto-Pruned, Not Left Dangling (2026-08-16)
+
+**Decision:** When picking a Business Partner/Global Grouping (or a LOB) would make an already-selected LOB (or Queue) invalid, that selection is automatically removed from the filter state in the same update — not left selected-but-invisible in the now-narrower dropdown.
+
+**Why:** Without this, a user could end up with, say, 3 LOBs checked in the filter chips while the LOB dropdown itself only lists 2 of them as options (the 3rd hidden by a newly-picked Business Partner) — the chart data would keep including that 3rd LOB's numbers with no visible way to tell why, or to uncheck it, since it no longer appears in the list. Auto-pruning keeps the dropdown's visible options and the filter's actual effect on the page in agreement at all times. Widening a filter (clearing a Business Partner selection, for example) never triggers pruning in the other direction — an existing narrower LOB/Queue selection stays exactly as the user left it when its constraint is loosened, since a previously-valid choice never becomes invalid by gaining more options.
+
 ## HES Filter Panel Pinned via `position: sticky`, Reusing PlanningSidebar's Existing Pattern (2026-08-16)
 
 **Decision:** `TsaFilterPanel.jsx`'s outer container is now `position: sticky, top: 0, zIndex: 10` with a permanent subtle box-shadow, rather than `position: fixed` or a scroll-driven JS solution.

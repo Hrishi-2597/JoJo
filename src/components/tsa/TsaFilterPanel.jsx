@@ -1,6 +1,6 @@
 import React from 'react'
 import {
-  LOB_LIST, GLOBAL_GROUPING_LIST, FISCAL_MONTH_LIST, TSA_ACTIVE_QUEUE_NAMES,
+  GLOBAL_GROUPING_LIST, FISCAL_MONTH_LIST, lobOptionsForFilters, queueOptionsForFilters,
 } from '../../data/tsaData'
 import { FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS } from '../../data/mockData'
 import MultiSelectField from '../MultiSelectField'
@@ -43,11 +43,38 @@ function ClusterDivider() {
 // opt-in rather than added to the shared `defs` unconditionally, same "opt-in prop,
 // not a new default for every consumer" precedent as ChartKit.jsx's `comingSoon`.
 export default function TsaFilterPanel({ filters, onChange, granularity, onGranularityChange, includeQueue = false }) {
-  const set = key => val => onChange({ ...filters, [key]: val })
+  // Cascading dropdowns (2026-08-16, per direct request) — LOB's own OPTIONS narrow
+  // to whichever LOBs match the currently-selected Business Partner/Global Grouping;
+  // Queue's options narrow further to whichever queues belong to the (possibly
+  // BP/Group-narrowed) LOB scope. One-directional, matching the panel's own
+  // Business Partner & Group -> LOB & Queue left-to-right order — picking a LOB/
+  // Queue never narrows Business Partner/Global Grouping's own options.
+  const lobOptions = lobOptionsForFilters(filters)
+  const queueOptions = includeQueue ? queueOptionsForFilters(filters) : []
+
+  // Changing an "upstream" filter also prunes any already-selected downstream value
+  // that's no longer valid under the new scope (e.g. a selected LOB that the newly-
+  // picked Business Partner doesn't include) — otherwise a dropdown could show a
+  // narrowed option list while still holding a now-invisible selected value.
+  const set = key => val => {
+    const next = { ...filters, [key]: val }
+    if (key === 'businessPartner' || key === 'globalGrouping') {
+      const validLobs = lobOptionsForFilters(next)
+      next.lob = (filters.lob || []).filter(l => validLobs.includes(l))
+      if (includeQueue) {
+        const validQueues = queueOptionsForFilters(next)
+        next.queue = (filters.queue || []).filter(q => validQueues.includes(q))
+      }
+    } else if (key === 'lob' && includeQueue) {
+      const validQueues = queueOptionsForFilters(next)
+      next.queue = (filters.queue || []).filter(q => validQueues.includes(q))
+    }
+    onChange(next)
+  }
 
   const defs = {
-    ...(includeQueue ? { queue: { label: 'Queue Name', options: TSA_ACTIVE_QUEUE_NAMES, mono: true } } : {}),
-    lob:             { label: 'LOB',             options: LOB_LIST, mono: true },
+    ...(includeQueue ? { queue: { label: 'Queue Name', options: queueOptions, mono: true } } : {}),
+    lob:             { label: 'LOB',             options: lobOptions, mono: true },
     fiscalYear:      { label: 'Fiscal Year',     options: FISCAL_YEARS },
     fiscalQuarter:   { label: 'Fiscal Quarter',  options: FISCAL_QUARTERS },
     fiscalMonth:     { label: 'Fiscal Month',    options: FISCAL_MONTH_LIST },

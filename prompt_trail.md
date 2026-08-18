@@ -956,3 +956,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Reordered `TsaFilterPanel.jsx`'s 3 filter clusters to Business Partner & Group → LOB & Queue → Calendars (was Scope → Time → People) — a pure visual reorder, `GranularityToggle` stays last after Calendars, no filter keys/options/logic changed.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `tech_spec.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 75 — 2026-08-16
+**Input:** Can we make the dropdown menus talk to each other? For example, if I pick a specific Business Partner or Group, the next dropdowns should only show the LOBs or Queues that actually belong to them.
+
+**Action:**
+- New `lobOptionsForFilters(filters)`/`queueOptionsForFilters(filters)` in `tsaData.js` — compute each dropdown's OPTIONS list dynamically from `LOB_FACTS`/`QUEUE_LOB_ASSIGNMENTS` (the same relationships `filterLobs()` already uses to narrow chart data), rather than the static full `LOB_LIST`/`TSA_ACTIVE_QUEUE_NAMES`.
+- `TsaFilterPanel.jsx`'s `lob`/`queue` `defs` now source `options` from these, so picking a Business Partner/Global Grouping narrows LOB's pickable options, and picking a LOB (directly or via Business Partner/Global Grouping) narrows Queue's pickable options — one-directional, matching the panel's own Business Partner & Group → LOB & Queue left-to-right order (the reverse — LOB/Queue narrowing Business Partner/Global Grouping — was deliberately not built, per the request's own directional example).
+- `set()` also auto-prunes stale downstream selections (an already-checked LOB/Queue that a newly-picked upstream filter would make invalid) so a dropdown's visible options and the filter's actual effect never disagree; widening a filter never prunes anything, since a previously-valid pick can't become invalid by gaining more options.
+- Applies to both `TsaFilterPanel` consumers (HES Forecasting + HES Capacity Plan) for the Business-Partner/Group → LOB cascade; LOB → Queue only where `includeQueue` is set (HES Forecasting).
+- Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming narrowed option sets match the real `LOB_FACTS`/`QUEUE_LOB_ASSIGNMENTS` relationships exactly, an explicit LOB pick further narrows Queue options beyond Business Partner alone, and a stale LOB selection is correctly pruned when an incompatible Business Partner is picked.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
