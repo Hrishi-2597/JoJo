@@ -69,6 +69,15 @@ export default function TsaFilterPanel({ filters, onChange, granularity, onGranu
       background: 'linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-inset) 100%)',
       borderBottom: '1px solid var(--border-subtle)',
       padding: '11px 18px 12px',
+      // Pinned to the top of the viewport while scrolling (2026-08-16, per direct
+      // request) — position: sticky rather than fixed, so it still scrolls normally
+      // until it reaches the top, matching PlanningSidebar's own sticky treatment
+      // (App.jsx) rather than inventing a second pinning convention. zIndex 10 keeps
+      // it above every scrolled-past chart/table (the highest existing zIndex on this
+      // page, PerformanceMatrixTable's sticky header, tops out at 4) and above the
+      // "Coming Soon" overlay (zIndex 6).
+      position: 'sticky', top: 0, zIndex: 10,
+      boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
         <Cluster icon="scope" cols={includeQueue ? 2 : 1}>{includeQueue && field('queue')}{field('lob')}</Cluster>

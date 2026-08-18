@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Filter Panel Now Pinned to the Top of the Screen While Scrolling (2026-08-16)
+
+- `TsaFilterPanel.jsx` (shared by both HES Forecasting and HES Capacity Plan) is now `position: sticky, top: 0` — it stays pinned to the top of the viewport once you scroll past it, instead of scrolling away with the page. Filters, the "Scoped by" active-filter chip row, and the granularity toggle all stay reachable at any scroll position.
+- Reused the exact same sticky pattern `PlanningSidebar.jsx` already uses in `App.jsx` (`position: sticky, top: 0`) rather than inventing a second pinning convention or a `position: fixed` layout (which would've needed manual height offsetting).
+- `zIndex: 10` keeps it above every scrolled-past chart/table on the page (the highest existing z-index, `PerformanceMatrixTable`'s sticky header, tops out at 4) and above the "Coming Soon" overlay (z-index 6); a permanent subtle box-shadow gives it a "floating above content" look at any scroll position without needing a scroll-position listener.
+- Scoped to HES only (both `TsaFilterPanel` consumers — HES Forecasting and HES Capacity Plan) — ESG's own separate `FilterPanel.jsx`/`MsgCapacityFilterPanel.jsx` were untouched, consistent with the "HES-only focus" from the prior change.
+- **Verified**: `npm run build` clean (1186 modules); no browser-automation tool was available this session to confirm the scroll behavior visually — verified via code inspection against `PlanningSidebar`'s already-working sticky implementation instead.
+
 ## ESG Hidden from the App — HES-Only Focus, Fully Reversible (2026-08-16)
 
 - Per direct request ("we only want to work on HES"), the ESG tile is no longer shown on the landing page — `LandingPage.jsx`'s `TILES` array gained a `SHOW_ESG` flag (default `false`) filtering the ESG entry out of what renders. The tile's own data, and every ESG page/component/selector underneath it (`ForecastingPage.jsx`, `MsgCapacityPage.jsx`, and everything they import), are completely untouched — nothing was deleted.

@@ -935,3 +935,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `App.jsx`'s 2 other "ESG · HES" labels (landing-screen header subtitle, page footer) updated to "HES" only, with a comment tying them back to `SHOW_ESG` so both flip back together if ESG returns.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 73 — 2026-08-16
+**Input:** Can we freeze filters at the top - filters could stay pinned to the top of the screen when we scroll down the page.
+
+**Action:**
+- `TsaFilterPanel.jsx`'s outer container changed to `position: sticky, top: 0, zIndex: 10` (plus a permanent subtle box-shadow) — reused the exact same sticky pattern `PlanningSidebar.jsx` already uses in `App.jsx`, rather than `position: fixed` (which would need manual layout-height offsetting) or a scroll-listener-driven approach.
+- Applies to both `TsaFilterPanel` consumers — HES Forecasting and HES Capacity Plan — since the component is shared between them and both are HES; ESG's own separate `FilterPanel.jsx`/`MsgCapacityFilterPanel.jsx` were untouched, consistent with the prior "HES-only focus" change.
+- Verified with `npm run build` (clean, 1186 modules); no browser-automation tool was available this session to confirm the scroll behavior visually.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Filter Panel Pinned via `position: sticky`, Reusing PlanningSidebar's Existing Pattern (2026-08-16)
+
+**Decision:** `TsaFilterPanel.jsx`'s outer container is now `position: sticky, top: 0, zIndex: 10` with a permanent subtle box-shadow, rather than `position: fixed` or a scroll-driven JS solution.
+
+**Why:** `PlanningSidebar.jsx` already pins itself to the viewport top the exact same way (`position: sticky, top: 0`, confirmed working in this app since it renders on every page), so reusing that convention avoids introducing a second pinning mechanism with different edge cases. `position: fixed` was ruled out since it would require manually reserving vertical space for the panel in the page layout (to stop content from jumping under it) and manually recalculating that space whenever the panel's own height changes (e.g., when the "Scoped by" active-filter chip row appears/disappears) — `sticky` handles both for free by staying in normal document flow until the scroll position would carry it past the top, at which point it's exactly as tall as it already was.
+
 ## ESG Hidden via a Filter Flag, Not Deleted (2026-08-16)
 
 **Decision:** ESG's landing-page tile is hidden behind a `SHOW_ESG = false` constant in `LandingPage.jsx` that filters it out of the rendered tile list — the tile's own data, and every ESG page/component/selector it links to, are left completely in place in the codebase.
