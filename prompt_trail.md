@@ -946,3 +946,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Applies to both `TsaFilterPanel` consumers — HES Forecasting and HES Capacity Plan — since the component is shared between them and both are HES; ESG's own separate `FilterPanel.jsx`/`MsgCapacityFilterPanel.jsx` were untouched, consistent with the prior "HES-only focus" change.
 - Verified with `npm run build` (clean, 1186 modules); no browser-automation tool was available this session to confirm the scroll behavior visually.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 74 — 2026-08-16
+**Input:** "he flow would be better if we ordered them like this: Business Partner & Group / LOB & Queue / Calendars"
+
+**Action:**
+- Reordered `TsaFilterPanel.jsx`'s 3 filter clusters to Business Partner & Group → LOB & Queue → Calendars (was Scope → Time → People) — a pure visual reorder, `GranularityToggle` stays last after Calendars, no filter keys/options/logic changed.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `tech_spec.md`; committed, pushed to `main`, and redeployed.

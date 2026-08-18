@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Filter Panel Reordered for Better Flow (2026-08-16)
+
+- `TsaFilterPanel.jsx`'s 3 filter clusters reordered per direct request — was Scope (LOB/Queue) → Time (fiscal periods) → People (Business Partner/Global Grouping); now **Business Partner & Group → LOB & Queue → Calendars**. `GranularityToggle` stays at the end, after the fiscal/Calendars cluster it's most related to.
+- Purely a visual reorder — no filter's own key, options, or narrowing logic changed, so `activeFilters`/`clearAll` and the "Scoped by" chip row are unaffected.
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## HES Filter Panel Now Pinned to the Top of the Screen While Scrolling (2026-08-16)
 
 - `TsaFilterPanel.jsx` (shared by both HES Forecasting and HES Capacity Plan) is now `position: sticky, top: 0` — it stays pinned to the top of the viewport once you scroll past it, instead of scrolling away with the page. Filters, the "Scoped by" active-filter chip row, and the granularity toggle all stay reachable at any scroll position.

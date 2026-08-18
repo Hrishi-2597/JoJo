@@ -79,14 +79,16 @@ export default function TsaFilterPanel({ filters, onChange, granularity, onGranu
       position: 'sticky', top: 0, zIndex: 10,
       boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
     }}>
+      {/* Ordered Business Partner & Group -> LOB & Queue -> Calendars (2026-08-16,
+          per direct request, "the flow would be better") — was Scope/Time/People. */}
       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+        <Cluster icon="people" cols={2}>{field('businessPartner')}{field('globalGrouping')}</Cluster>
+        <ClusterDivider />
         <Cluster icon="scope" cols={includeQueue ? 2 : 1}>{includeQueue && field('queue')}{field('lob')}</Cluster>
         <ClusterDivider />
         <Cluster icon="time" cols={4}>
           {field('fiscalYear')}{field('fiscalQuarter')}{field('fiscalMonth')}{field('fiscalWeek')}
         </Cluster>
-        <ClusterDivider />
-        <Cluster icon="people" cols={2}>{field('businessPartner')}{field('globalGrouping')}</Cluster>
         <ClusterDivider />
         <GranularityToggle value={granularity} onChange={onGranularityChange} />
       </div>

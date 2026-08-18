@@ -149,7 +149,10 @@ SPoG/
 │   │       │                            pinned to the top of the viewport while scrolling, on both TsaFilterPanel
 │   │       │                            consumers (HES Forecasting + HES Capacity Plan); same sticky pattern as
 │   │       │                            PlanningSidebar.jsx in App.jsx. ESG's own separate FilterPanel.jsx/
-│   │       │                            MsgCapacityFilterPanel.jsx were not touched.
+│   │       │                            MsgCapacityFilterPanel.jsx were not touched. Cluster order (2026-08-16,
+│   │       │                            per direct request) is now Business Partner & Group -> LOB & Queue ->
+│   │       │                            Calendars (fiscal periods), was Scope -> Time -> People; GranularityToggle
+│   │       │                            stays last, after Calendars.
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
