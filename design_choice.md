@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## ESG Hidden via a Filter Flag, Not Deleted (2026-08-16)
+
+**Decision:** ESG's landing-page tile is hidden behind a `SHOW_ESG = false` constant in `LandingPage.jsx` that filters it out of the rendered tile list — the tile's own data, and every ESG page/component/selector it links to, are left completely in place in the codebase.
+
+**Why:** The request was to focus on HES going forward ("we only want to work on HES"), not to permanently remove ESG — a real, working feature with its own substantial build history. Deleting the ESG pages/routes would be a much harder action to reverse (recreating deleted components, re-wiring routes) than flipping a boolean back, for no benefit given the stated goal was about where *current* attention goes, not that ESG is wrong or unwanted. A filter flag keeps the change scoped to exactly what was asked (make it inaccessible) while keeping the door fully open to bring it back with a trivial edit.
+
 ## HES Forecasting's New Queue Filter Genuinely Narrows the Page, via a Round-Robin Queue→LOB Map (2026-08-04)
 
 **Decision:** Rather than adding a Queue Name dropdown that changes filter state without affecting any chart (a "cosmetic" gap this project has repeatedly hunted down and fixed for Plan dropdowns), the new filter is backed by `QUEUE_LOB_ASSIGNMENTS` — a deterministic round-robin assignment of each of the 78 real active queue names to one of the 33 real LOBs — feeding directly into the page's existing `filterLobs()`/`lobScopeRatio()` mechanism that every FY-level chart already scales off of.

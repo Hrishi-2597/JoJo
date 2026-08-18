@@ -146,8 +146,10 @@ export default function App() {
             <h1 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
               ISG SPoG
             </h1>
+            {/* 'HES' (was 'ESG · HES', 2026-08-16) — tied to LandingPage.jsx's SHOW_ESG
+                flag hiding the ESG tile; flip both back together if ESG returns. */}
             <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
-              {isBusiness ? `${meta.label} · ${subPageLabel}` : 'ESG · HES'}
+              {isBusiness ? `${meta.label} · ${subPageLabel}` : 'HES'}
             </p>
           </div>
         </div>
@@ -194,7 +196,7 @@ export default function App() {
             textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',
             padding: '12px 0', borderTop: '1px solid var(--border-subtle)',
           }}>
-            ISG SPoG · ESG · HES · © 2026 Aligned Automation Services
+            ISG SPoG · HES · © 2026 Aligned Automation Services
           </footer>
         </div>
       </div>

@@ -2,6 +2,13 @@ import React from 'react'
 
 // Full descriptive names (Enterprise Service Group / High End Storage) were
 // dropped entirely 2026-07-27, per direct request — just the acronym now.
+// ESG tile hidden 2026-08-16 per direct request ("we only want to work on HES") —
+// the tile definition and every underlying ESG page/component are untouched, just
+// filtered out of the rendered list, so re-enabling it later is a one-line flip
+// (SHOW_ESG below). See App.jsx's header subtitle/footer for the 2 other "ESG ·
+// HES" labels tied to this same decision.
+const SHOW_ESG = false
+
 const TILES = [
   {
     key: 'msg',
@@ -15,7 +22,7 @@ const TILES = [
     desc: 'Forecasting and Capacity Plan for HES lines of business and workload.',
     accent: '#a78bfa',
   },
-]
+].filter(t => SHOW_ESG || t.key !== 'msg')
 
 function Tile({ tile, onSelect }) {
   return (

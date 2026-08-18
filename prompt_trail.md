@@ -924,3 +924,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Caught and avoided a scope leak before it shipped: `TsaFilterPanel.jsx` is shared, unmodified, by TSA Capacity Plan's own page — adding `queue` unconditionally would have put a functionally-live (and confusingly page-crossing) Queue filter there too, since `tsaCapacityData.js` reuses the same `filterLobs()`. Added an opt-in `includeQueue` prop (default `false`), set only by `TsaForecastingPage.jsx`.
 - Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming: the queue→LOB map covers all 33 LOBs, `filterLobs`/`asuByFY`/`tsaCardData` all genuinely narrow when queues are selected, AND-semantics with an existing LOB filter work, and TSA Capacity's own filtering is unaffected.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 72 — 2026-08-16
+**Input:** "Lets make changes on HES" (asked to clarify what specifically) → "Can you make one change hide everything about ESG now..we only want to work on HES"
+
+**Action:**
+- Hidden, not deleted: `LandingPage.jsx`'s `TILES` array gained a `SHOW_ESG = false` flag filtering the ESG tile out of what renders — every ESG page/component/selector underneath it is untouched.
+- `App.jsx`'s 2 other "ESG · HES" labels (landing-screen header subtitle, page footer) updated to "HES" only, with a comment tying them back to `SHOW_ESG` so both flip back together if ESG returns.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

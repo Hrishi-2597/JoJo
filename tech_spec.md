@@ -57,7 +57,10 @@ SPoG/
 │   │   ├── HolidayCalendarView.jsx # Third sidebar section (2026-07-27) — Region pill filter + searchable Country
 │   │   │                             MultiSelectField over src/data/holidayCalendarData.js's 800-row real global
 │   │   │                             holiday list, grouped into collapsible per-month accordions
-│   │   ├── LandingPage.jsx     # "TSG SPoG" title + MSG/TSA tiles — the app's entry point (2026-07-03)
+│   │   ├── LandingPage.jsx     # "TSG SPoG" title + MSG/TSA tiles — the app's entry point (2026-07-03). ESG (msg)
+│   │   │                         tile hidden 2026-08-16 via a `SHOW_ESG = false` filter — the tile data and every
+│   │   │                         underlying ESG page/component are untouched, just not rendered; flip the flag
+│   │   │                         (and App.jsx's 2 matching "HES"-only labels) to bring it back
 │   │   ├── ForecastingPage.jsx # MSG Forecasting page body (filters + cards + 3 layers + RCA/CLCA sidebar)
 │   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by every page
 │   │   ├── Modal.jsx           # Shared popup modal — used by every page's Key Metrics card drill-downs

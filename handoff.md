@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## ESG Hidden from the App — HES-Only Focus, Fully Reversible (2026-08-16)
+
+- Per direct request ("we only want to work on HES"), the ESG tile is no longer shown on the landing page — `LandingPage.jsx`'s `TILES` array gained a `SHOW_ESG` flag (default `false`) filtering the ESG entry out of what renders. The tile's own data, and every ESG page/component/selector underneath it (`ForecastingPage.jsx`, `MsgCapacityPage.jsx`, and everything they import), are completely untouched — nothing was deleted.
+- `App.jsx`'s two other "ESG · HES" labels (the header subtitle shown on the landing screen, and the page footer) updated to just "HES" to match, with a comment pointing back to `SHOW_ESG` so both flip back together if ESG returns.
+- **To bring ESG back**: flip `SHOW_ESG` to `true` in `LandingPage.jsx` and restore the two "ESG · HES" strings in `App.jsx` — a 3-line change, no rebuilding of anything.
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## New "Queue Name" Filter on HES Forecasting, Sourced from the Total Queues Card (2026-08-04)
 
 - HES Forecasting's filter panel (`TsaFilterPanel.jsx`) gained a "Queue Name" multi-select, leading the Scope cluster (mirroring ESG Forecasting's own Queue Name filter's position/label) — options are `TSA_ACTIVE_QUEUE_NAMES`, the exact same 78-name active roster the Total Queues KPI card already shows.
