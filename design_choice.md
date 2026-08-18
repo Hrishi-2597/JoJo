@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Performance Table's Clipped Dropdown Fixed by Removing `overflow: hidden`, Not Raising z-index (2026-08-16)
+
+**Decision:** `PerformanceMatrixTable.jsx`'s outer panel wrapper no longer sets `overflow: 'hidden'`. The rounded-corner look it existed for is now achieved by giving `.layer-header` its own matching `border-radius` (top corners always, bottom corners only while the panel is collapsed) instead.
+
+**Why:** The user's own two suggested fixes were "bring it to the front" (raise z-index) or "make the main box a little bigger" — but the actual clipping was caused by `overflow: hidden`, which clips child content that visually extends past its box regardless of that child's z-index (`z-index` only resolves stacking order AMONG un-clipped content, it can't escape an ancestor's `overflow: hidden`). Raising the popover's z-index would have changed nothing. A bigger fixed box (e.g. a `min-height`) would have papered over the symptom for a 1-2-row result but broken again for an even shorter result, or wasted space for a normal-sized one. Removing the actual clipping property is the only fix that's correct for every row count, not just the one that was reported.
+
 ## Cascading Dropdowns Are One-Directional, Following the Panel's Own Left-to-Right Order (2026-08-16)
 
 **Decision:** Picking a Business Partner/Global Grouping narrows LOB's options; picking a LOB (directly or via Business Partner/Global Grouping) narrows Queue's options. The reverse never happens — Business Partner/Global Grouping's own option lists are always the full, unfiltered set, regardless of what's picked in LOB or Queue.

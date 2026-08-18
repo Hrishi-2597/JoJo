@@ -969,3 +969,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Applies to both `TsaFilterPanel` consumers (HES Forecasting + HES Capacity Plan) for the Business-Partner/Group → LOB cascade; LOB → Queue only where `includeQueue` is set (HES Forecasting).
 - Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming narrowed option sets match the real `LOB_FACTS`/`QUEUE_LOB_ASSIGNMENTS` relationships exactly, an explicit LOB pick further narrows Queue options beyond Business Partner alone, and a stale LOB selection is correctly pruned when an incompatible Business Partner is picked.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 76 — 2026-08-16
+**Input:** I noticed a small bug on the SR Performance table. If you filter by just one queue and scroll down, the "Select Plan" menu gets cut off by the section's borders. We probably just need to bring it to the front or make the main box a little bigger.
+
+**Action:**
+- Root-caused: `PerformanceMatrixTable.jsx`'s outer panel wrapper had `overflow: 'hidden'` (added only to round `.layer-header`'s top corners to match the box) — this clips ANY child content past its bounds regardless of z-index, including the "Select Plan" `PlanSelect` popover. Filtering to 1 queue (via the new queue→LOB cascade) shrinks the box down to barely more than the header + controls row, leaving no spare height for the popover before it hits that clipping boundary.
+- Fixed by removing `overflow: 'hidden'` (not raising z-index, which can't escape an ancestor's overflow clipping, and not just enlarging the box, which would only paper over the symptom for this one row count) — `.layer-header` now rounds its own top corners directly via inline style (and bottom corners too, only while collapsed), so the panel still looks correctly rounded without needing to clip its children.
+- Only `PerformanceMatrixTable.jsx` touched — it's HES-only (ASU/SR Performance on HES Forecasting, Workload/ACT Performance on HES Capacity Plan), so both benefit.
+- Verified with `npm run build` (clean, 1186 modules); no browser-automation tool was available this session to visually confirm the popover no longer clips.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

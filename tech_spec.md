@@ -104,7 +104,11 @@ SPoG/
 │   │   │                                a purple RCA/CLCA pill per row (same convention as msgCapacity/
 │   │   │                                QueuePerformanceTable.jsx) opening a contributingFactors-backed PopupTable.
 │   │   │                                Consumed by tsa/AsuSrPerformanceTable.jsx and tsaCapacity/
-│   │   │                                WorkloadActPerformanceTable.jsx — see those pages' own entries below
+│   │   │                                WorkloadActPerformanceTable.jsx — see those pages' own entries below.
+│   │   │                                Outer wrapper's `overflow: 'hidden'` removed (2026-08-16, fixed bug) — it
+│   │   │                                clipped the PlanSelect popover once filtering left too few rows for the box
+│   │   │                                to have spare height; .layer-header now rounds its own top corners (and
+│   │   │                                bottom corners only while collapsed) via inline style instead.
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors

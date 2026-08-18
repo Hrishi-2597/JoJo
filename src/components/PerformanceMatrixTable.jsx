@@ -78,8 +78,18 @@ export default function PerformanceMatrixTable({
   const colCount = 1 + periods.length * 3 + 1
 
   return (
-    <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
-      <div className="layer-header" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    // `overflow: 'hidden'` removed 2026-08-16 — it was only there to visually round
+    // .layer-header's top corners to match this box, but it also clipped the "Select
+    // Plan" dropdown's popover once filtering down to 1-2 LOBs left too little table
+    // height below it for the popover to fit inside the box (reported bug). The header
+    // below now rounds its own corners directly instead, so this box no longer needs
+    // to clip its children to look right.
+    <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, marginBottom: 14 }}>
+      <div className="layer-header" onClick={() => setOpen(o => !o)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderTopLeftRadius: 10, borderTopRightRadius: 10,
+        borderBottomLeftRadius: open ? 0 : 10, borderBottomRightRadius: open ? 0 : 10,
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {title}

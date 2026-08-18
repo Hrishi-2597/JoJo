@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Fixed: ASU/SR Performance Table's "Select Plan" Dropdown Clipped When Filtered Down to Few Rows (2026-08-16)
+
+- Reported bug: filtering to a single queue (which narrows to very few LOB rows via the queue→LOB cascade) and scrolling to the section made the "Select Plan" `PlanSelect` popover get cut off partway.
+- **Root cause**: `PerformanceMatrixTable.jsx`'s outer panel wrapper had `overflow: 'hidden'` — added purely to visually round `.layer-header`'s top corners to match the panel's own rounded border — which also clipped ANY child content extending past the box's bounds, including the "Select Plan" popover. With few rows, the box shrinks to barely more than the header + controls row, leaving no spare height for the popover to open into before hitting that clipping boundary.
+- **Fix**: removed `overflow: 'hidden'` from the outer wrapper; the header now rounds its own top corners directly (and its bottom corners too, only while collapsed) via inline `border-radius`, so the panel still looks correctly rounded without needing to clip its children. Increasing z-index alone (one of the two fixes suggested) wouldn't have solved this — `overflow: hidden` clips regardless of stacking order.
+- Only `PerformanceMatrixTable.jsx` was touched — it's HES-only (backs both ASU/SR Performance on HES Forecasting and Workload/ACT Performance on HES Capacity Plan), so both benefit from the fix.
+- **Verified**: `npm run build` clean (1186 modules); no browser-automation tool was available this session to visually confirm the popover no longer clips.
+
 ## HES Filter Panel Dropdowns Now Cascade (2026-08-16)
 
 - Per direct request, picking a Business Partner and/or Global Grouping now narrows which LOBs show up as pickable options in the LOB dropdown; picking a LOB (directly, or indirectly via Business Partner/Global Grouping) narrows which Queues show up as pickable — matching the panel's own Business Partner & Group → LOB & Queue left-to-right order.
