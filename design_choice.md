@@ -4,6 +4,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "Plan vs Coverage HC"'s Trend Pop-Up Reuses One-Shot `expandToGranularity`, Not a Click-Through Drill Cascade (2026-08-16)
+
+**Decision:** The click-a-CQN trend pop-up shows Fiscal Year by default, with a Quarter/Week toggle that re-fetches the SAME selector at that granularity directly — it does NOT implement "click a year to see its quarters, then click a quarter to see its weeks" as a literal multi-step, breadcrumb-driven cascade.
+
+**Why:** The request said "show year trend which can be drilled down to quarter, week from above" — read as describing the DIRECTION (broad to narrow), not necessarily a mandatory click-through-each-level mechanic. Every other trend-capable chart in this app already lets its granularity jump directly from Year to Quarter or Week via one call to `expandToGranularity` (the same helper this page's own top-level "View By" toggle uses) — building a bespoke progressive-drill-with-breadcrumbs interaction instead would be substantially more code for a UX difference the request didn't clearly call for, and would be the only chart in the app behaving that way instead of reusing an established, already-correct pattern.
+
+## Plan HC Reuses "ASU/SR HC Impact"'s Existing Headcount Formula, Not a New Invented Number (2026-08-16)
+
+**Decision:** `planVsCoverageHcByCqn`'s `planHC` field is computed with the exact same formula as `workloadImpactOnHeadcount`'s existing `headcount` field (`popPlan1` per LOB, divided by that LOB's queue count).
+
+**Why:** Both fields represent the identical underlying concept — "this queue's share of its LOB's planned headcount" — just surfaced on two different charts. Inventing a second, independently-derived "Plan HC" number for the same real-world quantity would let the same queue show two different "planned headcount" values depending on which chart you're looking at, which reads as a data bug even though both are illustrative mock numbers. Reusing the identical formula keeps the page internally consistent.
+
 ## ASU Reuses SR's Bar Color at a Different Opacity, Rather Than a New Hue (2026-08-16)
 
 **Decision:** The new ASU bar shares `metric1` (blue) with the existing SR bar, at a lower opacity (0.45 vs SR's 0.85), instead of introducing a 4th distinct color.

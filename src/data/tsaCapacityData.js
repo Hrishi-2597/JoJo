@@ -512,6 +512,57 @@ export function workloadImpactOnHeadcount(filters = {}, cap = 8, localLobs) {
   })
 }
 
+// Per-queue Plan HC baseline (2026-08-16) — the SAME formula workloadImpactOnHeadcount
+// already uses for its own `headcount` field (both represent the identical
+// real-world concept, "this queue's share of its LOB's planned headcount," so they're
+// deliberately kept numerically identical rather than each chart inventing its own
+// disconnected version of the same number).
+function planHcForQueue(q) {
+  const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
+  const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
+  return Math.max(1, Math.round((lobRow?.popPlan1 ?? 10) / queueCount))
+}
+
+// "Plan vs Coverage HC" (Layer 01 "Headcount and Attrition", 2026-08-16, per direct
+// request) — Coverage HC (how much of the planned headcount is actually covering the
+// queue right now) uses a DIFFERENT index/modulus than any other per-queue variance
+// formula in this file (`i * 17 + q.name.length, % 19`) so it varies independently
+// per queue rather than tracking Plan HC (or ASU/SR/Workload) by a fixed ratio — same
+// "don't let two supposedly-independent numbers move in lockstep" principle as
+// workloadImpactOnHeadcount's ASU/SR split above.
+export function planVsCoverageHcByCqn(filters = {}, cap = 8) {
+  return cqnsForFilters(filters).slice(0, cap).map((q, i) => {
+    const planHC = planHcForQueue(q)
+    const coverageHC = Math.max(1, Math.round(planHC * (0.68 + ((i * 17 + q.name.length) % 19) * 0.018)))
+    return { cqn: q.name, lob: q.lob, planHC, coverageHC }
+  })
+}
+
+// Year-by-default trend for ONE clicked CQN (2026-08-16) — backs "Plan vs Coverage
+// HC"'s click-a-CQN pop-up. Builds a 3-FY {planHC, coverageHC} baseline (same modest
+// YoY-step convention as workloadActFyRows above) then reuses expandToGranularity —
+// the SAME one-shot Year->Quarter/Week expansion every other trend-drill chart in
+// this app already uses for its own granularity control — rather than a bespoke
+// click-a-quarter-to-see-its-weeks mechanic. Recomputes the queue's own base
+// planHC/coverageHC independently (via TSA_ACTIVE_QUEUE_NAMES' fixed index rather
+// than an array position, since this is called for one CQN in isolation, outside any
+// particular filtered/capped list) — the illustrative numbers may not perfectly
+// match whatever happened to be on-screen in the bar chart at the moment of the
+// click, an accepted convention already true of every other trend-drill selector in
+// this app (e.g. cpasuTrendByRegion), not a new gap introduced here.
+export function planVsCoverageHcTrendByCqn(cqnName, granularity) {
+  const q = CQN_LOB_ASSIGNMENTS.find(c => c.name === cqnName) || { name: cqnName, lob: LOB_LIST[0] }
+  const idx = TSA_ACTIVE_QUEUE_NAMES.indexOf(cqnName)
+  const planHCBase = planHcForQueue(q)
+  const coverageHCBase = Math.max(1, Math.round(planHCBase * (0.68 + ((idx * 17 + cqnName.length) % 19) * 0.018)))
+  const fyRows = FISCAL_YEARS.map((fy, i) => ({
+    period: fy,
+    planHC: Math.round(planHCBase * (0.94 + i * 0.05)),
+    coverageHC: Math.round(coverageHCBase * (0.92 + i * 0.06)),
+  }))
+  return expandToGranularity(fyRows, granularity, ['planHC', 'coverageHC'])
+}
+
 // Illustrative Sankey, now with two modes (2026-07-03): 'LOB' flows 3 illustrative
 // CQN priority tiers into 4 real LOB names; 'CQN' flows 3 illustrative LOB-priority
 // tiers into 4 real TSA queue names (pulled from LOB_QUEUES['High End Storage'] —

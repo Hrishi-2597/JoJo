@@ -133,7 +133,11 @@ SPoG/
 │   │   └── tsaCapacity/         # TSA Capacity Plan page (all new, 2026-07-03; revised same day)
 │   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
-│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28)
+│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28).
+│   │       │                                   New Visual1b "Plan vs Coverage HC" (2026-08-16), sits between "Actual vs
+│   │       │                                   Plan Variation" and "Attrition" — CQN X-axis, Plan HC/Coverage HC bars;
+│   │       │                                   click a CQN opens CqnHcTrendModal (Year default, Quarter/Week drill via
+│   │       │                                   DrillToggle, both new local components in this file)
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), "ASU/SR HC Impact"
 │   │       │                                   (2026-08-16, was "Workload Impact on Headcount", 2026-07-28 replaced Average
@@ -195,7 +199,12 @@ SPoG/
 │       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly).
 │                                 workloadImpactOnHeadcount() (2026-08-16) gained `asu` (scaled off tsaData.js's own
 │                                 ASU_BY_FY, independent variation formula from `sr`) and an optional `localLobs` 3rd
-│                                 param (intersects the page-level in-scope LOB set, backing the chart's own LOB dropdown)
+│                                 param (intersects the page-level in-scope LOB set, backing the chart's own LOB dropdown).
+│                                 New planVsCoverageHcByCqn()/planVsCoverageHcTrendByCqn() (2026-08-16) back "Plan vs
+│                                 Coverage HC" — planHC reuses workloadImpactOnHeadcount's own headcount formula
+│                                 (same real concept, deliberately identical); coverageHC uses its own independent
+│                                 variance formula; the trend fn expands a 3-FY base series via expandToGranularity
+│                                 for the click-a-CQN pop-up's Year/Quarter/Week drill.
 ├── index.html                  # Vite entry HTML
 ├── vite.config.js              # base: '/TSG-SPoG/' for GitHub Pages paths
 ├── tailwind.config.js          # Custom navy color palette
@@ -1179,3 +1188,4 @@ Steps:
 27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request
 28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
 29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships
+30. "Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29

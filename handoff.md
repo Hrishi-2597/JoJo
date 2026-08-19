@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## New "Plan vs Coverage HC" Chart on HES Capacity's Headcount and Attrition Layer (2026-08-16)
+
+- Per direct request, a new 3rd chart added to `HeadcountAttritionLayer.jsx` (Layer 01, HES Capacity Plan), sitting between "Actual vs Plan Variation" and "Attrition". X-axis is CQN (queue name, reusing the same real 78-name roster/queue→LOB assignment "ASU/SR HC Impact" already established), with two grouped bars per CQN: **Plan HC** and **Coverage HC**.
+- **Click a CQN bar → pop-up trend drill**: opens a Modal titled with the CQN's name, showing that queue's Plan HC vs Coverage HC trend by Fiscal Year by default, with a small Quarter/Week toggle to drill down further — reuses the same one-shot `expandToGranularity` expansion (Year → Quarter or Week directly, no click-a-quarter-to-see-its-weeks cascade needed) every other trend chart on this app already uses for its own granularity control.
+- New `planVsCoverageHcByCqn(filters, cap)`/`planVsCoverageHcTrendByCqn(cqnName, granularity)` in `tsaCapacityData.js`. Plan HC reuses the EXACT same formula "ASU/SR HC Impact"'s own `headcount` field already uses (both represent the same real concept — a queue's share of its LOB's planned headcount — so they're deliberately identical, not independently invented). Coverage HC uses its own distinct index/modulus variance formula so it doesn't track Plan HC (or ASU/SR/Workload) by a fixed ratio — verified with a Node smoke test that the Coverage/Plan ratio varies across the roster.
+- Also gained the standard title-click details table (CQN/LOB/Plan HC/Coverage HC, full 78-row roster), matching every other chart's own drill-down convention.
+- **Verified**: `npm run build` clean (1186 modules); Node smoke tests confirming independent Plan/Coverage variation, correct Year/Quarter (12 rows)/Week (156 rows) expansion for a single CQN, and the full un-capped roster count.
+
 ## HES Capacity's "Workload Impact on Headcount" Renamed "ASU/SR HC Impact", Gained an ASU Column and Its Own LOB Dropdown (2026-08-16)
 
 - `WorkloadDistributionLayer.jsx`'s Visual2 (Layer 03, HES Capacity Plan) renamed "Workload Impact on Headcount" → "ASU/SR HC Impact", per direct request.

@@ -5,10 +5,12 @@ import {
 } from 'recharts'
 import {
   fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension,
+  planVsCoverageHcByCqn, planVsCoverageHcTrendByCqn,
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton, planSeriesColor } from '../ChartKit'
+import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton, planSeriesColor, truncate } from '../ChartKit'
+import { Modal } from '../Modal'
 
 // Plan A/B-style pickers exclude 'Actual' the same way Forecasting's plan dropdowns
 // already do (see mockData.js's CAPACITY_PLAN_NAMES comment) — this page's own bars
@@ -58,6 +60,102 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
           )}
         </ComposedChart>
       </ResponsiveContainer>
+    </Visual>
+  )
+}
+
+// X-axis tick for CQN (queue) names — same truncate-long-names treatment as
+// WorkloadDistributionLayer.jsx's own CqnTick (duplicated locally rather than
+// imported since that file doesn't export it, and it's a 6-line presentational
+// component — not worth a cross-layer import for).
+function CqnTick({ x, y, payload }) {
+  return (
+    <text x={x} y={y} dy={10} textAnchor="middle" fontSize={8.5} fill="var(--text-secondary)">
+      {truncate(String(payload.value), 12)}
+    </text>
+  )
+}
+
+// Small 2-way "drill" toggle (Quarter/Week) reusing the same `.drill-toggle`/
+// `.drill-btn` pill classes GranularityToggle/BinaryToggle already use elsewhere —
+// not promoted to a shared component since this is the only place a Year-default,
+// Quarter-or-Week-only (no Month) toggle is needed. Clicking the already-active
+// option deselects back to `null` (Year), same interaction as GranularityToggle.
+function DrillToggle({ value, onChange }) {
+  return (
+    <div className="drill-toggle">
+      {['Quarter', 'Week'].map(o => (
+        <button key={o} onClick={() => onChange(value === o ? null : o)} className={`drill-btn${value === o ? ' active' : ''}`}>{o}</button>
+      ))}
+    </div>
+  )
+}
+
+// Click-a-CQN pop-up (2026-08-16) — opens showing the clicked queue's Plan HC vs
+// Coverage HC by FISCAL YEAR by default; the DrillToggle re-fetches the same
+// selector at Quarter or Week granularity instead, reusing the one-shot
+// expandToGranularity expansion every other trend-drill chart on this app already
+// uses (see planVsCoverageHcTrendByCqn's own comment) rather than a bespoke
+// click-a-quarter-to-see-its-weeks cascade.
+function CqnHcTrendModal({ cqn, onClose }) {
+  const [granularity, setGranularity] = useState(null)
+  const data = useMemo(() => planVsCoverageHcTrendByCqn(cqn, granularity), [cqn, granularity])
+  return (
+    <Modal title={cqn} onClose={onClose} width={520}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+        <DrillToggle value={granularity} onChange={setGranularity} />
+      </div>
+      <ResponsiveContainer width="100%" height={240}>
+        <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
+          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
+          <Bar dataKey="planHC" name="Plan HC" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
+          <Bar dataKey="coverageHC" name="Coverage HC" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </Modal>
+  )
+}
+
+// "Plan vs Coverage HC" (2026-08-16, per direct request) — one bar pair per CQN
+// showing planned headcount vs the headcount actually covering that queue right now;
+// click a CQN to drill into its own Year/Quarter/Week trend via CqnHcTrendModal
+// above. Narrows to the page-level LOB filter the same way "ASU/SR HC Impact"
+// (WorkloadDistributionLayer.jsx) already does, via cqnsForFilters/CQN_LOB_ASSIGNMENTS.
+function Visual1b({ filters }) {
+  const [drillCqn, setDrillCqn] = useState(null)
+  const data = useMemo(() => planVsCoverageHcByCqn(filters, 8), [filters])
+  const table = useMemo(() => ({
+    title: 'Plan vs Coverage HC — CQN detail',
+    columns: [
+      { key: 'cqn', label: 'CQN', wrap: true }, { key: 'lob', label: 'LOB' },
+      { key: 'planHC', label: 'Plan HC', align: 'right' }, { key: 'coverageHC', label: 'Coverage HC', align: 'right' },
+    ],
+    rows: planVsCoverageHcByCqn(filters, 999),
+  }), [filters])
+  return (
+    <Visual title="Plan vs Coverage HC" subtitle="Click a CQN to see its Year/Quarter/Week trend"
+      info="Planned headcount vs actual coverage headcount by CQN; click a bar to drill into that queue's own trend."
+      rca="A handful of CQNs are running well under their planned coverage headcount."
+      clca="Prioritize backfill for the CQNs with the widest Plan-to-Coverage HC gap."
+      table={table}>
+      <ResponsiveContainer width="100%" height={222}>
+        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
+          <XAxis dataKey="cqn" tick={<CqnTick />} interval={0} axisLine={false} tickLine={false} height={30} />
+          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
+          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
+          <Bar dataKey="planHC" name="Plan HC" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30}
+            onClick={d => setDrillCqn(d.cqn)} style={{ cursor: 'pointer' }} />
+          <Bar dataKey="coverageHC" name="Coverage HC" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30}
+            onClick={d => setDrillCqn(d.cqn)} style={{ cursor: 'pointer' }} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      {drillCqn && <CqnHcTrendModal cqn={drillCqn} onClose={() => setDrillCqn(null)} />}
     </Visual>
   )
 }
@@ -158,6 +256,7 @@ export default function HeadcountAttritionLayer({ filters, granularity }) {
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
+          <Visual1b filters={filters} />
           <Visual2 filters={filters} granularity={granularity} />
         </div>
       )}

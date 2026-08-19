@@ -993,3 +993,23 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Added a chart-local "LOB" `MultiSelectField`, independent of the page-level LOB filter — `workloadImpactOnHeadcount()` gained an optional `localLobs` 3rd param that intersects (not replaces) whatever the page-level filters already scope to, same layering every per-chart Plan Name dropdown elsewhere in the app already uses relative to its page's own filters.
 - Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming ASU/SR vary independently per row, the chart-local LOB dropdown narrows correctly standalone, and correctly intersects rather than overrides an active page-level LOB filter.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 78 — 2026-08-16
+**Input:** cant see the cahnges
+
+**Action:**
+- Diagnosed rather than blindly redeploying: confirmed via `git fetch`/`git show origin/gh-pages:index.html` that the `gh-pages` branch itself already had the correct, latest build (matching hash) — the live URL was just serving a stale, not-yet-propagated CDN copy, a GitHub Pages propagation delay rather than a failed deploy or code issue. No code or redeploy action taken; explained the distinction and suggested a hard refresh / short wait.
+
+---
+
+## Prompt 79 — 2026-08-16
+**Input:** In HES capacity View in Headcount and attrition layer add a graph after Actual vs Plan variation..Name it as Plan vs Coverage HC(or any better word)..show CQN'S on X-axis with two columns Plan HC and Coverage HC and when we click on a particular CQN it should open a pop-up and show year trend which can be drilled down to quarter,week from above.
+
+**Action:**
+- New 3rd chart "Plan vs Coverage HC" added to `HeadcountAttritionLayer.jsx` (Layer 01, HES Capacity Plan), between "Actual vs Plan Variation" and "Attrition" — CQN X-axis (same real 78-name roster/queue→LOB assignment `WorkloadDistributionLayer.jsx`'s "ASU/SR HC Impact" already established), grouped Plan HC/Coverage HC bars.
+- Click-a-CQN pop-up (`CqnHcTrendModal`, new): shows that queue's Plan HC vs Coverage HC trend by Fiscal Year by default, with a Quarter/Week `DrillToggle` (new small local component, same `.drill-toggle` pill styling as `GranularityToggle`) re-fetching the same selector at that granularity — reusing the app's existing one-shot `expandToGranularity` Year→Quarter/Week expansion rather than a bespoke click-a-quarter-to-see-its-weeks cascade.
+- New `planVsCoverageHcByCqn(filters, cap)`/`planVsCoverageHcTrendByCqn(cqnName, granularity)` in `tsaCapacityData.js` — Plan HC reuses "ASU/SR HC Impact"'s own `headcount` formula exactly (same real concept, kept deliberately identical rather than reinvented); Coverage HC uses its own independent variance formula so it doesn't track Plan HC by a fixed ratio. Also gained the standard title-click details table.
+- Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming independent Plan/Coverage variation, correct Year/Quarter (12 rows)/Week (156 rows) expansion, and the full 78-row un-capped roster.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
