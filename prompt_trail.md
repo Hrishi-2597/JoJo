@@ -1025,3 +1025,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - The selected plan also carries into the click-a-CQN trend pop-up (`CqnHcTrendModal`'s new `planName` prop), so drilling into a CQN doesn't silently revert to the unscaled baseline.
 - Verified with `npm run build` (clean, 1186 modules) and a Node smoke test across the full 78-row roster: 19 rows genuinely shift Plan HC under a sample named plan (the rest round to the same small integer at these 1-10-range per-queue headcount magnitudes, same precision characteristic already accepted elsewhere in this file), and Coverage HC never changes with the plan selection.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 81 — 2026-08-16
+**Input:** Show fewer CQN on x-axis so it does not overlap
+
+**Action:**
+- Lowered "Plan vs Coverage HC"'s own chart CQN cap from 8 to 5 (`Visual1b` in `HeadcountAttritionLayer.jsx`) — this chart is 1 of 3 sharing its layer row (vs. "ASU/SR HC Impact"'s 2-per-row, using the same cap=8 default without issue), so it had noticeably less width per truncated label. The details table (999 cap) is unaffected — still shows the full 78-CQN roster.
+- Verified with `npm run build` (clean, 1186 modules).
+- Updated `handoff.md`, `tech_spec.md`; committed, pushed to `main`, and redeployed.

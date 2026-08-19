@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "Plan vs Coverage HC" Shows Fewer CQNs to Stop Label Overlap (2026-08-16 follow-up)
+
+- Reported overlapping X-axis labels — fixed by lowering the chart's own CQN cap from 8 to 5 (`Visual1b` in `HeadcountAttritionLayer.jsx`). This chart is one of 3 sharing its layer row (unlike "ASU/SR HC Impact," which shares its row with only 1 sibling), so the same cap=8 default left noticeably less width per label here.
+- The details table (opened by clicking the title) is unaffected — it still calls with `cap=999`, showing the full 78-CQN roster; only the on-chart bar count shrank.
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## "Plan vs Coverage HC" Gained a "Select Plan" Dropdown (2026-08-16 follow-up)
 
 - Per direct follow-up request, added a multi-select "Plan Name" `PlanSelect` to "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx`) — first-selected-plan-only for calculation, same policy every other ranked/per-category chart in this app uses for a Plan dropdown (this chart already shows 2 bars per CQN, so "N plans" has no clean additional rendering).

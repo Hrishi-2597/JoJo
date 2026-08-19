@@ -133,11 +133,16 @@ function CqnHcTrendModal({ cqn, planName, onClose }) {
 // "N plans" has no clean additional rendering here. The picked plan also carries into
 // the click-a-CQN trend pop-up (via `planName` on CqnHcTrendModal) so drilling in
 // doesn't silently revert to the unscaled baseline.
+// Capped at 5 CQNs, not 8 (2026-08-16 follow-up, reported overlap) — this chart is
+// one of 3 sharing its layer row (Visual1/Visual1b/Visual2), narrower than "ASU/SR HC
+// Impact" (2 per row) which shares the same cap default elsewhere — 8 truncated CQN
+// labels didn't fit legibly at this chart's width. The details table (999 cap) still
+// shows the full roster; only the on-chart bar count shrank.
 function Visual1b({ filters }) {
   const [drillCqn, setDrillCqn] = useState(null)
   const [selectedPlans, setSelectedPlans] = useState([])
   const planName = selectedPlans[0]
-  const data = useMemo(() => planVsCoverageHcByCqn(filters, 8, planName), [filters, planName])
+  const data = useMemo(() => planVsCoverageHcByCqn(filters, 5, planName), [filters, planName])
   const table = useMemo(() => ({
     title: 'Plan vs Coverage HC — CQN detail',
     columns: [

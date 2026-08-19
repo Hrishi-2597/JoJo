@@ -140,7 +140,10 @@ SPoG/
 │   │       │                                   DrillToggle, both new local components in this file). Gained a "Select
 │   │       │                                   Plan" PlanSelect (2026-08-16 follow-up) — first-selected-plan-only,
 │   │       │                                   genuinely rescales Plan HC via tsaCapacityData.js's lobPlanValue();
-│   │       │                                   carries into CqnHcTrendModal's own `planName` prop too.
+│   │       │                                   carries into CqnHcTrendModal's own `planName` prop too. Chart's own CQN
+│   │       │                                   cap lowered 8 -> 5 (2026-08-16 follow-up, fixed reported X-axis label
+│   │       │                                   overlap) — this chart is 1 of 3 sharing its layer row, narrower than
+│   │       │                                   "ASU/SR HC Impact"'s 2-per-row; its own details table still shows all 78.
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), "ASU/SR HC Impact"
 │   │       │                                   (2026-08-16, was "Workload Impact on Headcount", 2026-07-28 replaced Average
