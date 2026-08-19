@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "Plan vs Coverage HC" Gained a "Select Plan" Dropdown (2026-08-16 follow-up)
+
+- Per direct follow-up request, added a multi-select "Plan Name" `PlanSelect` to "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx`) — first-selected-plan-only for calculation, same policy every other ranked/per-category chart in this app uses for a Plan dropdown (this chart already shows 2 bars per CQN, so "N plans" has no clean additional rendering).
+- Genuinely rescales the Plan HC bar: `planHcForQueue()` (`tsaCapacityData.js`) now reuses this page's own real `lobPlanValue()`/`PLAN_SCALE_BY_NAME` — the exact mechanism `Actual vs Plan Variation`'s own Plan dropdown already relies on — rather than being cosmetic.
+- Coverage HC deliberately stays keyed to the UNSCALED baseline regardless of which plan is picked — it represents actual current coverage, not something that should shift just because the comparison plan changed, the same "Plan Name never rescales the Actual-shaped series" convention every other Plan dropdown in this app already follows.
+- The selected plan also carries into the click-a-CQN trend pop-up (`CqnHcTrendModal`), so drilling into a CQN doesn't silently revert Plan HC back to the unscaled baseline.
+- **Verified**: `npm run build` clean (1186 modules); a Node smoke test across the full 78-row roster confirmed 19 rows genuinely shift Plan HC under a named plan (the rest round to the same small integer at these per-queue headcount magnitudes — 1-10 range — the same precision characteristic already accepted for this file's other per-queue headcount fields) while Coverage HC never changes with the plan selection.
+
 ## New "Plan vs Coverage HC" Chart on HES Capacity's Headcount and Attrition Layer (2026-08-16)
 
 - Per direct request, a new 3rd chart added to `HeadcountAttritionLayer.jsx` (Layer 01, HES Capacity Plan), sitting between "Actual vs Plan Variation" and "Attrition". X-axis is CQN (queue name, reusing the same real 78-name roster/queue→LOB assignment "ASU/SR HC Impact" already established), with two grouped bars per CQN: **Plan HC** and **Coverage HC**.

@@ -137,7 +137,10 @@ SPoG/
 │   │       │                                   New Visual1b "Plan vs Coverage HC" (2026-08-16), sits between "Actual vs
 │   │       │                                   Plan Variation" and "Attrition" — CQN X-axis, Plan HC/Coverage HC bars;
 │   │       │                                   click a CQN opens CqnHcTrendModal (Year default, Quarter/Week drill via
-│   │       │                                   DrillToggle, both new local components in this file)
+│   │       │                                   DrillToggle, both new local components in this file). Gained a "Select
+│   │       │                                   Plan" PlanSelect (2026-08-16 follow-up) — first-selected-plan-only,
+│   │       │                                   genuinely rescales Plan HC via tsaCapacityData.js's lobPlanValue();
+│   │       │                                   carries into CqnHcTrendModal's own `planName` prop too.
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), "ASU/SR HC Impact"
 │   │       │                                   (2026-08-16, was "Workload Impact on Headcount", 2026-07-28 replaced Average
@@ -204,7 +207,12 @@ SPoG/
 │                                 Coverage HC" — planHC reuses workloadImpactOnHeadcount's own headcount formula
 │                                 (same real concept, deliberately identical); coverageHC uses its own independent
 │                                 variance formula; the trend fn expands a 3-FY base series via expandToGranularity
-│                                 for the click-a-CQN pop-up's Year/Quarter/Week drill.
+│                                 for the click-a-CQN pop-up's Year/Quarter/Week drill. Both gained an optional
+│                                 `planName` param (2026-08-16 follow-up) — planHcForQueue() now reuses this file's
+│                                 own lobPlanValue()/PLAN_SCALE_BY_NAME so the chart's own Select Plan dropdown
+│                                 genuinely rescales Plan HC; coverageHcForQueue() always derives from the UNSCALED
+│                                 baseline regardless of planName (Coverage HC represents actual coverage, not
+│                                 something that shifts with the comparison plan).
 ├── index.html                  # Vite entry HTML
 ├── vite.config.js              # base: '/TSG-SPoG/' for GitHub Pages paths
 ├── tailwind.config.js          # Custom navy color palette
@@ -1189,3 +1197,4 @@ Steps:
 28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
 29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships
 30. "Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29
+31. "Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't), same small-integer rounding characteristic this file's other per-queue headcount fields already have (e.g. `workloadImpactOnHeadcount`'s `headcount`)

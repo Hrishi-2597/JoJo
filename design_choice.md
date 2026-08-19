@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Coverage HC Never Rescales With the Selected Plan — Only Plan HC Does (2026-08-16)
+
+**Decision:** "Plan vs Coverage HC"'s new Select Plan dropdown rescales `planHC` (via `lobPlanValue()`/`PLAN_SCALE_BY_NAME`), but `coverageHC` is always derived from the UNSCALED baseline, regardless of which plan is selected.
+
+**Why:** Coverage HC represents actual, real current coverage — a fact about today's staffing, not something that should change just because the user is comparing against a different forecast/plan vintage. Every other Plan dropdown in this app follows the same rule: the "Actual"-shaped series never moves when the Plan Name selection changes (e.g. `AsuLayer`'s `actual` bar stays fixed regardless of which Plan is picked) — only the "Plan"-shaped series reacts. Making Coverage HC drift with the Plan selection would blur the entire point of the chart, which is to compare a FIXED reality (coverage) against a VARIABLE target (whichever plan you're checking it against).
+
 ## "Plan vs Coverage HC"'s Trend Pop-Up Reuses One-Shot `expandToGranularity`, Not a Click-Through Drill Cascade (2026-08-16)
 
 **Decision:** The click-a-CQN trend pop-up shows Fiscal Year by default, with a Quarter/Week toggle that re-fetches the SAME selector at that granularity directly — it does NOT implement "click a year to see its quarters, then click a quarter to see its weeks" as a literal multi-step, breadcrumb-driven cascade.

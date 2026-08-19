@@ -97,9 +97,9 @@ function DrillToggle({ value, onChange }) {
 // expandToGranularity expansion every other trend-drill chart on this app already
 // uses (see planVsCoverageHcTrendByCqn's own comment) rather than a bespoke
 // click-a-quarter-to-see-its-weeks cascade.
-function CqnHcTrendModal({ cqn, onClose }) {
+function CqnHcTrendModal({ cqn, planName, onClose }) {
   const [granularity, setGranularity] = useState(null)
-  const data = useMemo(() => planVsCoverageHcTrendByCqn(cqn, granularity), [cqn, granularity])
+  const data = useMemo(() => planVsCoverageHcTrendByCqn(cqn, granularity, planName), [cqn, granularity, planName])
   return (
     <Modal title={cqn} onClose={onClose} width={520}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
@@ -112,7 +112,7 @@ function CqnHcTrendModal({ cqn, onClose }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="planHC" name="Plan HC" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
+          <Bar dataKey="planHC" name={planName ? `Plan HC (${planName})` : 'Plan HC'} fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
           <Bar dataKey="coverageHC" name="Coverage HC" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -125,19 +125,30 @@ function CqnHcTrendModal({ cqn, onClose }) {
 // click a CQN to drill into its own Year/Quarter/Week trend via CqnHcTrendModal
 // above. Narrows to the page-level LOB filter the same way "ASU/SR HC Impact"
 // (WorkloadDistributionLayer.jsx) already does, via cqnsForFilters/CQN_LOB_ASSIGNMENTS.
+// "Select Plan" dropdown (2026-08-16 follow-up) — multi-select widget for UI
+// consistency with every other Plan dropdown in the app, but first-selected-plan-only
+// for calculation (`selectedPlans[0]`), same policy already used for every other
+// ranked/per-category chart shape (as opposed to period-trend charts, which render
+// one extra series per selected plan) — this chart already shows 2 bars per CQN, so
+// "N plans" has no clean additional rendering here. The picked plan also carries into
+// the click-a-CQN trend pop-up (via `planName` on CqnHcTrendModal) so drilling in
+// doesn't silently revert to the unscaled baseline.
 function Visual1b({ filters }) {
   const [drillCqn, setDrillCqn] = useState(null)
-  const data = useMemo(() => planVsCoverageHcByCqn(filters, 8), [filters])
+  const [selectedPlans, setSelectedPlans] = useState([])
+  const planName = selectedPlans[0]
+  const data = useMemo(() => planVsCoverageHcByCqn(filters, 8, planName), [filters, planName])
   const table = useMemo(() => ({
     title: 'Plan vs Coverage HC — CQN detail',
     columns: [
       { key: 'cqn', label: 'CQN', wrap: true }, { key: 'lob', label: 'LOB' },
       { key: 'planHC', label: 'Plan HC', align: 'right' }, { key: 'coverageHC', label: 'Coverage HC', align: 'right' },
     ],
-    rows: planVsCoverageHcByCqn(filters, 999),
-  }), [filters])
+    rows: planVsCoverageHcByCqn(filters, 999, planName),
+  }), [filters, planName])
   return (
     <Visual title="Plan vs Coverage HC" subtitle="Click a CQN to see its Year/Quarter/Week trend"
+      controls={<PlanSelect label="Plan Name" value={selectedPlans} onChange={setSelectedPlans} options={PLANS} />}
       info="Planned headcount vs actual coverage headcount by CQN; click a bar to drill into that queue's own trend."
       rca="A handful of CQNs are running well under their planned coverage headcount."
       clca="Prioritize backfill for the CQNs with the widest Plan-to-Coverage HC gap."
@@ -149,13 +160,13 @@ function Visual1b({ filters }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="planHC" name="Plan HC" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30}
+          <Bar dataKey="planHC" name={planName ? `Plan HC (${planName})` : 'Plan HC'} fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30}
             onClick={d => setDrillCqn(d.cqn)} style={{ cursor: 'pointer' }} />
           <Bar dataKey="coverageHC" name="Coverage HC" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30}
             onClick={d => setDrillCqn(d.cqn)} style={{ cursor: 'pointer' }} />
         </ComposedChart>
       </ResponsiveContainer>
-      {drillCqn && <CqnHcTrendModal cqn={drillCqn} onClose={() => setDrillCqn(null)} />}
+      {drillCqn && <CqnHcTrendModal cqn={drillCqn} planName={planName} onClose={() => setDrillCqn(null)} />}
     </Visual>
   )
 }

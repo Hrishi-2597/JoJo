@@ -516,24 +516,44 @@ export function workloadImpactOnHeadcount(filters = {}, cap = 8, localLobs) {
 // already uses for its own `headcount` field (both represent the identical
 // real-world concept, "this queue's share of its LOB's planned headcount," so they're
 // deliberately kept numerically identical rather than each chart inventing its own
-// disconnected version of the same number).
-function planHcForQueue(q) {
+// disconnected version of the same number). `planName` (2026-08-16 follow-up) reuses
+// this page's own real lobPlanValue()/PLAN_SCALE_BY_NAME so "Plan vs Coverage HC"'s
+// own Select Plan dropdown genuinely rescales the Plan HC bar — a missing/undefined
+// planName falls back to the unscaled baseline, same additive convention as every
+// other lobPlanValue() caller in this file.
+function planHcForQueue(q, planName) {
   const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
   const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
-  return Math.max(1, Math.round((lobRow?.popPlan1 ?? 10) / queueCount))
+  const basePlan = lobRow ? lobPlanValue(lobRow, planName) : 10
+  return Math.max(1, Math.round(basePlan / queueCount))
+}
+
+// Coverage HC's own base ALWAYS comes from the UNSCALED Plan HC baseline (planName
+// omitted here on purpose) — Coverage HC represents actual current coverage, which
+// doesn't shift just because the user is comparing against a different named Plan
+// vintage, the same "Plan Name never rescales the Actual-shaped series" convention
+// every other Plan dropdown in this app already follows (e.g. AsuLayer's `actual`
+// bar). Uses a DIFFERENT index/modulus than any other per-queue variance formula in
+// this file (`i * 17 + q.name.length, % 19`) so it varies independently rather than
+// tracking Plan HC (or ASU/SR/Workload) by a fixed ratio — same "don't let two
+// supposedly-independent numbers move in lockstep" principle as
+// workloadImpactOnHeadcount's ASU/SR split above.
+function coverageHcForQueue(q, i) {
+  const baselinePlanHC = planHcForQueue(q)
+  return Math.max(1, Math.round(baselinePlanHC * (0.68 + ((i * 17 + q.name.length) % 19) * 0.018)))
 }
 
 // "Plan vs Coverage HC" (Layer 01 "Headcount and Attrition", 2026-08-16, per direct
-// request) — Coverage HC (how much of the planned headcount is actually covering the
-// queue right now) uses a DIFFERENT index/modulus than any other per-queue variance
-// formula in this file (`i * 17 + q.name.length, % 19`) so it varies independently
-// per queue rather than tracking Plan HC (or ASU/SR/Workload) by a fixed ratio — same
-// "don't let two supposedly-independent numbers move in lockstep" principle as
-// workloadImpactOnHeadcount's ASU/SR split above.
-export function planVsCoverageHcByCqn(filters = {}, cap = 8) {
+// request) — `planName` (2026-08-16 follow-up, optional) backs the chart's own
+// "Select Plan" dropdown; first-selected-plan-only, same policy every ranked/
+// per-category chart in this app uses for a multi-select Plan dropdown (as opposed
+// to period-trend charts, which render one extra series per selected plan) — "N
+// plans stacked as N extra bars" has no clean rendering on a chart that already
+// shows 2 bars per CQN.
+export function planVsCoverageHcByCqn(filters = {}, cap = 8, planName) {
   return cqnsForFilters(filters).slice(0, cap).map((q, i) => {
-    const planHC = planHcForQueue(q)
-    const coverageHC = Math.max(1, Math.round(planHC * (0.68 + ((i * 17 + q.name.length) % 19) * 0.018)))
+    const planHC = planHcForQueue(q, planName)
+    const coverageHC = coverageHcForQueue(q, i)
     return { cqn: q.name, lob: q.lob, planHC, coverageHC }
   })
 }
@@ -543,18 +563,20 @@ export function planVsCoverageHcByCqn(filters = {}, cap = 8) {
 // YoY-step convention as workloadActFyRows above) then reuses expandToGranularity —
 // the SAME one-shot Year->Quarter/Week expansion every other trend-drill chart in
 // this app already uses for its own granularity control — rather than a bespoke
-// click-a-quarter-to-see-its-weeks mechanic. Recomputes the queue's own base
-// planHC/coverageHC independently (via TSA_ACTIVE_QUEUE_NAMES' fixed index rather
-// than an array position, since this is called for one CQN in isolation, outside any
-// particular filtered/capped list) — the illustrative numbers may not perfectly
-// match whatever happened to be on-screen in the bar chart at the moment of the
-// click, an accepted convention already true of every other trend-drill selector in
-// this app (e.g. cpasuTrendByRegion), not a new gap introduced here.
-export function planVsCoverageHcTrendByCqn(cqnName, granularity) {
+// click-a-quarter-to-see-its-weeks mechanic. `planName` (2026-08-16 follow-up)
+// carries the chart's own selected plan into the pop-up, so drilling into a CQN
+// doesn't silently revert Plan HC to the unscaled baseline. Recomputes the queue's
+// own base planHC/coverageHC independently (via TSA_ACTIVE_QUEUE_NAMES' fixed index
+// rather than an array position, since this is called for one CQN in isolation,
+// outside any particular filtered/capped list) — the illustrative numbers may not
+// perfectly match whatever happened to be on-screen in the bar chart at the moment
+// of the click, an accepted convention already true of every other trend-drill
+// selector in this app (e.g. cpasuTrendByRegion), not a new gap introduced here.
+export function planVsCoverageHcTrendByCqn(cqnName, granularity, planName) {
   const q = CQN_LOB_ASSIGNMENTS.find(c => c.name === cqnName) || { name: cqnName, lob: LOB_LIST[0] }
   const idx = TSA_ACTIVE_QUEUE_NAMES.indexOf(cqnName)
-  const planHCBase = planHcForQueue(q)
-  const coverageHCBase = Math.max(1, Math.round(planHCBase * (0.68 + ((idx * 17 + cqnName.length) % 19) * 0.018)))
+  const planHCBase = planHcForQueue(q, planName)
+  const coverageHCBase = coverageHcForQueue(q, idx)
   const fyRows = FISCAL_YEARS.map((fy, i) => ({
     period: fy,
     planHC: Math.round(planHCBase * (0.94 + i * 0.05)),

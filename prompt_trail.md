@@ -1013,3 +1013,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - New `planVsCoverageHcByCqn(filters, cap)`/`planVsCoverageHcTrendByCqn(cqnName, granularity)` in `tsaCapacityData.js` — Plan HC reuses "ASU/SR HC Impact"'s own `headcount` formula exactly (same real concept, kept deliberately identical rather than reinvented); Coverage HC uses its own independent variance formula so it doesn't track Plan HC by a fixed ratio. Also gained the standard title-click details table.
 - Verified with `npm run build` (clean, 1186 modules) and a Node smoke test confirming independent Plan/Coverage variation, correct Year/Quarter (12 rows)/Week (156 rows) expansion, and the full 78-row un-capped roster.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 80 — 2026-08-16
+**Input:** Also give a dropdown for Select Plan
+
+**Action:**
+- Added a multi-select "Plan Name" `PlanSelect` to "Plan vs Coverage HC" — first-selected-plan-only for calculation, same policy every other ranked/per-category chart in this app uses for a Plan dropdown.
+- `planHcForQueue()` (`tsaCapacityData.js`) now reuses this page's own real `lobPlanValue()`/`PLAN_SCALE_BY_NAME` so the dropdown genuinely rescales Plan HC — the same mechanism `Actual vs Plan Variation`'s own Plan dropdown already relies on. Coverage HC deliberately stays keyed to the unscaled baseline regardless of which plan is picked (it represents actual current coverage, not something that should shift with the comparison plan) — same "Plan Name never rescales the Actual-shaped series" convention every other Plan dropdown in this app follows.
+- The selected plan also carries into the click-a-CQN trend pop-up (`CqnHcTrendModal`'s new `planName` prop), so drilling into a CQN doesn't silently revert to the unscaled baseline.
+- Verified with `npm run build` (clean, 1186 modules) and a Node smoke test across the full 78-row roster: 19 rows genuinely shift Plan HC under a sample named plan (the rest round to the same small integer at these 1-10-range per-queue headcount magnitudes, same precision characteristic already accepted elsewhere in this file), and Coverage HC never changes with the plan selection.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
