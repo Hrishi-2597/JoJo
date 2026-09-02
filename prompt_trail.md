@@ -1035,3 +1035,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Lowered "Plan vs Coverage HC"'s own chart CQN cap from 8 to 5 (`Visual1b` in `HeadcountAttritionLayer.jsx`) — this chart is 1 of 3 sharing its layer row (vs. "ASU/SR HC Impact"'s 2-per-row, using the same cap=8 default without issue), so it had noticeably less width per truncated label. The details table (999 cap) is unaffected — still shows the full 78-CQN roster.
 - Verified with `npm run build` (clean, 1186 modules).
 - Updated `handoff.md`, `tech_spec.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 82 — 2026-08-16
+**Input:** Remove [screenshot of "ASU/SR HC Impact"] this chart and increase the width of workload distribution chart -only one chart should be there
+
+**Action:**
+- Removed "ASU/SR HC Impact" (Visual2) from `WorkloadDistributionLayer.jsx` entirely — the Sankey ("Workload Distribution," Visual1) is now the layer's only chart. No layout code was needed to widen it: both charts were already `flex: 1` children of a `display: flex` row, so the sole remaining child automatically claims the full row width once its sibling is gone.
+- Dropped the layer's own stale subtitle text ("— LOB/queue flow & ASU/SR HC impact" → "— LOB/queue flow").
+- Followed this project's own established precedent (prior chart removals like "Utilization Variance," "ACT Trend — Actual vs Plan") of removing the chart's backing selector too, not just the UI: deleted the now-fully-dead `workloadImpactOnHeadcount()` from `tsaCapacityData.js` (its only consumer) and its exclusively-used `ASU_BY_FY`/`SR_BY_FY` imports. Kept `cqnsForFilters()`/`CQN_LOB_ASSIGNMENTS`, since "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx`) still depends on both — verified via grep before removing anything.
+- Verified with `npm run build` (clean, 1186 modules, bundle size dropped ~3KB) and a Node smoke test confirming "Plan vs Coverage HC"'s own selectors still work correctly after the cleanup.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

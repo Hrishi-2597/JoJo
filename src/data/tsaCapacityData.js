@@ -6,7 +6,7 @@
 // are new.
 import {
   LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, tsaEffectiveFiscalYears,
-  SR_BY_FY, ASU_BY_FY, TSA_ACTIVE_QUEUE_NAMES,
+  TSA_ACTIVE_QUEUE_NAMES,
 } from './tsaData'
 import {
   FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
@@ -452,23 +452,25 @@ export function workloadActPerformanceByLob(filters = {}, metric = 'Workload', p
   })
 }
 
-// ── Workload Impact on Headcount (Layer 3, replacing "Average Case Time Variance",
-// 2026-07-28) — per-CQN detail using the SAME real queue-name roster the adjacent
-// Workload Distribution Sankey draws from (TSA_ACTIVE_QUEUE_NAMES, sourced from
-// LOB_QUEUES['High End Storage'] — the only real per-queue list this app has). No
-// real queue-to-LOB mapping has been supplied, so each queue is assigned to a
-// LOB_LIST entry round-robin by index — same "real names, illustrative structure"
-// approach LOB_FACTS already uses for businessPartner/globalGrouping — so picking a
-// LOB from the filter panel narrows to a genuine, real-named CQN subset instead of
-// an arbitrary one.
+// ── Plan vs Coverage HC (Layer 01 "Headcount and Attrition") per-CQN detail ─────
+// Real queue-name roster the adjacent Workload Distribution Sankey also draws from
+// (TSA_ACTIVE_QUEUE_NAMES, sourced from LOB_QUEUES['High End Storage'] — the only
+// real per-queue list this app has). No real queue-to-LOB mapping has been supplied,
+// so each queue is assigned to a LOB_LIST entry round-robin by index — same "real
+// names, illustrative structure" approach LOB_FACTS already uses for
+// businessPartner/globalGrouping — so picking a LOB from the filter panel narrows to
+// a genuine, real-named CQN subset instead of an arbitrary one.
 const CQN_LOB_ASSIGNMENTS = TSA_ACTIVE_QUEUE_NAMES.map((name, i) => ({ name, lob: LOB_LIST[i % LOB_LIST.length] }))
 
-// `localLobs` (2026-08-16, optional) — the "ASU/SR HC Impact" chart's OWN LOB
-// dropdown, independent of the page-level LOB filter above it. When set, further
-// intersects the page-level in-scope LOB set rather than replacing it, so the
-// chart's own picker narrows on TOP of whatever the page filters already scope to,
-// the same layering every per-chart Plan Name dropdown elsewhere in this app already
-// does relative to the page's own filters.
+// `localLobs` (2026-08-16, optional) — a chart's OWN LOB dropdown, independent of
+// the page-level LOB filter above it. When set, further intersects the page-level
+// in-scope LOB set rather than replacing it, so the chart's own picker narrows on
+// TOP of whatever the page filters already scope to, the same layering every
+// per-chart Plan Name dropdown elsewhere in this app already does relative to the
+// page's own filters. (Originally added for "ASU/SR HC Impact," WorkloadDistribution-
+// Layer's onetime 2nd chart — removed 2026-08-16, per direct request, to let the
+// Sankey take the full row; `localLobs` itself stays, since "Plan vs Coverage HC"
+// below also threads a LOB filter through cqnsForFilters via `filters`.)
 function cqnsForFilters(filters, localLobs) {
   let inScope = new Set(filterLobs(filters).map(l => l.lob))
   if (localLobs?.length) inScope = new Set([...inScope].filter(l => localLobs.includes(l)))
@@ -476,51 +478,14 @@ function cqnsForFilters(filters, localLobs) {
   return scoped.length ? scoped : CQN_LOB_ASSIGNMENTS
 }
 
-// ASU/SR/Workload/Headcount scaled off this page's own existing conventions rather
-// than invented outright: ASU and SR both off TSA Forecasting's own ASU_BY_FY/
-// SR_BY_FY plan (tsaData.js, same magnitude as those charts on that page), Workload
-// off TSA_CAPACITY_LOBS' own workloadPlan/workloadActual per LOB, Headcount off
-// TSA_CAPACITY_LOBS' popPlan1 (already documented there as the Plan-over-Plan
-// headcount-per-LOB field) — each queue takes a deterministic sub-share of its
-// assigned LOB's totals. ASU uses a DIFFERENT index/modulus combination than SR
-// (`i * 11 + q.name.length, % 13` vs SR's `i * 7 + q.name.length, % 11`) so the two
-// vary independently per queue rather than moving in lockstep — the exact "two
-// supposedly-independent metrics come out identical/correlated by construction"
-// failure mode already fixed once on TSA Forecasting's own DB/OSP split (see
-// srDbOspByFY in tsaData.js). `cap` (default 8) keeps the chart legible when
-// unfiltered; the click-popup table calls with a much higher cap to show the full
-// in-scope roster. A single-LOB filter typically narrows to 2-3 queues, well under
-// the default cap either way. `localLobs` threads through to cqnsForFilters — see
-// its own comment above.
-export function workloadImpactOnHeadcount(filters = {}, cap = 8, localLobs) {
-  const years = tsaEffectiveFiscalYears(filters)
-  const latestFy = years[years.length - 1] || 'FY27'
-  const srRow = SR_BY_FY.find(d => d.period === latestFy) || SR_BY_FY[SR_BY_FY.length - 1]
-  const asuRow = ASU_BY_FY.find(d => d.period === latestFy) || ASU_BY_FY[ASU_BY_FY.length - 1]
-  const srPerQueueBase = srRow.plan / TSA_ACTIVE_QUEUE_NAMES.length
-  const asuPerQueueBase = asuRow.plan / TSA_ACTIVE_QUEUE_NAMES.length
-
-  return cqnsForFilters(filters, localLobs).slice(0, cap).map((q, i) => {
-    const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
-    const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
-    const sr = Math.round(srPerQueueBase * (0.7 + ((i * 7 + q.name.length) % 11) * 0.04))
-    const asu = Math.round(asuPerQueueBase * (0.7 + ((i * 11 + q.name.length) % 13) * 0.03))
-    const workloadPlan = Math.round((lobRow?.workloadPlan ?? 620) / queueCount)
-    const workloadActual = Math.round((lobRow?.workloadActual ?? workloadPlan) / queueCount)
-    const headcount = Math.max(1, Math.round((lobRow?.popPlan1 ?? 10) / queueCount))
-    return { cqn: q.name, lob: q.lob, asu, sr, workloadActual, workloadPlan, headcount }
-  })
-}
-
-// Per-queue Plan HC baseline (2026-08-16) — the SAME formula workloadImpactOnHeadcount
-// already uses for its own `headcount` field (both represent the identical
-// real-world concept, "this queue's share of its LOB's planned headcount," so they're
-// deliberately kept numerically identical rather than each chart inventing its own
-// disconnected version of the same number). `planName` (2026-08-16 follow-up) reuses
-// this page's own real lobPlanValue()/PLAN_SCALE_BY_NAME so "Plan vs Coverage HC"'s
-// own Select Plan dropdown genuinely rescales the Plan HC bar — a missing/undefined
-// planName falls back to the unscaled baseline, same additive convention as every
-// other lobPlanValue() caller in this file.
+// Per-queue Plan HC baseline (2026-08-16) — off TSA_CAPACITY_LOBS' own popPlan1
+// (already documented there as the Plan-over-Plan headcount-per-LOB field), each
+// queue taking a deterministic sub-share of its assigned LOB's total. `planName`
+// (2026-08-16 follow-up) reuses this page's own real lobPlanValue()/
+// PLAN_SCALE_BY_NAME so "Plan vs Coverage HC"'s own Select Plan dropdown genuinely
+// rescales the Plan HC bar — a missing/undefined planName falls back to the
+// unscaled baseline, same additive convention as every other lobPlanValue() caller
+// in this file.
 function planHcForQueue(q, planName) {
   const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
   const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
@@ -535,9 +500,8 @@ function planHcForQueue(q, planName) {
 // every other Plan dropdown in this app already follows (e.g. AsuLayer's `actual`
 // bar). Uses a DIFFERENT index/modulus than any other per-queue variance formula in
 // this file (`i * 17 + q.name.length, % 19`) so it varies independently rather than
-// tracking Plan HC (or ASU/SR/Workload) by a fixed ratio — same "don't let two
-// supposedly-independent numbers move in lockstep" principle as
-// workloadImpactOnHeadcount's ASU/SR split above.
+// tracking Plan HC by a fixed ratio — same "don't let two supposedly-independent
+// numbers move in lockstep" principle as tsaData.js's srDbOspByFY DB/OSP split.
 function coverageHcForQueue(q, i) {
   const baselinePlanHC = planHcForQueue(q)
   return Math.max(1, Math.round(baselinePlanHC * (0.68 + ((i * 17 + q.name.length) % 19) * 0.018)))

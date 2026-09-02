@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## "ASU/SR HC Impact" Chart Removed — Workload Distribution Now One Full-Width Chart (2026-08-16 follow-up)
+
+- Per direct request, removed "ASU/SR HC Impact" (Visual2) from `WorkloadDistributionLayer.jsx` entirely — only the Sankey ("Workload Distribution") remains, which now automatically fills the full row width (it's the sole flex child in a `flex: 1` layout, so no extra sizing code was needed for the width increase).
+- The layer's own subtitle text dropped its now-stale "& ASU/SR HC impact" half, reading just "— LOB/queue flow."
+- Cleaned up the now-fully-dead `workloadImpactOnHeadcount()` selector in `tsaCapacityData.js` (its only consumer was the removed chart) and its exclusively-used `ASU_BY_FY`/`SR_BY_FY` imports — following this project's own established precedent of removing a selector once its only consumer is gone (e.g. `tsaUtilByFY`, `actHrsDefaulterLobs`), rather than leaving dead exported code behind. `cqnsForFilters`/`CQN_LOB_ASSIGNMENTS` were kept — "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx`) still depends on both.
+- **Verified**: `npm run build` clean (1186 modules, bundle size dropped ~3KB from the dead-code removal); Node smoke test confirming "Plan vs Coverage HC"'s own selectors are unaffected by the cleanup.
+
 ## "Plan vs Coverage HC" Shows Fewer CQNs to Stop Label Overlap (2026-08-16 follow-up)
 
 - Reported overlapping X-axis labels — fixed by lowering the chart's own CQN cap from 8 to 5 (`Visual1b` in `HeadcountAttritionLayer.jsx`). This chart is one of 3 sharing its layer row (unlike "ASU/SR HC Impact," which shares its row with only 1 sibling), so the same cap=8 default left noticeably less width per label here.

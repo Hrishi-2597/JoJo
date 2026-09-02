@@ -4,6 +4,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "ASU/SR HC Impact" Removed Entirely, Not Hidden Behind a Flag (2026-08-16)
+
+**Decision:** `WorkloadDistributionLayer.jsx`'s Visual2 ("ASU/SR HC Impact") was deleted from the file entirely, along with its backing `workloadImpactOnHeadcount()` selector in `tsaCapacityData.js` — not hidden behind a feature flag the way ESG's landing tile was (`SHOW_ESG`).
+
+**Why:** Different situations call for different reversibility tradeoffs. ESG's tile represented a whole, independently-functioning business section the team might genuinely return to — a flag kept a 3-line path back with zero risk of losing other in-progress work. This chart, by contrast, is one visual on one layer that the user directly said to "remove," with a specific one-chart-only replacement layout in the same request — closer to the established pattern this exact codebase already used for prior chart removals ("Utilization Variance," "ACT Trend — Actual vs Plan," "Average Case Time Variance": each removed entirely along with their now-dead selectors, not flagged off). Following that existing precedent, rather than introducing a third reversibility pattern, keeps the codebase's own conventions consistent. `git history` remains the real undo path if "ASU/SR HC Impact" is ever wanted back — the same as it was for every other chart this project has fully removed before it.
+
+## Workload Distribution's Width Increase Needed No New Layout Code (2026-08-16)
+
+**Decision:** No CSS/layout change was made to widen the Sankey chart itself — removing its sibling (`Visual2`) was sufficient.
+
+**Why:** `WorkloadDistributionLayer`'s row is a `display: flex` container, and each `Visual` (`ChartKit.jsx`) is already `flex: 1` — a flex child set to grow. With two children, each claimed roughly half the row; with the sibling gone, the sole remaining child's own `flex: 1` automatically claims the entire row. This is the exact same "flex-1 absorbs the freed width, no layout change needed" mechanic already documented in this file's own history for prior single-visual-remaining layer reductions (e.g. `HeadcountAttritionLayer`'s Utilization Variance removal) — reusing an already-proven, zero-code-change pattern rather than hand-rolling a width override.
+
 ## Coverage HC Never Rescales With the Selected Plan — Only Plan HC Does (2026-08-16)
 
 **Decision:** "Plan vs Coverage HC"'s new Select Plan dropdown rescales `planHC` (via `lobPlanValue()`/`PLAN_SCALE_BY_NAME`), but `coverageHC` is always derived from the UNSCALED baseline, regardless of which plan is selected.

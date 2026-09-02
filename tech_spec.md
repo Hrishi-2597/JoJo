@@ -145,11 +145,13 @@ SPoG/
 │   │       │                                   overlap) — this chart is 1 of 3 sharing its layer row, narrower than
 │   │       │                                   "ASU/SR HC Impact"'s 2-per-row; its own details table still shows all 78.
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
-│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), "ASU/SR HC Impact"
-│   │       │                                   (2026-08-16, was "Workload Impact on Headcount", 2026-07-28 replaced Average
-│   │       │                                   Case Time Variance) — gained an ASU bar/column alongside the existing SR one,
-│   │       │                                   plus its own chart-local LOB MultiSelectField (independent of, and further
-│   │       │                                   narrowing on top of, the page-level LOB filter)
+│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — now a SINGLE full-width chart, the Sankey
+│   │       │                                   (LOB/CQN toggle). Its sibling "ASU/SR HC Impact" (2026-08-16, briefly the
+│   │       │                                   layer's 2nd chart — was "Workload Impact on Headcount," 2026-07-28 replaced
+│   │       │                                   Average Case Time Variance, gained an ASU bar and its own chart-local LOB
+│   │       │                                   MultiSelectField the same day) was REMOVED ENTIRELY 2026-08-16, per direct
+│   │       │                                   request, so the Sankey could take the full row; see Known Limitations/
+│   │       │                                   Removed section below — its backing selector was removed too
 │   │       ├── WorkloadActPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle Workload/ACT retitles
 │   │       │                                     "Workload Performance"/"ACT Performance"; wraps PerformanceMatrixTable.jsx +
 │   │       │                                     tsaCapacityData.js's workloadActPerformanceByLob()
@@ -203,13 +205,14 @@ SPoG/
 │       │                         which narrows chart DATA) using the same LOB_FACTS/QUEUE_LOB_ASSIGNMENTS relationships.
 │       ├── msgCapacityData.js  # MSG Capacity Plan's data model (queue-level HC/utilization/SL/leaves fact table)
 │       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly).
-│                                 workloadImpactOnHeadcount() (2026-08-16) gained `asu` (scaled off tsaData.js's own
-│                                 ASU_BY_FY, independent variation formula from `sr`) and an optional `localLobs` 3rd
-│                                 param (intersects the page-level in-scope LOB set, backing the chart's own LOB dropdown).
+│                                 (Removed 2026-08-16: workloadImpactOnHeadcount() — backed WorkloadDistributionLayer's
+│                                 "ASU/SR HC Impact" Visual2, removed entirely per direct request so the Sankey could
+│                                 take the full row; this was its only consumer. cqnsForFilters()/CQN_LOB_ASSIGNMENTS
+│                                 stayed — planVsCoverageHcByCqn() below still depends on both.)
 │                                 New planVsCoverageHcByCqn()/planVsCoverageHcTrendByCqn() (2026-08-16) back "Plan vs
-│                                 Coverage HC" — planHC reuses workloadImpactOnHeadcount's own headcount formula
-│                                 (same real concept, deliberately identical); coverageHC uses its own independent
-│                                 variance formula; the trend fn expands a 3-FY base series via expandToGranularity
+│                                 Coverage HC" — planHC off TSA_CAPACITY_LOBS' own popPlan1, a deterministic per-queue
+│                                 sub-share of its LOB's total; coverageHC uses its own independent variance formula;
+│                                 the trend fn expands a 3-FY base series via expandToGranularity
 │                                 for the click-a-CQN pop-up's Year/Quarter/Week drill. Both gained an optional
 │                                 `planName` param (2026-08-16 follow-up) — planHcForQueue() now reuses this file's
 │                                 own lobPlanValue()/PLAN_SCALE_BY_NAME so the chart's own Select Plan dropdown
@@ -370,22 +373,21 @@ TsaCapacityPage
 │   │                                          series) live here, driving both this chart and LobVarianceChart below
 │   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters,
 │                                                         planA, planB), worst |variance| first, value-labeled
-├── WorkloadDistributionLayer(filters) — badge "03" (dropped its unused `granularity` prop 2026-07-28 — see below)
-│   ├── Visual1 "Workload Distribution" (renamed) — recharts Sankey: workloadSankey(filters, mode), LOB/CQN BinaryToggle
-│   │                                                (LOB mode: CQN tiers→real LOBs; CQN mode: LOB tiers→real TSA queues);
-│   │                                                node hover (2026-07-20) shows every connected node on the other side
-│   │                                                with value + % of the hovered node's own total (nodeHoverSummary(),
-│   │                                                fixed top-right panel) — separate from the existing link-hover Tooltip,
-│   │                                                which still shows one single flow at a time
-│   └── Visual2 "Workload Impact on Headcount" (2026-07-28, replaces "Average Case Time Variance") — ComposedChart:
-│                                                workloadImpactOnHeadcount(filters), X-axis = CQN (real queue names,
-│                                                same roster the Sankey's CQN mode draws from); SR bar (metric1) +
-│                                                Workload Actual/Plan line pair (metric2, solid/dashed) on the primary
-│                                                axis, Headcount line (trend) on the secondary axis; narrows to the
-│                                                selected LOB's real CQNs via cqnsForFilters()/filterLobs; click-title
-│                                                table shows the full in-scope CQN roster (cap=999)
-│   (Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23; "Average Case Time Variance" removed 2026-07-28 —
-│    layer is still exactly 2 visuals, filling the row via each Visual's own flex-1, no layout change needed)
+├── WorkloadDistributionLayer(filters) — badge "03" (dropped its unused `granularity` prop 2026-07-28 — see below).
+│                                        Now a SINGLE full-width visual (2026-08-16, see below) — no `display:flex` row
+│                                        layout needed anymore, though the surrounding div keeps it for consistency
+│   └── Visual1 "Workload Distribution" (renamed) — recharts Sankey: workloadSankey(filters, mode), LOB/CQN BinaryToggle
+│                                                (LOB mode: CQN tiers→real LOBs; CQN mode: LOB tiers→real TSA queues);
+│                                                node hover (2026-07-20) shows every connected node on the other side
+│                                                with value + % of the hovered node's own total (nodeHoverSummary(),
+│                                                fixed top-right panel) — separate from the existing link-hover Tooltip,
+│                                                which still shows one single flow at a time. Now the layer's ONLY
+│                                                visual (fills the full row via its own flex-1, no layout change needed)
+│   (Visual2 "Workload Impact on Headcount"/"ASU/SR HC Impact" removed entirely 2026-08-16, per direct request, to let
+│    Visual1 take the full row — same "removed entirely, only visual's flex-1 absorbs the extra width" pattern already
+│    used for Visual3 below and HeadcountAttritionLayer's own Utilization Variance removal. Backing selector
+│    workloadImpactOnHeadcount() removed too, see tsaCapacityData.js entry above — this was its only consumer.
+│    Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23; "Average Case Time Variance" removed 2026-07-28)
 └── TsaCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
                                                  Region/Sub-region BinaryToggle, same fallback-to-parent-region
                                                  mechanic as MsgCapacityGeoMap. Switched from SLO% to Headcount
@@ -1016,13 +1018,21 @@ CQN_LOB_ASSIGNMENTS (2026-07-28, private)  — TSA_ACTIVE_QUEUE_NAMES (tsaData.j
   LOB_FACTS uses for businessPartner/globalGrouping) until a real mapping arrives
 cqnsForFilters(filters) (private)         — CQN_LOB_ASSIGNMENTS narrowed to filterLobs(filters)'s in-scope LOB names
   (falls back to the full 71-queue set if a filter combination leaves nothing in scope)
-workloadImpactOnHeadcount(filters, cap=8) — {cqn, lob, sr, workloadActual, workloadPlan, headcount} × up to `cap` CQNs
-  in scope — Workload Distribution Visual2 ("Workload Impact on Headcount", 2026-07-28, replacing "Average Case Time
-  Variance"). SR scaled off tsaData.js's own SR_BY_FY plan (same magnitude as the SR chart on TSA Forecasting) ÷
-  TSA_ACTIVE_QUEUE_NAMES.length; Workload Actual/Plan and Headcount are each a deterministic per-queue sub-share of
-  their assigned LOB's own TSA_CAPACITY_LOBS fields (workloadPlan/workloadActual, popPlan1) — not invented numbers.
-  Selecting a LOB filter narrows to that LOB's 2-3 real CQNs directly (via cqnsForFilters); unfiltered, the cap keeps
-  the chart to 8 bars. The click-title table calls this with cap=999 for the full in-scope roster.
+(Removed 2026-08-16: workloadImpactOnHeadcount(filters, cap, localLobs) — backed Workload Distribution Visual2
+  ("Workload Impact on Headcount"/"ASU/SR HC Impact"), removed entirely per direct request so the Sankey (Visual1)
+  could take the full row; this was its only consumer. cqnsForFilters/CQN_LOB_ASSIGNMENTS above stayed — HeadcountAttri
+  tionLayer's planVsCoverageHcByCqn/planVsCoverageHcTrendByCqn still depend on both.)
+planVsCoverageHcByCqn(filters, cap=8, planName) — {cqn, lob, planHC, coverageHC} × up to `cap` CQNs in scope — backs
+  HeadcountAttritionLayer's "Plan vs Coverage HC" (2026-08-16). planHC is a deterministic per-queue sub-share of its
+  assigned LOB's own TSA_CAPACITY_LOBS.popPlan1, rescaled by planName via lobPlanValue()/PLAN_SCALE_BY_NAME when given
+  (2026-08-16 follow-up); coverageHC always derives from the UNSCALED planHC baseline regardless of planName (own
+  independent variance formula, doesn't track planHC by a fixed ratio). Uses cqnsForFilters/CQN_LOB_ASSIGNMENTS above.
+  Cap lowered to 5 on the chart itself (2026-08-16 follow-up, fixed reported X-axis label overlap) — the click-title
+  table still calls with cap=999 for the full in-scope roster.
+planVsCoverageHcTrendByCqn(cqnName, granularity, planName) — {period, planHC, coverageHC} FY/granularity trend for ONE
+  clicked CQN — backs "Plan vs Coverage HC"'s click-a-CQN pop-up (Year default, Quarter/Week drill via a small local
+  DrillToggle in HeadcountAttritionLayer.jsx); expands a 3-FY base series via mockData.js's expandToGranularity, same
+  one-shot Year→Quarter/Week mechanic every other trend-drill chart in this app uses.
 ```
 
 `workloadByFY`/`WORKLOAD_BY_FY` (the original "Workload Act vs Plan" hours-based dataset) were removed 2026-07-03 once
@@ -1200,4 +1210,5 @@ Steps:
 28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
 29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships
 30. "Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29
-31. "Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't), same small-integer rounding characteristic this file's other per-queue headcount fields already have (e.g. `workloadImpactOnHeadcount`'s `headcount`)
+31. "Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)
+32. "ASU/SR HC Impact" (`WorkloadDistributionLayer.jsx`'s onetime 2nd chart) was removed entirely 2026-08-16, per direct request, so the Sankey could take the full row — this is intentional, not a partial implementation; `WorkloadDistributionLayer` now renders exactly 1 visual
