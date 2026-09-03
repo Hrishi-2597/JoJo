@@ -117,6 +117,10 @@ function CasesPerFteTrendChart({ filters, granularity }) {
   )
 }
 
+// Plan line removed (2026-09-03, per direct request) — pop-up now shows actuals
+// only. `actHrsByFY` itself is untouched (still computes plan/adherence for
+// tsaCapacityCardData's own headline use) — this is a display-only change, not a
+// data-layer one.
 function AvgCaseTimeTrendChart({ filters, granularity }) {
   const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
   return (
@@ -129,7 +133,6 @@ function AvgCaseTimeTrendChart({ filters, granularity }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="actual" name="Avg Case Time (hrs)" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-          <Line type="monotone" dataKey="plan" name="Plan (hrs)" stroke={C.metric2} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -140,7 +143,7 @@ const MODAL_TITLES = {
   fte: 'Staffing Summary — Actual vs Plan',
   attrition: 'Headcount & Attrition Trend',
   casesPerFte: 'Cases per FTE — Actual vs Plan',
-  avgCaseTime: 'Avg Case Time — Actual vs Plan',
+  avgCaseTime: 'Avg Case Time — Actual',
 }
 
 // Builds the "YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>" sub-message, same
@@ -203,7 +206,7 @@ export default function TsaCapacityMetricCards({ filters, granularity }) {
           value={`${d.avgCaseTime.actual}h`}
           sub={avgCaseTimeYtd.text} trend={avgCaseTimeYtd.trend}
           onClick={() => toggle('avgCaseTime')} active={active === 'avgCaseTime'}
-          info="Average hours spent per case, compared against the planned Average Case Time." />
+          info="Average hours spent per case for the latest in-scope period, compared against the prior period." />
       </div>
 
       {active && <DrillDownModal type={active} filters={filters} granularity={granularity} onClose={() => setActive(null)} />}

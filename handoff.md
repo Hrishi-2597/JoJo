@@ -1,5 +1,20 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity Plan's Filter Bar: Queue Filter Added, LOB and Global Grouping Removed (2026-09-03)
+
+- Per direct request, `TsaCapacityPage.jsx`'s filter panel now shows a "Queue Name" filter and no longer shows "LOB" or "Global Grouping" — Business Partner and the 4 fiscal-period filters (Fiscal Year/Quarter/Month/Week) are unchanged.
+- `TsaFilterPanel.jsx` (shared with HES Forecasting) gained two new opt-out props, `includeLob`/`includeGlobalGrouping` (both default `true`, so HES Forecasting's own filter bar — which still shows LOB, Global Grouping, AND Queue — is completely unaffected). Both the "Business Partner & Group" and "LOB & Queue" clusters now size themselves to however many fields are actually visible, rather than assuming a fixed count.
+- The Queue filter's own cascading behavior (from the prior LOB/Queue cascade rollout) still works with no LOB filter present: Queue's options fall back to narrowing via Business Partner alone (`queueOptionsForFilters` already handled a missing/empty `filters.lob`).
+- **No data-layer changes were needed** — every HES Capacity Analysis Layer chart already funnels through `tsaData.js`'s `filterLobs()`, which already applies the Queue filter (added for HES Forecasting back on 2026-08-04) via `matchesQueueFilter`. Removing the LOB filter's own UI doesn't remove any narrowing power: Queue effectively takes over LOB's old scoping role, using the exact same underlying mechanism.
+- **Verified**: `npm run build` clean (1186 modules); Node smoke tests confirming `filterLobs()`/real Analysis Layer selectors (`tsaAttritionByDimension`, `workloadSankey`) genuinely narrow via the Queue filter with no `lob` key present in the filters object at all, and that Queue's dropdown options still cascade correctly from Business Partner alone. Confirmed (pre-existing, not a regression) that HES Capacity's 4 top "Key Metrics" KPI cards (Staffing Summary, Attrition %, Cases per FTE, Avg Case Time) are page-wide aggregates that never scoped by LOB either — only the deeper Analysis Layer charts did, and still do via Queue.
+
+## HES Capacity's "Avg Case Time" Card Drops the Plan Line — Pop-Up Shows Actuals Only (2026-09-03)
+
+- Per direct request, `TsaCapacityMetricCards.jsx`'s `AvgCaseTimeTrendChart` (the pop-up opened by clicking the "Avg Case Time" KPI card) no longer renders the "Plan (hrs)" line — only "Avg Case Time (hrs)" (actual) remains.
+- Display-only change: `actHrsByFY()` itself is untouched and still computes `plan`/`adherence` (used by `tsaCapacityCardData`'s own headline YTD math) — this was purely about what the pop-up chart renders, not the underlying data.
+- Updated the now-stale copy that referenced the removed Plan comparison: the modal title changed from "Avg Case Time — Actual vs Plan" to "Avg Case Time — Actual," and the card's own info tooltip ("compared against the planned Average Case Time") changed to describe the actual YoY comparison the card's sub-line genuinely shows ("compared against the prior period").
+- **Verified**: `npm run build` clean (1186 modules).
+
 ## "ASU/SR HC Impact" Chart Removed — Workload Distribution Now One Full-Width Chart (2026-08-16 follow-up)
 
 - Per direct request, removed "ASU/SR HC Impact" (Visual2) from `WorkloadDistributionLayer.jsx` entirely — only the Sankey ("Workload Distribution") remains, which now automatically fills the full row width (it's the sole flex child in a `flex: 1` layout, so no extra sizing code was needed for the width increase).

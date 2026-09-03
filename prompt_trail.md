@@ -1047,3 +1047,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Followed this project's own established precedent (prior chart removals like "Utilization Variance," "ACT Trend — Actual vs Plan") of removing the chart's backing selector too, not just the UI: deleted the now-fully-dead `workloadImpactOnHeadcount()` from `tsaCapacityData.js` (its only consumer) and its exclusively-used `ASU_BY_FY`/`SR_BY_FY` imports. Kept `cqnsForFilters()`/`CQN_LOB_ASSIGNMENTS`, since "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx`) still depends on both — verified via grep before removing anything.
 - Verified with `npm run build` (clean, 1186 modules, bundle size dropped ~3KB) and a Node smoke test confirming "Plan vs Coverage HC"'s own selectors still work correctly after the cleanup.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 83 — 2026-09-03
+**Input:** Bring in queue filter in the filter panel ,remove global grouping and LOB filter from HES Capacity Planning.Also remove plan line from Average Case Time card..show only actuals in pop -up
+
+**Action:**
+- `TsaFilterPanel.jsx` (shared with HES Forecasting) gained two new opt-out props, `includeLob`/`includeGlobalGrouping` (both default `true`, so HES Forecasting is completely unaffected) — both the "Business Partner & Group" and "LOB & Queue" clusters now size themselves to however many fields are actually visible.
+- `TsaCapacityPage.jsx`: `DEFAULT_FILTERS` swapped `lob`/`globalGrouping` for `queue`; `TsaFilterPanel` now called with `includeQueue includeLob={false} includeGlobalGrouping={false}` — HES Capacity's filter bar now shows Queue Name in place of LOB and Global Grouping.
+- No data-layer changes needed: every HES Capacity chart already funnels through `tsaData.js`'s `filterLobs()`, which already applies the Queue filter (added 2026-08-04 for HES Forecasting) regardless of whether the LOB filter's own UI is shown — Queue genuinely takes over LOB's old scoping role with zero new selector code.
+- `TsaCapacityMetricCards.jsx`'s `AvgCaseTimeTrendChart` (the "Avg Case Time" card's pop-up) no longer renders the "Plan (hrs)" line — actuals only. Display-only: `actHrsByFY()` itself is untouched (still backs the card's own headline YTD math). Updated the now-stale "Actual vs Plan" modal title and card info text to match.
+- Verified with `npm run build` (clean, 1186 modules) and Node smoke tests confirming: `filterLobs()`/real Analysis Layer selectors (`tsaAttritionByDimension`, `workloadSankey`) genuinely narrow via the Queue filter with no `lob` key present at all in the filters object, Queue's dropdown options still cascade correctly from Business Partner alone, and (confirmed pre-existing, not a regression) HES Capacity's 4 top KPI cards never scoped by LOB either.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.

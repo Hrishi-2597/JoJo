@@ -131,8 +131,14 @@ SPoG/
 │   │   │   ├── MsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Sub-region view); below-map
 │   │   │   │                                summary table removed 2026-07-27, existing hover tooltip is the only detail surface now
 │   │   └── tsaCapacity/         # TSA Capacity Plan page (all new, 2026-07-03; revised same day)
-│   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
-│   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
+│   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx, configured with
+│   │       │                                   includeQueue/includeLob={false}/includeGlobalGrouping={false}, 2026-09-03
+│   │       │                                   — was LOB+Global Grouping, no Queue, before) + cards + 4 layers (RCA/CLCA
+│   │       │                                   sidebar removed 2026-07-20)
+│   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %).
+│   │       │                                   Avg Case Time's pop-up (AvgCaseTimeTrendChart) drops its Plan line
+│   │       │                                   (2026-09-03, actuals-only now) — display-only, actHrsByFY() itself
+│   │       │                                   still computes plan/adherence for the card's own headline math.
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28).
 │   │       │                                   New Visual1b "Plan vs Coverage HC" (2026-08-16), sits between "Actual vs
 │   │       │                                   Plan Variation" and "Attrition" — CQN X-axis, Plan HC/Coverage HC bars;
@@ -158,13 +164,21 @@ SPoG/
 │   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — colors by Headcount Adherence % vs the selected Plan Name (2026-07-29, was raw headcount relative-to-peak 2026-07-23, was SLO before that), Region/Sub-region toggle; per-LOB Actual/Planned headcount + variance hover popup
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
-│   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
-│   │       │                            reused, mostly unmodified, by tsaCapacity/TsaCapacityPage.jsx. New `includeQueue` prop
-│   │       │                            (2026-08-04, default false, opt-in) adds an 8th filter — "Queue Name", options
-│   │       │                            TSA_ACTIVE_QUEUE_NAMES (same roster as the Total Queues card) — leading the Scope
-│   │       │                            cluster; only TsaForecastingPage.jsx passes `includeQueue`, so TSA Capacity's own
-│   │       │                            filter bar/data are unaffected. See tsaData.js's filterLobs()/QUEUE_LOB_ASSIGNMENTS
-│   │       │                            below for how the selection genuinely narrows the page, not just decorative.
+│   │       ├── TsaFilterPanel.jsx      # Base 6 filters: FY-Qtr-Month-Week / Business Partner + GranularityToggle, plus
+│   │       │                            LOB/Global Grouping/Queue as opt-in/opt-out props — reused, configured
+│   │       │                            differently per consumer, by tsaCapacity/TsaCapacityPage.jsx. `includeQueue` prop
+│   │       │                            (2026-08-04, default false, opt-in) adds "Queue Name", options
+│   │       │                            TSA_ACTIVE_QUEUE_NAMES (same roster as the Total Queues card). See
+│   │       │                            tsaData.js's filterLobs()/QUEUE_LOB_ASSIGNMENTS below for how the selection
+│   │       │                            genuinely narrows the page, not just decorative. `includeLob`/
+│   │       │                            `includeGlobalGrouping` (2026-09-03, both default true, opt-OUT) let a
+│   │       │                            consumer drop LOB/Global Grouping — TsaForecastingPage.jsx passes only
+│   │       │                            `includeQueue` (keeps LOB+Global Grouping+Queue, all 3); TsaCapacityPage.jsx
+│   │       │                            (2026-09-03) passes `includeQueue includeLob={false}
+│   │       │                            includeGlobalGrouping={false}` (Queue only, no LOB/Global Grouping) — no
+│   │       │                            data-layer change needed, since every consumer already funnels through
+│   │       │                            filterLobs(), which already applies the Queue filter regardless of whether
+│   │       │                            the LOB filter's own UI is shown.
 │   │       │                            Panel's outer div is now `position: sticky, top: 0, zIndex: 10` (2026-08-16) —
 │   │       │                            pinned to the top of the viewport while scrolling, on both TsaFilterPanel
 │   │       │                            consumers (HES Forecasting + HES Capacity Plan); same sticky pattern as
@@ -1212,3 +1226,4 @@ Steps:
 30. "Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29
 31. "Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)
 32. "ASU/SR HC Impact" (`WorkloadDistributionLayer.jsx`'s onetime 2nd chart) was removed entirely 2026-08-16, per direct request, so the Sankey could take the full row — this is intentional, not a partial implementation; `WorkloadDistributionLayer` now renders exactly 1 visual
+33. HES Capacity Plan's own "Key Metrics" KPI cards (Staffing Summary/Attrition %/Cases per FTE/Avg Case Time — `fteByFY`/`tsaAttritionByFY`/`cpfByFY`/`actHrsByFY`) don't scope by LOB or Queue at all — confirmed (2026-09-03, pre-existing, not introduced by that day's Queue-filter rollout) they're page-wide aggregates that never called `filterLobs()`, even back when a LOB filter was still shown on this page. Only the deeper Analysis Layer charts (Attrition/Plan-over-Plan/Workload Distribution/Geo Map, all via `filterCapacityLobs()`) genuinely narrow with the Queue filter — same split HES Forecasting's own Total Queues card has with `tsaCardData()` vs its Analysis Layers

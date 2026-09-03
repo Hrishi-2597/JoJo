@@ -4,6 +4,24 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Capacity's LOB/Global Grouping Removal Needed No Data-Layer Changes (2026-09-03)
+
+**Decision:** Dropping LOB and Global Grouping from HES Capacity's filter bar (and adding Queue) was done as a pure UI/config change — new `includeLob`/`includeGlobalGrouping` opt-out props on the shared `TsaFilterPanel.jsx`, plus updating `TsaCapacityPage.jsx`'s `DEFAULT_FILTERS` and prop usage. No selector in `tsaCapacityData.js` was touched.
+
+**Why:** Every HES Capacity chart already funneled its filtering through `tsaData.js`'s `filterLobs()` (directly, or via `filterCapacityLobs()`), and `filterLobs()` already applies the Queue filter (`matchesQueueFilter`, added 2026-08-04 for HES Forecasting) alongside `lob`/`businessPartner`/`globalGrouping`. Since a missing filter key is already treated as "no restriction" throughout this codebase (`matchesMulti`'s `!selected || selected.length === 0` check), simply not rendering the LOB/Global Grouping UI — while still passing whatever `filters.queue` the user picks — was sufficient for Queue to take over LOB's narrowing role with zero risk of silently breaking a selector that assumed `filters.lob` was always present.
+
+## Avg Case Time's Plan Line Removed From the Pop-Up Only, Not From the Underlying Selector (2026-09-03)
+
+**Decision:** `actHrsByFY()` (`tsaCapacityData.js`) still computes and returns `plan`/`adherence` exactly as before — only `AvgCaseTimeTrendChart`'s JSX (`TsaCapacityMetricCards.jsx`) stopped rendering the `plan` `<Line>`.
+
+**Why:** The request was specifically about the pop-up ("show only actuals in pop-up"), and `tsaCapacityCardData()`'s own YTD headline math for the "Avg Case Time" card still needs `actHrsByFY`'s `plan`/`adherence` fields — removing them from the selector would have silently broken the card's own face, which the request never asked to change. Scoping the edit to exactly the rendering layer keeps the change minimal and avoids touching code the request didn't mention.
+
+## HES Capacity's Own Opt-Out Props Default to `true`, Matching Existing Behavior (2026-09-03)
+
+**Decision:** `includeLob`/`includeGlobalGrouping` both default to `true` — the OPPOSITE default direction from `includeQueue` (which defaults to `false`).
+
+**Why:** `TsaFilterPanel.jsx` is shared with HES Forecasting, which has always shown both LOB and Global Grouping and must keep doing so untouched. A prop that changes a shared component's behavior for one specific consumer should default to whatever preserves every OTHER consumer's current behavior unchanged — for a "remove this filter" request, that means "on by default, opt out"; for the earlier "add this filter" request (Queue), it meant "off by default, opt in." Both follow the same underlying rule (never change an existing consumer's behavior without that consumer explicitly asking for it), just pointing in the direction each specific request required.
+
 ## "ASU/SR HC Impact" Removed Entirely, Not Hidden Behind a Flag (2026-08-16)
 
 **Decision:** `WorkloadDistributionLayer.jsx`'s Visual2 ("ASU/SR HC Impact") was deleted from the file entirely, along with its backing `workloadImpactOnHeadcount()` selector in `tsaCapacityData.js` — not hidden behind a feature flag the way ESG's landing tile was (`SHOW_ESG`).
