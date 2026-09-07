@@ -140,16 +140,12 @@ SPoG/
 │   │       │                                   (2026-09-03, actuals-only now) — display-only, actHrsByFY() itself
 │   │       │                                   still computes plan/adherence for the card's own headline math.
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28).
-│   │       │                                   New Visual1b "Plan vs Coverage HC" (2026-08-16), sits between "Actual vs
-│   │       │                                   Plan Variation" and "Attrition" — CQN X-axis, Plan HC/Coverage HC bars;
-│   │       │                                   click a CQN opens CqnHcTrendModal (Year default, Quarter/Week drill via
-│   │       │                                   DrillToggle, both new local components in this file). Gained a "Select
-│   │       │                                   Plan" PlanSelect (2026-08-16 follow-up) — first-selected-plan-only,
-│   │       │                                   genuinely rescales Plan HC via tsaCapacityData.js's lobPlanValue();
-│   │       │                                   carries into CqnHcTrendModal's own `planName` prop too. Chart's own CQN
-│   │       │                                   cap lowered 8 -> 5 (2026-08-16 follow-up, fixed reported X-axis label
-│   │       │                                   overlap) — this chart is 1 of 3 sharing its layer row, narrower than
-│   │       │                                   "ASU/SR HC Impact"'s 2-per-row; its own details table still shows all 78.
+│   │       │                                   "Plan vs Coverage HC" (Visual1b, 2026-08-16 - 2026-08-16 follow-ups) was
+│   │       │                                   REMOVED ENTIRELY 2026-09-07, per direct request — layer is back to exactly
+│   │       │                                   2 visuals (Actual vs Plan Variation, Attrition); its supporting local
+│   │       │                                   components (CqnTick, DrillToggle, CqnHcTrendModal) and backing selectors
+│   │       │                                   (tsaCapacityData.js's planVsCoverageHcByCqn/planVsCoverageHcTrendByCqn)
+│   │       │                                   were removed too — this was their only consumer.
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — now a SINGLE full-width chart, the Sankey
 │   │       │                                   (LOB/CQN toggle). Its sibling "ASU/SR HC Impact" (2026-08-16, briefly the
@@ -195,15 +191,19 @@ SPoG/
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
-│   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan, Plan Impact (region→LOB drill)
-│   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric
+│   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan. "Plan Impact" (Visual3,
+│   │       │                            region→LOB drill) REMOVED ENTIRELY 2026-09-07, per direct request — layer is
+│   │       │                            back to exactly 2 visuals, each filling the row via its own flex-1
+│   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric; "Plan Impact"
+│   │       │                            removed the same day, for the same reason
 │   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis") — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
-│   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above the Geo Map — toggle ASU/SR retitles "ASU
-│   │       │                               Performance"/"SR Performance"; wraps PerformanceMatrixTable.jsx + tsaData.js's
-│   │       │                               asuSrPerformanceByLob()
-│   │       └── TsaGeoMap.jsx           # Layer 04 — colors by real ASU/SR Adherence % vs the selected Plan Name (2026-07-29,
-│   │                                     was a filters-only synthetic adherence unrelated to either metric); ASU/SR
-│   │                                     BinaryToggle + Plan Name dropdown + per-LOB Actual/Plan/Adherence% hover popup
+│   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above where the Geo Map used to sit — toggle
+│   │       │                               ASU/SR retitles "ASU Performance"/"SR Performance"; wraps
+│   │       │                               PerformanceMatrixTable.jsx + tsaData.js's asuSrPerformanceByLob()
+│   │       (TsaGeoMap.jsx — Layer 04 — REMOVED ENTIRELY 2026-09-07, per direct request; the file itself was deleted, along
+│   │        with its exclusive backing selectors in tsaData.js (geoAdherenceByRegion/geoAdherenceWobble/
+│   │        geoLobPerformanceByRegion/GEO_LOB_REGIONS/LOB_REGION_ASSIGNMENTS and the regionForCountry re-export) — this
+│   │        page now has only 3 Analysis Layers + AsuSrPerformanceTable, no Geo Map)
 │   └── data/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
 │       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
@@ -221,18 +221,12 @@ SPoG/
 │       └── tsaCapacityData.js  # TSA Capacity Plan's data model (reuses tsaData.js's LOB_FACTS/filterLobs directly).
 │                                 (Removed 2026-08-16: workloadImpactOnHeadcount() — backed WorkloadDistributionLayer's
 │                                 "ASU/SR HC Impact" Visual2, removed entirely per direct request so the Sankey could
-│                                 take the full row; this was its only consumer. cqnsForFilters()/CQN_LOB_ASSIGNMENTS
-│                                 stayed — planVsCoverageHcByCqn() below still depends on both.)
-│                                 New planVsCoverageHcByCqn()/planVsCoverageHcTrendByCqn() (2026-08-16) back "Plan vs
-│                                 Coverage HC" — planHC off TSA_CAPACITY_LOBS' own popPlan1, a deterministic per-queue
-│                                 sub-share of its LOB's total; coverageHC uses its own independent variance formula;
-│                                 the trend fn expands a 3-FY base series via expandToGranularity
-│                                 for the click-a-CQN pop-up's Year/Quarter/Week drill. Both gained an optional
-│                                 `planName` param (2026-08-16 follow-up) — planHcForQueue() now reuses this file's
-│                                 own lobPlanValue()/PLAN_SCALE_BY_NAME so the chart's own Select Plan dropdown
-│                                 genuinely rescales Plan HC; coverageHcForQueue() always derives from the UNSCALED
-│                                 baseline regardless of planName (Coverage HC represents actual coverage, not
-│                                 something that shifts with the comparison plan).
+│                                 take the full row; this was its only consumer.)
+│                                 (Removed 2026-09-07: CQN_LOB_ASSIGNMENTS, cqnsForFilters(), planHcForQueue(),
+│                                 coverageHcForQueue(), planVsCoverageHcByCqn(), planVsCoverageHcTrendByCqn() — all
+│                                 backed HeadcountAttritionLayer's "Plan vs Coverage HC", removed entirely per direct
+│                                 request; these were their only consumers. lobPlanValue() itself stayed — still used
+│                                 elsewhere in this file.)
 ├── index.html                  # Vite entry HTML
 ├── vite.config.js              # base: '/TSG-SPoG/' for GitHub Pages paths
 ├── tailwind.config.js          # Custom navy color palette
@@ -275,13 +269,14 @@ TsaForecastingPage
 │   └── DrillDownModal     — Popup (TsaChartKit's Modal), one of TotalQueuesSection/AsuTrendChart/
 │                            SrDbOspChart/CpasuChart/CurrentUcrChart; closing it only clears local
 │                            `active` state, filters prop is untouched
-├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01"
+├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01" (2 visuals, was 3 — see below)
 │   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters) + Adherence% line, "Plan Name" dropdown
-│   ├── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
-│   └── Visual3 "Plan Impact"                 — ComposedChart: asuRegionPlans(filters) grouped bars (AMER/APJ/EMEA/Global);
-│                                                clicking a region bar renders asuLobImpact(region) as an inline delta list
-├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 3-visual structure/names as AsuLayer, SR metric
-├── AsuSrTrendLayer(filters) — "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis"), collapsible, badge "03"
+│   └── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
+│   (Visual3 "Plan Impact" removed entirely 2026-09-07, per direct request — asuRegionPlans/asuLobImpact and their
+│    backing consts/builders removed from tsaData.js too, this was their only consumer)
+├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 2-visual structure/names as AsuLayer, SR metric
+│   (its own "Plan Impact" — srRegionPlans/srLobImpact — removed the same day, for the same reason)
+└── AsuSrTrendLayer(filters) — "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis"), collapsible, badge "03"
 │   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByRegion(filters) grouped bars/line by default (one group per
 │   │                           IMPACT_REGIONS entry); clicking a region switches to cpasuTrendByRegion(filters, region)
 │   │                           at whichever granularity regionTrendGranularity(filters) resolves to (Week > Quarter > Year)
@@ -290,8 +285,9 @@ TsaForecastingPage
 │   └── Visual3 "UCR Runrate with Target" — ComposedChart: UCR_BY_FY directly (always all 3 FYs, ignores
 │                                            Quarter/Week filters); clicking a year's bar opens a Modal listing
 │                                            topNonAdherentLobsByYear(filters, year) — top 5 LOBs, not queues
-└── TsaGeoMap(filters)    — Collapsible, badge "04"; same choropleth mechanism as Layer3GeoMap,
-                            colored by geoAdherenceByRegion(filters); no Region/Sub-region toggle
+(TsaGeoMap(filters) — badge "04" — REMOVED ENTIRELY 2026-09-07, per direct request; geoAdherenceByRegion/
+ geoAdherenceWobble/geoLobPerformanceByRegion/GEO_LOB_REGIONS/LOB_REGION_ASSIGNMENTS and the regionForCountry
+ re-export removed from tsaData.js too, this was their only consumer)
 ```
 
 ### App (2026-07-03 restructure): landing tiles + per-business sub-toggle
@@ -521,9 +517,9 @@ tsaData.js:   asuByFY, srByFY, asuPlanVsPlanByFY, srPlanVsPlanByFY, cpasuByFY (d
 `period.slice(0, 4)`, since the "UCR Runrate with Target" chart it backs now renders at whatever granularity
 is selected — a clicked bar can carry a quarter/month/week label, not just a bare fiscal year.
 
-Charts whose x-axis isn't time — region (Plan Impact, both Geo Maps), queue (Top Queues by Variance), or
-LOB (the LOB donut breakdowns) — don't take a `granularity` argument at all; there's no sub-year view of
-"which region," so the toggle doesn't apply to them by design.
+Charts whose x-axis isn't time — region (e.g. ESG's Plan Impact, every remaining Geo Map), queue (Top
+Queues by Variance), or LOB (the LOB donut breakdowns) — don't take a `granularity` argument at all;
+there's no sub-year view of "which region," so the toggle doesn't apply to them by design.
 
 ---
 
@@ -541,9 +537,9 @@ No external state library. All state is local React `useState`:
 | `Layer3GeoMap` | `viewMode` (Region/Country), `hovered`, `open` | String, Object, Boolean |
 | `TsaForecastingPage` | `filters`; `granularity` (null\|'Quarter'\|'Month'\|'Week', default null = Fiscal Year) | Object (7 filter keys), String or null |
 | `TsaMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill) | String or null, String or null |
-| `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open`, `selectedRegion` (Visual3 drill state) | String, Object, Boolean, String or null |
+| `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open` (Visual3 "Plan Impact"'s own `selectedRegion` drill state removed with it, 2026-09-07) | String, Object, Boolean |
 | `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalPeriod` | Boolean, String or null, String, String or null |
-| `TsaGeoMap` | `open`, `hovered` | Boolean, Object |
+(`TsaGeoMap` — REMOVED ENTIRELY 2026-09-07, per direct request)
 | `MsgCapacityPage` / `TsaCapacityPage` | `filters`; `granularity` (same null-default convention) | Object, String or null |
 | `MsgCapacityMetricCards` / `TsaCapacityMetricCards` | `active` (which card's modal is open) | String or null |
 | `PlanOverPlanLayer` (shared) | `open`, `plans` (planA/planB) | Boolean, Object |
@@ -718,9 +714,10 @@ Same conventions as `mockData.js`: static exports are datasets, lowercase functi
 LOB_LIST              — 33 real LOB names (business-supplied verbatim)
 GLOBAL_GROUPING_LIST  — ['Consumer', 'Commercial', 'Enterprise'] — inferred, not yet user-confirmed
 FISCAL_MONTH_LIST     — FY25M01 ... FY27M12 (36 values, derived from FISCAL_YEARS) — filter only
-IMPACT_REGIONS        — ['AMER', 'APJ', 'EMEA', 'Global'] — the 4-region set for Plan Impact
-                         (AsuLayer/SrLayer Visual3) and for CPASU Trend's region breakdown
-                         (AsuSrTrendLayer Visual1), distinct from the 5-region REGIONS
+IMPACT_REGIONS        — ['AMER', 'APJ', 'EMEA', 'Global'] — the 4-region set originally shared by
+                         "Plan Impact" (AsuLayer/SrLayer Visual3, removed entirely 2026-09-07) and
+                         CPASU Trend's region breakdown (AsuSrTrendLayer Visual1, still uses it);
+                         distinct from the 5-region REGIONS
 LOB_QUEUES            — { 'High End Storage': { active: [...71 real names], inactive: [...~150 real names] } }
                          (business-supplied verbatim); other LOBs have no entry yet. Backs
                          TSA_ACTIVE_QUEUE_NAMES/TSA_ACTIVE_QUEUES below (Total Queues card).
@@ -791,17 +788,12 @@ topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × cou
   LOB-level.
 ```
 
-### Region / LOB impact ("Plan Impact" drill-down)
+### Region / LOB impact ("Plan Impact" drill-down) — REMOVED ENTIRELY 2026-09-07
 ```
-ASU_REGION_PLANS, SR_REGION_PLANS — {region, planA, planB} × 4 IMPACT_REGIONS, static
-asuRegionPlans(filters) / srRegionPlans(filters) — currently ignore filters (deck shows a fixed region view)
-buildLobImpact(base) — per region, computes a delta for all 33 LOBs via
-  residue = (i*17 + ri*41) % 131; delta = round(base * 0.10 * (residue-65)/65)
-  17 is coprime with the prime modulus 131, so i → i*17 mod 131 is injective over i=0..32 — every
-  LOB gets a distinct delta within a region. (Fixed 2026-07-02: the original `(i*7+ri*13)%21` formula
-  only produced 3 distinct buckets, so several LOBs showed an identical delta value.)
-asuLobImpact(region, count=6) / srLobImpact(region, count=6) — top-N by ascending delta, clicked from
-  the region bar in AsuLayer/SrLayer Visual3
+(AsuLayer/SrLayer Visual3 "Plan Impact" and everything in this section backed it exclusively —
+  ASU_REGION_PLANS/SR_REGION_PLANS, buildRegionPlans, buildLobImpact, ASU_LOB_IMPACT_BY_REGION/
+  SR_LOB_IMPACT_BY_REGION, and asuRegionPlans/srRegionPlans/asuLobImpact/srLobImpact were all removed
+  from tsaData.js per direct request. IMPACT_REGIONS itself stayed — still used by CPASU Trend below.)
 ```
 
 ### CPASU Trend: region breakdown + time-granularity drill (AsuSrTrendLayer Visual1)
@@ -819,31 +811,13 @@ cpasuTrendByRegion(filters, region) — {period, asu, sr, cpasu} × periods.leng
   deterministic per-period/region wobble — fully synthetic, no real per-region/quarter/week dataset exists
 ```
 
-### Geo Map (LOB adherence)
+### Geo Map (LOB adherence) — REMOVED ENTIRELY 2026-09-07
 ```
-REGION_ADHERENCE_BASE (2026-07-28) — { NAMER: 94, APJ: 86, EMEA: 75, LATAM: 63, Global: 80 }, a deliberately-spread
-  per-region baseline mirroring ESG Forecasting's own curated GEO_REGION_DATA table
-lobAdherenceValue(region, lobIndex) = clamp(50, 99, REGION_ADHERENCE_BASE[region] + ((lobIndex*11) % 30) - 15) —
-  ±15 illustrative spread around the region's own base, so a LOB filter still moves the number
-LOB_REGION_ASSIGNMENTS (2026-07-29, private) — each of the 33 real LOB_LIST entries assigned to one of
-  the 4 real map regions (NAMER/LATAM/APJ/EMEA) round-robin by index — no real LOB-to-region mapping
-  exists, same "real names, illustrative structure" placeholder convention as CQN_LOB_ASSIGNMENTS
-  (tsaCapacityData.js); verified to partition all 33 LOBs with no overlap/gap
-geoLobPerformanceByRegion(region, filters, metric='ASU'|'SR', planName) (2026-07-29) — {lob, actual, plan,
-  adherence} × that region's LOBs, reusing asuSrPerformanceByLob directly (same selector the ASU/SR
-  Performance table uses) and collapsed to the LATEST in-scope quarter — backs TsaGeoMap's per-LOB
-  hover popup (a snapshot, not the table's full per-quarter history)
-geoAdherenceWobble(lob) (2026-07-29, private) — deterministic ~0.6x-1.4x per-LOB multiplier, MAP-COLOR
-  ONLY (does not touch geoLobPerformanceByRegion's own reconciling actual/plan numbers, which the hover
-  popup shows verbatim) — needed because geoLobPerformanceByRegion's own actual/plan share cancels out
-  in the ratio (every LOB gets the identical weight for both), which would otherwise color every region
-  nearly the same; see design_choice.md
-geoAdherenceByRegion(filters, metric='ASU'|'SR', planName) (2026-07-29, signature changed — was
-  filters-only) — aggregates geoLobPerformanceByRegion's per-LOB actual/plan (weighted by
-  geoAdherenceWobble) into one adherence % per region, for each of the 4 real map regions; consumed by
-  TsaGeoMap's choropleth fill AND its hover headline — now genuinely reacts to the map's own metric
-  toggle and Plan Name dropdown, replacing the previous filters-only synthetic-adherence version (see
-  design_choice.md for both the 2026-07-28 spread fix and the 2026-07-29 plan-reactivity rework)
+(TsaGeoMap.jsx and everything in this section backed it exclusively — geoAdherenceByRegion,
+  geoAdherenceWobble, geoLobPerformanceByRegion, LOB_REGION_ASSIGNMENTS/GEO_LOB_REGIONS, and the
+  regionForCountry re-export were all removed from tsaData.js per direct request, along with the
+  TsaGeoMap.jsx file itself. asuSrPerformanceByLob() — reused by geoLobPerformanceByRegion above but
+  NOT exclusive to it — stayed, since the ASU/SR Performance table still calls it directly.)
 ```
 
 ### Cards
@@ -1026,27 +1000,13 @@ workloadActPerformanceByLob(filters, metric='Workload'|'ACT', planName) (2026-07
   each LOB's own already-established number is expanded directly instead — see design_choice.md. planName reuses
   this page's own real PLAN_SCALE_BY_NAME. Backs the "Workload Performance"/"ACT Performance" table above the Geo
   Map (tsaCapacity/WorkloadActPerformanceTable.jsx, wraps the shared PerformanceMatrixTable.jsx)
-CQN_LOB_ASSIGNMENTS (2026-07-28, private)  — TSA_ACTIVE_QUEUE_NAMES (tsaData.js, 71 real queues, the same roster
-  workloadSankey's CQN mode draws from) each assigned to a LOB_LIST entry round-robin by index — no real queue-to-LOB
-  mapping has been supplied, so this is the "real names, illustrative structure" placeholder (same convention
-  LOB_FACTS uses for businessPartner/globalGrouping) until a real mapping arrives
-cqnsForFilters(filters) (private)         — CQN_LOB_ASSIGNMENTS narrowed to filterLobs(filters)'s in-scope LOB names
-  (falls back to the full 71-queue set if a filter combination leaves nothing in scope)
 (Removed 2026-08-16: workloadImpactOnHeadcount(filters, cap, localLobs) — backed Workload Distribution Visual2
   ("Workload Impact on Headcount"/"ASU/SR HC Impact"), removed entirely per direct request so the Sankey (Visual1)
-  could take the full row; this was its only consumer. cqnsForFilters/CQN_LOB_ASSIGNMENTS above stayed — HeadcountAttri
-  tionLayer's planVsCoverageHcByCqn/planVsCoverageHcTrendByCqn still depend on both.)
-planVsCoverageHcByCqn(filters, cap=8, planName) — {cqn, lob, planHC, coverageHC} × up to `cap` CQNs in scope — backs
-  HeadcountAttritionLayer's "Plan vs Coverage HC" (2026-08-16). planHC is a deterministic per-queue sub-share of its
-  assigned LOB's own TSA_CAPACITY_LOBS.popPlan1, rescaled by planName via lobPlanValue()/PLAN_SCALE_BY_NAME when given
-  (2026-08-16 follow-up); coverageHC always derives from the UNSCALED planHC baseline regardless of planName (own
-  independent variance formula, doesn't track planHC by a fixed ratio). Uses cqnsForFilters/CQN_LOB_ASSIGNMENTS above.
-  Cap lowered to 5 on the chart itself (2026-08-16 follow-up, fixed reported X-axis label overlap) — the click-title
-  table still calls with cap=999 for the full in-scope roster.
-planVsCoverageHcTrendByCqn(cqnName, granularity, planName) — {period, planHC, coverageHC} FY/granularity trend for ONE
-  clicked CQN — backs "Plan vs Coverage HC"'s click-a-CQN pop-up (Year default, Quarter/Week drill via a small local
-  DrillToggle in HeadcountAttritionLayer.jsx); expands a 3-FY base series via mockData.js's expandToGranularity, same
-  one-shot Year→Quarter/Week mechanic every other trend-drill chart in this app uses.
+  could take the full row; this was its only consumer.)
+(Removed 2026-09-07: CQN_LOB_ASSIGNMENTS, cqnsForFilters, planHcForQueue, coverageHcForQueue,
+  planVsCoverageHcByCqn, planVsCoverageHcTrendByCqn — all backed HeadcountAttritionLayer's "Plan vs Coverage HC"
+  chart (2026-08-16, 2 follow-ups), removed entirely per direct request; these were their only consumers.
+  lobPlanValue() itself stayed — still used elsewhere in this file (tsaPlanOverPlanByDimension).)
 ```
 
 `workloadByFY`/`WORKLOAD_BY_FY` (the original "Workload Act vs Plan" hours-based dataset) were removed 2026-07-03 once
@@ -1201,9 +1161,9 @@ Steps:
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
 5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (146 real names as of 2026-07-02) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
-7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied
+7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. ~~Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied~~ — moot: `CQN_LOB_ASSIGNMENTS` (tsaCapacityData.js) was removed 2026-09-07 along with its last consumer, "Plan vs Coverage HC"
 8. `GLOBAL_GROUPING_LIST` (TSA Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
-9. TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view
+9. ~~TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view~~ — moot: TSA Forecasting's Geo Map (`TsaGeoMap.jsx`) and "Plan Impact" (`asuRegionPlans`/`srRegionPlans`, AsuLayer/SrLayer Visual3) were both removed entirely 2026-09-07
 10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
 11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
 12. (Superseded 2026-07-20) All 4 pages' RCA/CLCA sidebars were removed entirely — RCA/Insights now live only on each graph/card's per-visual "i" button; that button's content remains illustrative example content, not yet connected to a real RCA workflow
@@ -1223,7 +1183,8 @@ Steps:
 27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request
 28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
 29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships
-30. "Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29
-31. "Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)
+30. ~~"Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07
+31. ~~"Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07
 32. "ASU/SR HC Impact" (`WorkloadDistributionLayer.jsx`'s onetime 2nd chart) was removed entirely 2026-08-16, per direct request, so the Sankey could take the full row — this is intentional, not a partial implementation; `WorkloadDistributionLayer` now renders exactly 1 visual
 33. HES Capacity Plan's own "Key Metrics" KPI cards (Staffing Summary/Attrition %/Cases per FTE/Avg Case Time — `fteByFY`/`tsaAttritionByFY`/`cpfByFY`/`actHrsByFY`) don't scope by LOB or Queue at all — confirmed (2026-09-03, pre-existing, not introduced by that day's Queue-filter rollout) they're page-wide aggregates that never called `filterLobs()`, even back when a LOB filter was still shown on this page. Only the deeper Analysis Layer charts (Attrition/Plan-over-Plan/Workload Distribution/Geo Map, all via `filterCapacityLobs()`) genuinely narrow with the Queue filter — same split HES Forecasting's own Total Queues card has with `tsaCardData()` vs its Analysis Layers
+34. HES Forecasting's "Plan Impact" (`AsuLayer`/`SrLayer` Visual3), its Geo Map (`TsaGeoMap.jsx`), and HES Capacity's "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx` Visual1b) were all removed entirely 2026-09-07, per direct request — this is intentional, not a partial implementation. `AsuLayer`/`SrLayer` now render exactly 2 visuals each; `TsaForecastingPage` no longer has a Layer 04; `HeadcountAttritionLayer` now renders exactly 2 visuals. Every backing selector exclusive to these charts was removed alongside them (see the relevant Data Model sections above) — anything still exported was independently confirmed to have another real consumer first

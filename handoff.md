@@ -1,5 +1,15 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: "Plan Impact" and the Geo Map Removed; HES Capacity: "Plan vs Coverage HC" Removed (2026-09-07)
+
+- Per direct request, "Plan Impact" (Visual3 in both `AsuLayer.jsx`'s "ASU Trend" and `SrLayer.jsx`'s "SR Trend") was removed entirely — both layers now show exactly 2 visuals (Actuals vs Plan Comparison, Plan vs Plan Comparison), each filling the row via its own `flex-1`, no layout change needed.
+- HES Forecasting's Geo Map (`TsaGeoMap.jsx`, Layer 04) was removed entirely — the file itself is deleted, and its import/render call dropped from `TsaForecastingPage.jsx`.
+- HES Capacity Plan's "Plan vs Coverage HC" (Visual1b in `HeadcountAttritionLayer.jsx`) was removed entirely — that layer is back to exactly 2 visuals (Actual vs Plan Variation, Attrition).
+- Followed this project's established precedent of removing a chart's backing selectors too, not just its UI, once confirmed (via grep) they had no other consumers:
+  - `tsaData.js`: `asuRegionPlans`/`srRegionPlans`/`asuLobImpact`/`srLobImpact` and their backing consts/builders (`ASU_REGION_PLANS`, `SR_REGION_PLANS`, `ASU_LOB_IMPACT_BY_REGION`, `SR_LOB_IMPACT_BY_REGION`, `buildRegionPlans`, `buildLobImpact`) — `IMPACT_REGIONS` itself stayed, since CPASU Trend (`AsuSrTrendLayer.jsx`, untouched) still uses it. Also removed `geoAdherenceByRegion`/`geoAdherenceWobble`/`geoLobPerformanceByRegion`/`GEO_LOB_REGIONS`/`LOB_REGION_ASSIGNMENTS` and the `regionForCountry` re-export (all Geo-Map-only) — `asuSrPerformanceByLob()` itself stayed, since the ASU/SR Performance table above where the map used to sit still calls it directly.
+  - `tsaCapacityData.js`: `planVsCoverageHcByCqn`/`planVsCoverageHcTrendByCqn` and their private helpers (`cqnsForFilters`, `CQN_LOB_ASSIGNMENTS`, `planHcForQueue`, `coverageHcForQueue`) — `lobPlanValue()` itself stayed, since it's still used elsewhere in the file (`tsaPlanOverPlanByDimension`).
+- **Verified**: `npm run build` clean (1185 modules, down from 1186 — matches the deleted `TsaGeoMap.jsx` file; bundle size dropped from ~1096KB to ~1077KB); grep sweep confirming every removed identifier has zero remaining real-code references (only historical comments); Node smoke tests confirming every selector that stayed (`asuByFY`, `srByFY`, `asuPlanVsPlanByFY`, `srPlanVsPlanByFY`, `cpasuByRegion`, `cpasuTrendByRegion`, `asuSrPerformanceByLob`, `fteByFY`, `tsaAttritionByDimension`, `tsaAttritionTrendByDimension`) still runs correctly after the cleanup.
+
 ## HES Capacity Plan's Filter Bar: Queue Filter Added, LOB and Global Grouping Removed (2026-09-03)
 
 - Per direct request, `TsaCapacityPage.jsx`'s filter panel now shows a "Queue Name" filter and no longer shows "LOB" or "Global Grouping" — Business Partner and the 4 fiscal-period filters (Fiscal Year/Quarter/Month/Week) are unchanged.

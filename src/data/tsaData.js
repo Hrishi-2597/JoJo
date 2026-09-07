@@ -5,7 +5,7 @@
 // and metrics, and keeping it decoupled avoids any risk to the MSG Forecasting page.
 import {
   FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, FISCAL_MONTH_LIST, BUSINESS_PARTNERS, REGIONS,
-  regionForCountry, matchesMulti, inferRegion, periodsForGranularity, expandToGranularity, expandRateToGranularity,
+  matchesMulti, inferRegion, periodsForGranularity, expandToGranularity, expandRateToGranularity,
 } from './mockData'
 
 export { FISCAL_MONTH_LIST }
@@ -222,29 +222,11 @@ export function asuSrPerformanceByLob(filters = {}, metric = 'ASU', planName) {
   })
 }
 
-// Which of the 4 real geographic regions (that TsaGeoMap's choropleth already colors
-// via regionForCountry) each real LOB belongs to — no such mapping has been supplied,
-// so this is a deterministic round-robin placeholder (same "real names, illustrative
-// structure" convention as LOB_FACTS' businessPartner/globalGrouping tags), letting
-// the Geo Map's hover popup show a genuine, real-LOB-named subset per region rather
-// than every LOB appearing under every region.
-const GEO_LOB_REGIONS = ['NAMER', 'LATAM', 'APJ', 'EMEA']
-const LOB_REGION_ASSIGNMENTS = LOB_LIST.map((lob, i) => ({ lob, region: GEO_LOB_REGIONS[i % GEO_LOB_REGIONS.length] }))
-
-// Per-LOB ASU/SR actual/plan/adherence for one region's hovered Geo Map popup (2026-
-// 07-29) — reuses asuSrPerformanceByLob directly (the same selector the ASU/SR
-// Performance table above this map already uses), narrowed to this region's LOBs and
-// collapsed to the LATEST in-scope quarter — a hover popup wants a snapshot, not the
-// full per-quarter history the table shows.
-export function geoLobPerformanceByRegion(region, filters = {}, metric = 'ASU', planName) {
-  const regionLobs = new Set(LOB_REGION_ASSIGNMENTS.filter(l => l.region === region).map(l => l.lob))
-  return asuSrPerformanceByLob(filters, metric, planName)
-    .filter(l => regionLobs.has(l.lob))
-    .map(l => {
-      const latest = l.quarters[l.quarters.length - 1]
-      return { lob: l.lob, actual: latest?.actual ?? 0, plan: latest?.plan ?? 0, adherence: latest?.adherence ?? 0 }
-    })
-}
+// (Removed 2026-09-07: GEO_LOB_REGIONS/LOB_REGION_ASSIGNMENTS and
+// geoLobPerformanceByRegion — backed TsaGeoMap's hover popup, removed entirely per
+// direct request; this was their only consumer. asuSrPerformanceByLob() itself
+// stayed — the ASU/SR Performance table above where the map used to sit still uses
+// it directly.)
 
 // ── CPASU (= SR / ASU) ─────────────────────────────────────────────────────
 export function cpasuByFY(filters = {}, granularity) {
@@ -430,51 +412,17 @@ export const TSA_ACTIVE_QUEUES = TSA_ACTIVE_QUEUE_NAMES.map(name => ({
   name, region: inferRegion(name),
 }))
 
-// ── Plan Impact Analysis: region-level Plan A/B + LOB contribution ────────────
-// Requested 4-region set for Plan Impact (and reused by CPASU Trend's region
-// breakdown below) — distinct from the full 5-region REGIONS used elsewhere on
-// this page's Geo Map.
+// Requested 4-region set, originally shared by "Plan Impact" (AsuLayer/SrLayer
+// Visual3, removed entirely 2026-09-07 — see below) and CPASU Trend's own region
+// breakdown — distinct from the full 5-region REGIONS used elsewhere on this page's
+// Geo Map. Still needed: CPASU Trend (cpasuByRegion/cpasuTrendByRegion below).
 export const IMPACT_REGIONS = ['AMER', 'APJ', 'EMEA', 'Global']
 
-function buildRegionPlans(base) {
-  return IMPACT_REGIONS.map((region, i) => ({
-    region,
-    planA: Math.round(base * (0.85 - i * 0.15)),
-    planB: Math.round(base * (0.80 - i * 0.14)),
-  }))
-}
-export const ASU_REGION_PLANS = buildRegionPlans(BASE_ASU.FY27)
-export const SR_REGION_PLANS = buildRegionPlans(BASE_SR.FY27)
-
-function buildLobImpact(base) {
-  const byRegion = {}
-  IMPACT_REGIONS.forEach((region, ri) => {
-    byRegion[region] = LOB_LIST.map((lob, i) => {
-      // 17 is coprime with the prime modulus 131, so i -> i*17 mod 131 is injective
-      // over i = 0..32 — every LOB gets a distinct residue (and thus a distinct delta)
-      // within a given region, instead of collapsing into a handful of repeated values.
-      const residue = (i * 17 + ri * 41) % 131
-      const delta = Math.round(base * 0.10 * ((residue - 65) / 65))
-      return { lob, delta }
-    }).sort((a, b) => a.delta - b.delta)
-  })
-  return byRegion
-}
-const ASU_LOB_IMPACT_BY_REGION = buildLobImpact(BASE_ASU.FY27)
-const SR_LOB_IMPACT_BY_REGION = buildLobImpact(BASE_SR.FY27)
-
-export function asuRegionPlans(filters = {}) {
-  return ASU_REGION_PLANS
-}
-export function srRegionPlans(filters = {}) {
-  return SR_REGION_PLANS
-}
-export function asuLobImpact(region, count = 6) {
-  return (ASU_LOB_IMPACT_BY_REGION[region] || []).slice(0, count)
-}
-export function srLobImpact(region, count = 6) {
-  return (SR_LOB_IMPACT_BY_REGION[region] || []).slice(0, count)
-}
+// (Removed 2026-09-07: buildRegionPlans/ASU_REGION_PLANS/SR_REGION_PLANS,
+// buildLobImpact/ASU_LOB_IMPACT_BY_REGION/SR_LOB_IMPACT_BY_REGION, and
+// asuRegionPlans/srRegionPlans/asuLobImpact/srLobImpact — backed AsuLayer/SrLayer's
+// "Plan Impact" Visual3, removed entirely per direct request; these were its only
+// consumers.)
 
 // ── CPASU Trend (Layer 3, Visual 1) — regions shown by default, click a region ─
 // to drill into its own trend at whatever time granularity is most specific in
@@ -527,35 +475,10 @@ export function cpasuTrendByRegion(filters = {}, region, granularity) {
 
 // ── Geo Map: LOB adherence by region (choropleth, reuses Forecasting's country lookup) ─
 // Colors the map by the SAME ASU/SR adherence the hover popup's per-LOB breakdown
-// already shows (2026-07-29, replacing a synthetic adherence unrelated to either
-// metric) — so the map's own metric toggle and Plan Name dropdown now genuinely
-// change which color each region shows, not just the hover popup's numbers.
-//
-// geoLobPerformanceByRegion's own actual/plan reconcile to the real page-level total
-// (every LOB gets the identical weight-based share for both, by design, so the
-// ASU/SR Performance table's numbers sum back correctly) — which means the ratio
-// between them is nearly constant across LOBs (only integer-rounding noise differs
-// it). That's correct for a reconciling total, but wrong for a choropleth, which
-// needs real region-to-region spread. geoAdherenceWobble() adds a deterministic
-// per-LOB spread scoped to THIS map-coloring selector only — it does not touch
-// geoLobPerformanceByRegion's own reconciling numbers (still shown verbatim in the
-// hover popup's per-LOB list), same "separate, non-reconciling, map-color-only
-// multiplier" precedent as tsaCapacityData.js's geoHeadcountEmphasis.
-function geoAdherenceWobble(lob) {
-  const i = LOB_LIST.indexOf(lob)
-  return 0.6 + ((i * 17) % 80) / 100
-}
-
-export function geoAdherenceByRegion(filters = {}, metric = 'ASU', planName) {
-  return GEO_LOB_REGIONS.map(region => {
-    const lobs = geoLobPerformanceByRegion(region, filters, metric, planName)
-    const actualSum = lobs.reduce((s, l) => s + l.actual * geoAdherenceWobble(l.lob), 0)
-    const planSum = lobs.reduce((s, l) => s + l.plan, 0)
-    const adherence = planSum ? Math.round((actualSum / planSum) * 100) : 0
-    return { region, adherence, label: region }
-  })
-}
-export { regionForCountry }
+// (Removed 2026-09-07: geoAdherenceWobble/geoAdherenceByRegion and the
+// `export { regionForCountry }` re-export — all backed TsaGeoMap, removed entirely
+// per direct request; these were their only consumers. regionForCountry's own
+// import from mockData.js was dropped too, since nothing else in this file uses it.)
 
 // % change between the latest in-scope period and the one before it. "Period" tracks
 // whatever granularity the caller's series was built at (2026-07-20 fix — tsaCardData

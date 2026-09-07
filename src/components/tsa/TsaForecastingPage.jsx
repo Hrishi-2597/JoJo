@@ -5,7 +5,6 @@ import AsuLayer from './AsuLayer'
 import SrLayer from './SrLayer'
 import AsuSrTrendLayer from './AsuSrTrendLayer'
 import AsuSrPerformanceTable from './AsuSrPerformanceTable'
-import TsaGeoMap from './TsaGeoMap'
 import SectionDivider from '../SectionDivider'
 
 // Every filter is multi-select: [] means "no selection = All" — same convention as
@@ -43,7 +42,6 @@ export default function TsaForecastingPage() {
         <SrLayer filters={filters} granularity={granularity} />
         <AsuSrTrendLayer filters={filters} granularity={granularity} />
         <AsuSrPerformanceTable filters={filters} />
-        <TsaGeoMap filters={filters} />
       </div>
     </>
   )

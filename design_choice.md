@@ -4,6 +4,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Three Charts Removed Entirely, Following This Project's Own Established "Remove the Chart AND Its Dead Selectors" Precedent (2026-09-07)
+
+**Decision:** "Plan Impact" (HES Forecasting's `AsuLayer`/`SrLayer` Visual3), HES Forecasting's Geo Map (`TsaGeoMap.jsx`, deleted as a file), and HES Capacity's "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx` Visual1b) were all removed completely — not hidden behind a flag — along with every backing selector confirmed (via grep) to have no other consumer.
+
+**Why:** This mirrors the exact precedent this project already set for "ASU/SR HC Impact" (removed 2026-08-16) and, before that, "Utilization Variance"/"ACT Trend — Actual vs Plan" — a direct "remove this chart" request removes the chart AND its now-dead data-layer code, rather than leaving orphaned exports behind. The ESG-hide pattern (a `SHOW_ESG` flag) was deliberately NOT used here: that flag existed because ESG represented a whole business section the team might plausibly return to as a unit; these are individual charts the user identified by name as unwanted, the same shape of request as the prior chart removals that were already handled by deleting outright.
+
+## `IMPACT_REGIONS` and `asuSrPerformanceByLob()` Were Kept Despite Losing Their Original Reason for Being Documented Alongside the Removed Code (2026-09-07)
+
+**Decision:** Removing "Plan Impact" and the Geo Map did NOT remove `IMPACT_REGIONS` (tsaData.js) or `asuSrPerformanceByLob()` (tsaData.js), even though both were introduced/discussed in the same historical context as the removed selectors.
+
+**Why:** Both are still genuinely depended on by code that isn't going anywhere: `IMPACT_REGIONS` by CPASU Trend's region breakdown (`AsuSrTrendLayer.jsx`, untouched), and `asuSrPerformanceByLob()` by the ASU/SR Performance table that used to sit directly above the now-removed Geo Map (`AsuSrPerformanceTable.jsx`, also untouched). Removing a piece of shared code just because it was ORIGINALLY introduced alongside something now-dead — without checking whether something else came to depend on it since — is exactly the kind of mistake grep-verifying every removal candidate is meant to catch.
+
 ## HES Capacity's LOB/Global Grouping Removal Needed No Data-Layer Changes (2026-09-03)
 
 **Decision:** Dropping LOB and Global Grouping from HES Capacity's filter bar (and adding Queue) was done as a pure UI/config change — new `includeLob`/`includeGlobalGrouping` opt-out props on the shared `TsaFilterPanel.jsx`, plus updating `TsaCapacityPage.jsx`'s `DEFAULT_FILTERS` and prop usage. No selector in `tsaCapacityData.js` was touched.

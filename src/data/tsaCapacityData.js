@@ -6,7 +6,6 @@
 // are new.
 import {
   LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, tsaEffectiveFiscalYears,
-  TSA_ACTIVE_QUEUE_NAMES,
 } from './tsaData'
 import {
   FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
@@ -452,102 +451,11 @@ export function workloadActPerformanceByLob(filters = {}, metric = 'Workload', p
   })
 }
 
-// ── Plan vs Coverage HC (Layer 01 "Headcount and Attrition") per-CQN detail ─────
-// Real queue-name roster the adjacent Workload Distribution Sankey also draws from
-// (TSA_ACTIVE_QUEUE_NAMES, sourced from LOB_QUEUES['High End Storage'] — the only
-// real per-queue list this app has). No real queue-to-LOB mapping has been supplied,
-// so each queue is assigned to a LOB_LIST entry round-robin by index — same "real
-// names, illustrative structure" approach LOB_FACTS already uses for
-// businessPartner/globalGrouping — so picking a LOB from the filter panel narrows to
-// a genuine, real-named CQN subset instead of an arbitrary one.
-const CQN_LOB_ASSIGNMENTS = TSA_ACTIVE_QUEUE_NAMES.map((name, i) => ({ name, lob: LOB_LIST[i % LOB_LIST.length] }))
-
-// `localLobs` (2026-08-16, optional) — a chart's OWN LOB dropdown, independent of
-// the page-level LOB filter above it. When set, further intersects the page-level
-// in-scope LOB set rather than replacing it, so the chart's own picker narrows on
-// TOP of whatever the page filters already scope to, the same layering every
-// per-chart Plan Name dropdown elsewhere in this app already does relative to the
-// page's own filters. (Originally added for "ASU/SR HC Impact," WorkloadDistribution-
-// Layer's onetime 2nd chart — removed 2026-08-16, per direct request, to let the
-// Sankey take the full row; `localLobs` itself stays, since "Plan vs Coverage HC"
-// below also threads a LOB filter through cqnsForFilters via `filters`.)
-function cqnsForFilters(filters, localLobs) {
-  let inScope = new Set(filterLobs(filters).map(l => l.lob))
-  if (localLobs?.length) inScope = new Set([...inScope].filter(l => localLobs.includes(l)))
-  const scoped = CQN_LOB_ASSIGNMENTS.filter(q => inScope.has(q.lob))
-  return scoped.length ? scoped : CQN_LOB_ASSIGNMENTS
-}
-
-// Per-queue Plan HC baseline (2026-08-16) — off TSA_CAPACITY_LOBS' own popPlan1
-// (already documented there as the Plan-over-Plan headcount-per-LOB field), each
-// queue taking a deterministic sub-share of its assigned LOB's total. `planName`
-// (2026-08-16 follow-up) reuses this page's own real lobPlanValue()/
-// PLAN_SCALE_BY_NAME so "Plan vs Coverage HC"'s own Select Plan dropdown genuinely
-// rescales the Plan HC bar — a missing/undefined planName falls back to the
-// unscaled baseline, same additive convention as every other lobPlanValue() caller
-// in this file.
-function planHcForQueue(q, planName) {
-  const lobRow = TSA_CAPACITY_LOBS.find(l => l.lob === q.lob)
-  const queueCount = CQN_LOB_ASSIGNMENTS.filter(c => c.lob === q.lob).length || 1
-  const basePlan = lobRow ? lobPlanValue(lobRow, planName) : 10
-  return Math.max(1, Math.round(basePlan / queueCount))
-}
-
-// Coverage HC's own base ALWAYS comes from the UNSCALED Plan HC baseline (planName
-// omitted here on purpose) — Coverage HC represents actual current coverage, which
-// doesn't shift just because the user is comparing against a different named Plan
-// vintage, the same "Plan Name never rescales the Actual-shaped series" convention
-// every other Plan dropdown in this app already follows (e.g. AsuLayer's `actual`
-// bar). Uses a DIFFERENT index/modulus than any other per-queue variance formula in
-// this file (`i * 17 + q.name.length, % 19`) so it varies independently rather than
-// tracking Plan HC by a fixed ratio — same "don't let two supposedly-independent
-// numbers move in lockstep" principle as tsaData.js's srDbOspByFY DB/OSP split.
-function coverageHcForQueue(q, i) {
-  const baselinePlanHC = planHcForQueue(q)
-  return Math.max(1, Math.round(baselinePlanHC * (0.68 + ((i * 17 + q.name.length) % 19) * 0.018)))
-}
-
-// "Plan vs Coverage HC" (Layer 01 "Headcount and Attrition", 2026-08-16, per direct
-// request) — `planName` (2026-08-16 follow-up, optional) backs the chart's own
-// "Select Plan" dropdown; first-selected-plan-only, same policy every ranked/
-// per-category chart in this app uses for a multi-select Plan dropdown (as opposed
-// to period-trend charts, which render one extra series per selected plan) — "N
-// plans stacked as N extra bars" has no clean rendering on a chart that already
-// shows 2 bars per CQN.
-export function planVsCoverageHcByCqn(filters = {}, cap = 8, planName) {
-  return cqnsForFilters(filters).slice(0, cap).map((q, i) => {
-    const planHC = planHcForQueue(q, planName)
-    const coverageHC = coverageHcForQueue(q, i)
-    return { cqn: q.name, lob: q.lob, planHC, coverageHC }
-  })
-}
-
-// Year-by-default trend for ONE clicked CQN (2026-08-16) — backs "Plan vs Coverage
-// HC"'s click-a-CQN pop-up. Builds a 3-FY {planHC, coverageHC} baseline (same modest
-// YoY-step convention as workloadActFyRows above) then reuses expandToGranularity —
-// the SAME one-shot Year->Quarter/Week expansion every other trend-drill chart in
-// this app already uses for its own granularity control — rather than a bespoke
-// click-a-quarter-to-see-its-weeks mechanic. `planName` (2026-08-16 follow-up)
-// carries the chart's own selected plan into the pop-up, so drilling into a CQN
-// doesn't silently revert Plan HC to the unscaled baseline. Recomputes the queue's
-// own base planHC/coverageHC independently (via TSA_ACTIVE_QUEUE_NAMES' fixed index
-// rather than an array position, since this is called for one CQN in isolation,
-// outside any particular filtered/capped list) — the illustrative numbers may not
-// perfectly match whatever happened to be on-screen in the bar chart at the moment
-// of the click, an accepted convention already true of every other trend-drill
-// selector in this app (e.g. cpasuTrendByRegion), not a new gap introduced here.
-export function planVsCoverageHcTrendByCqn(cqnName, granularity, planName) {
-  const q = CQN_LOB_ASSIGNMENTS.find(c => c.name === cqnName) || { name: cqnName, lob: LOB_LIST[0] }
-  const idx = TSA_ACTIVE_QUEUE_NAMES.indexOf(cqnName)
-  const planHCBase = planHcForQueue(q, planName)
-  const coverageHCBase = coverageHcForQueue(q, idx)
-  const fyRows = FISCAL_YEARS.map((fy, i) => ({
-    period: fy,
-    planHC: Math.round(planHCBase * (0.94 + i * 0.05)),
-    coverageHC: Math.round(coverageHCBase * (0.92 + i * 0.06)),
-  }))
-  return expandToGranularity(fyRows, granularity, ['planHC', 'coverageHC'])
-}
+// (Removed 2026-09-07: CQN_LOB_ASSIGNMENTS, cqnsForFilters, planHcForQueue,
+// coverageHcForQueue, planVsCoverageHcByCqn, planVsCoverageHcTrendByCqn — all backed
+// HeadcountAttritionLayer's "Plan vs Coverage HC" chart, removed entirely per direct
+// request; these were their only consumers. lobPlanValue() itself stayed — still
+// used elsewhere in this file (tsaPlanOverPlanByDimension).)
 
 // Illustrative Sankey, now with two modes (2026-07-03): 'LOB' flows 3 illustrative
 // CQN priority tiers into 4 real LOB names; 'CQN' flows 3 illustrative LOB-priority

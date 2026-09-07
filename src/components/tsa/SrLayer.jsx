@@ -4,18 +4,11 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { PLAN_NAMES } from '../../data/mockData'
-import { srByFY, srPlanVsPlanByFY, srRegionPlans, srLobImpact } from '../../data/tsaData'
+import { srByFY, srPlanVsPlanByFY } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
 import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor, planVsPlanSeriesColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
-
-// This page's own Plan Impact region set (AMER/APJ/EMEA/Global, see tsaData's
-// IMPACT_REGIONS) is its own 4-region taxonomy, distinct from the 5-region
-// NAMER/LATAM/APJ/EMEA/Global set the Holiday Calendar (and insightFactors' real-
-// holiday lookup) uses — AMER maps onto NAMER for that lookup, APJ/EMEA match
-// directly, Global has no clean match.
-const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
 
 // See AsuLayer.jsx's Visual1 for the full rationale — same multi-select Plan Name
 // treatment (2026-07-30): empty selection shows the baseline Plan; 1 selected plan
@@ -126,63 +119,10 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
   )
 }
 
-// See AsuLayer.jsx's Visual3 for the full rationale — srRegionPlans/srLobImpact are
-// confirmed cosmetic (static, no plan dependency), so this stays
-// first-selected-plan-only for labels only.
-function Visual3({ filters, plansA, plansB, onPlansChange }) {
-  const planA = plansA[0]
-  const planB = plansB[0]
-  const [selectedRegion, setSelectedRegion] = useState(null)
-  const data = useMemo(() => srRegionPlans(filters), [filters])
-  const lobImpact = useMemo(() => selectedRegion ? srLobImpact(selectedRegion) : [], [selectedRegion])
-  const table = useMemo(() => ({
-    title: 'What contributed, by region',
-    columns: FACTOR_TABLE_COLUMNS,
-    rows: data.flatMap(d => contributingFactors(d.region, HOLIDAY_REGION_MAP[d.region] ?? null, 1).map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
-  }), [data])
-
-  return (
-    <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
-      controls={<PlanDropdowns planA={plansA} planB={plansB} onChange={onPlansChange} options={PLANS} />}
-      info="Each region's SR gap between the two selected plans; click a region to see contributing LOBs."
-      rca="SR impact concentrates in a small number of LOBs per region."
-      clca="Prioritize staffing reviews for the top LOBs in the highest-impact region."
-      table={table} comingSoon>
-      <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
-        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
-            tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="planA" name={planA || 'Plan A'} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
-            onClick={d => setSelectedRegion(prev => prev === d.region ? null : d.region)} style={{ cursor: 'pointer' }} />
-          <Bar dataKey="planB" name={planB || 'Plan B'} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
-            onClick={d => setSelectedRegion(prev => prev === d.region ? null : d.region)} style={{ cursor: 'pointer' }} />
-        </ComposedChart>
-      </ResponsiveContainer>
-
-      {selectedRegion && (
-        <div className="animate-fade-in" style={{ marginTop: 4 }}>
-          <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 4, textAlign: 'center' }}>
-            <span style={{ color: '#38bdf8', fontWeight: 600 }}>{selectedRegion}</span> — LOB contribution to the gap
-          </p>
-          <div style={{ maxHeight: 130, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {lobImpact.map((l, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, padding: '2px 4px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>{l.lob}</span>
-                <span style={{ fontWeight: 600, color: l.delta >= 0 ? C.ahead : C.behind }}>
-                  {l.delta > 0 ? '+' : ''}{l.delta}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </Visual>
-  )
-}
+// Visual3 "Plan Impact" removed entirely 2026-09-07, per direct request — layer is
+// now exactly 2 visuals, filling the row via each Visual's own flex-1, no layout
+// change needed. `plans`/`handlePlanChange` state below stays — Visual2 ("Plan vs
+// Plan Comparison") still needs it.
 
 export default function SrLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
@@ -204,7 +144,6 @@ export default function SrLayer({ filters, granularity }) {
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
           <Visual2 filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
-          <Visual3 filters={filters} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
         </div>
       )}
     </div>

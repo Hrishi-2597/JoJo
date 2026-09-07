@@ -1060,3 +1060,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `TsaCapacityMetricCards.jsx`'s `AvgCaseTimeTrendChart` (the "Avg Case Time" card's pop-up) no longer renders the "Plan (hrs)" line — actuals only. Display-only: `actHrsByFY()` itself is untouched (still backs the card's own headline YTD math). Updated the now-stale "Actual vs Plan" modal title and card info text to match.
 - Verified with `npm run build` (clean, 1186 modules) and Node smoke tests confirming: `filterLobs()`/real Analysis Layer selectors (`tsaAttritionByDimension`, `workloadSankey`) genuinely narrow via the Queue filter with no `lob` key present at all in the filters object, Queue's dropdown options still cascade correctly from Business Partner alone, and (confirmed pre-existing, not a regression) HES Capacity's 4 top KPI cards never scoped by LOB either.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 84 — 2026-09-07
+**Input:** For HES Forecasting remove plan impact from both the layers - ASU Trend and SR Trend and remove Geo Map as well.For HES Capacity Plan ,from headcount and attrition - remove the graph plan vs coverage HC
+
+**Action:**
+- "Plan Impact" (Visual3 in both `AsuLayer.jsx`'s "ASU Trend" and `SrLayer.jsx`'s "SR Trend") removed entirely — both layers now show exactly 2 visuals, each filling the row via its own `flex-1`, no layout change needed.
+- HES Forecasting's Geo Map (`TsaGeoMap.jsx`, Layer 04) removed entirely — the file itself deleted, its import/render call dropped from `TsaForecastingPage.jsx`.
+- HES Capacity's "Plan vs Coverage HC" (Visual1b in `HeadcountAttritionLayer.jsx`) removed entirely — that layer is back to exactly 2 visuals.
+- Followed this project's established precedent of removing a chart's backing selectors too, not just its UI, once confirmed (via grep) they had no other consumers: `tsaData.js`'s `asuRegionPlans`/`srRegionPlans`/`asuLobImpact`/`srLobImpact` and their backing consts/builders (`IMPACT_REGIONS` itself stayed — CPASU Trend still uses it), plus `geoAdherenceByRegion`/`geoAdherenceWobble`/`geoLobPerformanceByRegion`/`GEO_LOB_REGIONS`/`LOB_REGION_ASSIGNMENTS` and the `regionForCountry` re-export (`asuSrPerformanceByLob()` stayed — still used by the ASU/SR Performance table); `tsaCapacityData.js`'s `planVsCoverageHcByCqn`/`planVsCoverageHcTrendByCqn` and their private helpers (`lobPlanValue()` stayed — still used elsewhere in the file).
+- Verified with `npm run build` (clean, 1185 modules — down from 1186, matching the deleted `TsaGeoMap.jsx` file; bundle size dropped from ~1096KB to ~1077KB), a grep sweep confirming every removed identifier has zero remaining real-code references, and Node smoke tests confirming every selector that stayed still runs correctly.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` — including sweeping every other stale reference to the removed identifiers across all 3 docs (component-tree diagrams, per-selector reference blocks, Known Limitations items), not just adding a new entry; committed, pushed to `main`, and redeployed.
