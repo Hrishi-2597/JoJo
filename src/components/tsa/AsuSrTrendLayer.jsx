@@ -5,19 +5,13 @@ import {
 } from 'recharts'
 import { PLAN_NAMES } from '../../data/mockData'
 import {
-  cpasuByRegion, regionTrendGranularity, cpasuTrendByRegion, srBotsByFY,
+  cpasuByFY, srBotsByFY,
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, Modal, PillButton, planSeriesColor, ComingSoonOverlay } from './TsaChartKit'
+import { C, Visual, Tip, PlanSelect, Modal, planSeriesColor, ComingSoonOverlay } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
-
-// CPASU Trend's regions (AMER/APJ/EMEA/Global, see tsaData's IMPACT_REGIONS) are this
-// page's own 4-region taxonomy, distinct from the 5-region NAMER/LATAM/APJ/EMEA/Global
-// set the Holiday Calendar (and insightFactors' real-holiday lookup) uses — AMER maps
-// onto NAMER for that lookup, APJ/EMEA match directly, Global has no clean match.
-const HOLIDAY_REGION_MAP = { AMER: 'NAMER', APJ: 'APJ', EMEA: 'EMEA', Global: null }
 
 // "UCR Runrate with Target" ranks LOBs, not queues, so its variance-tier table gets
 // its own column labels (copy of insightFactors' VARIANCE_TABLE_COLUMNS shape with
@@ -29,65 +23,37 @@ const LOB_VARIANCE_TABLE_COLUMNS = [
   { key: 'reason', label: 'Likely reason', wrap: true },
 ]
 
-// Regions render by default (one bar-pair per region); clicking a region drills
-// into that region's own trend at whatever granularity the page-wide View By
-// toggle is set to.
-function Visual1({ filters, granularity: pageGranularity }) {
-  const [selectedRegion, setSelectedRegion] = useState(null)
-  const regionData = useMemo(() => cpasuByRegion(filters), [filters])
-  const { granularity } = useMemo(() => regionTrendGranularity(filters, pageGranularity), [filters, pageGranularity])
-  const trendData = useMemo(
-    () => (selectedRegion ? cpasuTrendByRegion(filters, selectedRegion, pageGranularity) : []),
-    [filters, selectedRegion, pageGranularity]
-  )
-
-  const data = selectedRegion ? trendData : regionData
-  const xKey = selectedRegion ? 'period' : 'region'
-  const handleBarClick = selectedRegion ? undefined : (d => setSelectedRegion(d.region))
-
-  // Table follows whichever view is currently on screen — region-level factors by
-  // default, or per-period factors for the drilled-into region's own trend (seeded
-  // by region+period so each period still gets a distinct, stable factor while the
-  // holiday cross-reference stays fixed to the selected region).
-  const table = useMemo(() => {
-    if (selectedRegion) {
-      const holidayRegion = HOLIDAY_REGION_MAP[selectedRegion] ?? null
-      return {
-        title: `What contributed, by period — ${selectedRegion}`,
-        columns: FACTOR_TABLE_COLUMNS,
-        rows: trendData.flatMap(d => contributingFactors(`${selectedRegion}-${d.period}`, holidayRegion, 1)
-          .map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
-      }
-    }
-    return {
-      title: 'What contributed, by region',
-      columns: FACTOR_TABLE_COLUMNS,
-      rows: regionData.flatMap(d => contributingFactors(d.region, HOLIDAY_REGION_MAP[d.region] ?? null, 1)
-        .map(f => ({ ...f, factor: `${d.region} — ${f.factor}` }))),
-    }
-  }, [selectedRegion, regionData, trendData])
+// Region breakdown + click-to-drill removed entirely (2026-09-10, per direct
+// request, "make it like how i attached the pic") — X-axis is now plain fiscal
+// period (FY25/FY26/FY27, or whatever the page's own View By toggle resolves to),
+// matching every other simple ASU/SR/CPASU-style trend chart in this app. Backing
+// selectors cpasuByRegion/cpasuTrendByRegion/regionTrendGranularity were removed
+// from tsaData.js too — this was their only consumer.
+function Visual1({ filters, granularity }) {
+  const data = useMemo(() => cpasuByFY(filters, granularity), [filters, granularity])
+  const table = useMemo(() => ({
+    title: 'What contributed, by period',
+    columns: FACTOR_TABLE_COLUMNS,
+    rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
+  }), [data])
 
   return (
     <Visual title="CPASU Trend"
-      subtitle={selectedRegion ? `${selectedRegion} — ${granularity} view` : 'Click a region to see its trend'}
-      controls={selectedRegion && <PillButton onClick={() => setSelectedRegion(null)}>← All Regions</PillButton>}
-      info="ASU, SR, and CPASU by region; click a region to drill into its trend over time."
-      rca="CPASU is rising fastest in regions with the lowest bot deflection."
-      clca="Expand bot-deflection coverage in the regions driving the CPASU increase."
+      info="ASU, SR, and the resulting CPASU ratio by fiscal period."
+      rca="CPASU is rising fastest in periods with the lowest bot deflection."
+      clca="Expand bot-deflection coverage in the periods driving the CPASU increase."
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey={xKey} tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
-            onClick={handleBarClick} style={{ cursor: selectedRegion ? 'default' : 'pointer' }} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
-            onClick={handleBarClick} style={{ cursor: selectedRegion ? 'default' : 'pointer' }} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
           <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={C.trend}
             strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>

@@ -277,9 +277,9 @@ TsaForecastingPage
 ├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 2-visual structure/names as AsuLayer, SR metric
 │   (its own "Plan Impact" — srRegionPlans/srLobImpact — removed the same day, for the same reason)
 └── AsuSrTrendLayer(filters) — "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis"), collapsible, badge "03"
-│   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByRegion(filters) grouped bars/line by default (one group per
-│   │                           IMPACT_REGIONS entry); clicking a region switches to cpasuTrendByRegion(filters, region)
-│   │                           at whichever granularity regionTrendGranularity(filters) resolves to (Week > Quarter > Year)
+│   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByFY(filters, granularity) directly, plain fiscal-period
+│   │                           X-axis (FY25/FY26/FY27, or Quarter/Month/Week per the page's View By toggle);
+│   │                           region breakdown + click-to-drill REMOVED ENTIRELY 2026-09-07, per direct request
 │   ├── Visual2 "UCR Impact on SR" — BarChart: srBotsByFY(filters), humanSR ("SR's") + botsSR ("UCR Handled SR's") stacked,
 │   │                                SR Plan as a separate bar; PlanSelect in the corner (cornerControls, unwired)
 │   └── Visual3 "UCR Runrate with Target" — ComposedChart: UCR_BY_FY directly (always all 3 FYs, ignores
@@ -507,10 +507,10 @@ behavior — when omitted, so any caller that doesn't pass one still works):
 mockData.js:  planOverPlanByFY, actualVsPlanByFY, stackedAdherenceByFY (own bespoke expansion — renormalizes
               % buckets rather than dividing them), callVolumeByFY, dbOspVolumeByFY
 tsaData.js:   asuByFY, srByFY, asuPlanVsPlanByFY, srPlanVsPlanByFY, cpasuByFY (derives from the above, no
-              separate expansion needed), ucrByFY (uses expandRateToGranularity — see design_choice.md for
-              the bug this avoided), srBotsByFY, srDbOspByFY (both derive from srByFY, no separate expansion),
-              regionTrendGranularity(filters, granularity) / cpasuTrendByRegion(filters, region, granularity)
-              — granularity now comes from the global toggle, not inferred from which time filter was selected
+              separate expansion needed — also now CPASU Trend's own chart data source directly, since
+              its region breakdown was removed 2026-09-10), ucrByFY (uses expandRateToGranularity — see
+              design_choice.md for the bug this avoided), srBotsByFY, srDbOspByFY (both derive from
+              srByFY, no separate expansion)
 ```
 
 `topNonAdherentLobsByYear(filters, period, count)` (TSA) was generalized to derive its target fiscal year via
@@ -538,7 +538,7 @@ No external state library. All state is local React `useState`:
 | `TsaForecastingPage` | `filters`; `granularity` (null\|'Quarter'\|'Month'\|'Week', default null = Fiscal Year) | Object (7 filter keys), String or null |
 | `TsaMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill) | String or null, String or null |
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open` (Visual3 "Plan Impact"'s own `selectedRegion` drill state removed with it, 2026-09-07) | String, Object, Boolean |
-| `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalPeriod` | Boolean, String or null, String, String or null |
+| `AsuSrTrendLayer` | `open`; Visual2's `plan`; Visual3's `modalPeriod` (Visual1's `selectedRegion` CPASU Trend drill removed with it, 2026-09-10) | Boolean, String, String or null |
 (`TsaGeoMap` — REMOVED ENTIRELY 2026-09-07, per direct request)
 | `MsgCapacityPage` / `TsaCapacityPage` | `filters`; `granularity` (same null-default convention) | Object, String or null |
 | `MsgCapacityMetricCards` / `TsaCapacityMetricCards` | `active` (which card's modal is open) | String or null |
@@ -714,10 +714,9 @@ Same conventions as `mockData.js`: static exports are datasets, lowercase functi
 LOB_LIST              — 33 real LOB names (business-supplied verbatim)
 GLOBAL_GROUPING_LIST  — ['Consumer', 'Commercial', 'Enterprise'] — inferred, not yet user-confirmed
 FISCAL_MONTH_LIST     — FY25M01 ... FY27M12 (36 values, derived from FISCAL_YEARS) — filter only
-IMPACT_REGIONS        — ['AMER', 'APJ', 'EMEA', 'Global'] — the 4-region set originally shared by
-                         "Plan Impact" (AsuLayer/SrLayer Visual3, removed entirely 2026-09-07) and
-                         CPASU Trend's region breakdown (AsuSrTrendLayer Visual1, still uses it);
-                         distinct from the 5-region REGIONS
+(IMPACT_REGIONS — REMOVED ENTIRELY 2026-09-10: was the 4-region set shared by "Plan Impact",
+                  removed 2026-09-07, and CPASU Trend's region breakdown, removed 2026-09-10 —
+                  no remaining consumers; distinct from the 5-region REGIONS, which is unaffected)
 LOB_QUEUES            — { 'High End Storage': { active: [...71 real names], inactive: [...~150 real names] } }
                          (business-supplied verbatim); other LOBs have no entry yet. Backs
                          TSA_ACTIVE_QUEUE_NAMES/TSA_ACTIVE_QUEUES below (Total Queues card).
@@ -793,22 +792,18 @@ topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × cou
 (AsuLayer/SrLayer Visual3 "Plan Impact" and everything in this section backed it exclusively —
   ASU_REGION_PLANS/SR_REGION_PLANS, buildRegionPlans, buildLobImpact, ASU_LOB_IMPACT_BY_REGION/
   SR_LOB_IMPACT_BY_REGION, and asuRegionPlans/srRegionPlans/asuLobImpact/srLobImpact were all removed
-  from tsaData.js per direct request. IMPACT_REGIONS itself stayed — still used by CPASU Trend below.)
+  from tsaData.js per direct request. IMPACT_REGIONS itself stayed at the time — CPASU Trend still
+  used it, until that was removed too, below.)
 ```
 
-### CPASU Trend: region breakdown + time-granularity drill (AsuSrTrendLayer Visual1)
+### CPASU Trend: region breakdown + time-granularity drill — REMOVED ENTIRELY 2026-09-10
 ```
-REGION_SHARE — { AMER: 0.38, EMEA: 0.27, APJ: 0.22, Global: 0.13 } — illustrative share-of-total
-  split of the latest FY's aggregate ASU/SR across the 4 IMPACT_REGIONS
-cpasuByRegion(filters) — {region, asu, sr, cpasu} × 4, the default (region) view: splits the latest
-  in-scope FY's cpasuByFY() snapshot by REGION_SHARE
-regionTrendGranularity(filters) — Week > Quarter > Year precedence over the top filter bar's time
-  filters → {granularity, periods}; periods are real distinct values (e.g. the selected fiscal weeks),
-  not collapsed to years like tsaEffectiveFiscalYears
-cpasuTrendByRegion(filters, region) — {period, asu, sr, cpasu} × periods.length, the drill-down view once
-  a region is clicked: divides each period's year's ASU/SR baseline by periodsPerYear(granularity)
-  (52 for Week, 4 for Quarter, 1 for Year), scaled by REGION_SHARE, lobScopeRatio, and a small
-  deterministic per-period/region wobble — fully synthetic, no real per-region/quarter/week dataset exists
+(AsuSrTrendLayer Visual1's region breakdown + click-to-drill and everything in this section backed it
+  exclusively — REGION_SHARE, cpasuByRegion, regionTrendGranularity, periodsPerYear, cpasuTrendByRegion,
+  and IMPACT_REGIONS (above) were all removed from tsaData.js per direct request, reference screenshot
+  attached. The chart now renders cpasuByFY(filters, granularity) directly — X-axis is plain fiscal
+  period (FY25/FY26/FY27, or Quarter/Month/Week per the page's own View By toggle), matching the
+  screenshot. These were IMPACT_REGIONS/REGION_SHARE/periodsPerYear's only consumers.)
 ```
 
 ### Geo Map (LOB adherence) — REMOVED ENTIRELY 2026-09-07
@@ -869,7 +864,9 @@ attritionByFY(filters, granularity, lens)  — {period, headcount, attrition} �
 attritionByDimension(filters, dimension)   — {key, headcount, attrition, attritionCount} × regions or sub-regions —
   ('Region'|'SubRegion')                     HeadcountLayer Visual2's default view, sized by shareByKey
 attritionTrendByDimension(filters, key,    — {period, headcount, attrition, attritionCount} — FY/granularity trend for
-  dimension, granularity)                    one clicked region/sub-region key, same drill mechanic as tsaData.js's cpasuTrendByRegion
+  dimension, granularity)                    one clicked region/sub-region key, same "click a region to drill into
+                                              its own time trend" mechanic tsaData.js used for CPASU Trend before
+                                              that region breakdown was removed 2026-09-10
 slTrendByFY(filters, granularity)          — {period, actual, plan, slPct} — HeadcountLayer Visual3 ("Headcount Impact
                                               on SL") + SL% card modal
 slDefaulterQueues(filters, count=6)        — queues where actualHC > planHC AND slActual < 90, sorted by slActual
@@ -1164,7 +1161,7 @@ Steps:
 7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. ~~Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied~~ — moot: `CQN_LOB_ASSIGNMENTS` (tsaCapacityData.js) was removed 2026-09-07 along with its last consumer, "Plan vs Coverage HC"
 8. `GLOBAL_GROUPING_LIST` (TSA Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
 9. ~~TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view~~ — moot: TSA Forecasting's Geo Map (`TsaGeoMap.jsx`) and "Plan Impact" (`asuRegionPlans`/`srRegionPlans`, AsuLayer/SrLayer Visual3) were both removed entirely 2026-09-07
-10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
+10. ~~CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page~~ — moot: CPASU Trend's region breakdown + click-to-drill was removed entirely 2026-09-10, per direct request; the chart now renders `cpasuByFY()` directly against plain fiscal periods
 11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
 12. (Superseded 2026-07-20) All 4 pages' RCA/CLCA sidebars were removed entirely — RCA/Insights now live only on each graph/card's per-visual "i" button; that button's content remains illustrative example content, not yet connected to a real RCA workflow
 14. TSA Capacity's Sankey diagram (`workloadSankey()`) uses an illustrative 3-tier CQN taxonomy as flow sources since this page's filter set has no real per-queue dimension — only the 4 target LOB names are real

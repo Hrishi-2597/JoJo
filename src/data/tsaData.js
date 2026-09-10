@@ -5,7 +5,7 @@
 // and metrics, and keeping it decoupled avoids any risk to the MSG Forecasting page.
 import {
   FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, FISCAL_MONTH_LIST, BUSINESS_PARTNERS, REGIONS,
-  matchesMulti, inferRegion, periodsForGranularity, expandToGranularity, expandRateToGranularity,
+  matchesMulti, inferRegion, expandToGranularity, expandRateToGranularity,
 } from './mockData'
 
 export { FISCAL_MONTH_LIST }
@@ -412,69 +412,19 @@ export const TSA_ACTIVE_QUEUES = TSA_ACTIVE_QUEUE_NAMES.map(name => ({
   name, region: inferRegion(name),
 }))
 
-// Requested 4-region set, originally shared by "Plan Impact" (AsuLayer/SrLayer
-// Visual3, removed entirely 2026-09-07 — see below) and CPASU Trend's own region
-// breakdown — distinct from the full 5-region REGIONS used elsewhere on this page's
-// Geo Map. Still needed: CPASU Trend (cpasuByRegion/cpasuTrendByRegion below).
-export const IMPACT_REGIONS = ['AMER', 'APJ', 'EMEA', 'Global']
-
 // (Removed 2026-09-07: buildRegionPlans/ASU_REGION_PLANS/SR_REGION_PLANS,
 // buildLobImpact/ASU_LOB_IMPACT_BY_REGION/SR_LOB_IMPACT_BY_REGION, and
 // asuRegionPlans/srRegionPlans/asuLobImpact/srLobImpact — backed AsuLayer/SrLayer's
 // "Plan Impact" Visual3, removed entirely per direct request; these were its only
 // consumers.)
 
-// ── CPASU Trend (Layer 3, Visual 1) — regions shown by default, click a region ─
-// to drill into its own trend at whatever time granularity is most specific in
-// the top filter bar (Week > Quarter > Year), same precedence idea as
-// tsaEffectiveFiscalYears but exposed as real distinct periods, not collapsed years.
-const REGION_SHARE = { AMER: 0.38, EMEA: 0.27, APJ: 0.22, Global: 0.13 }
+// (Removed 2026-09-10: IMPACT_REGIONS, REGION_SHARE, cpasuByRegion,
+// regionTrendGranularity, periodsPerYear, cpasuTrendByRegion — backed CPASU Trend's
+// region breakdown + click-to-drill (AsuSrTrendLayer.jsx Visual1), removed entirely
+// per direct request — the chart's X-axis is now plain fiscal period (FY25/FY26/
+// FY27), reusing the existing cpasuByFY() below directly instead. These were the
+// region logic's only consumers.)
 
-export function cpasuByRegion(filters = {}) {
-  const cpasu = cpasuByFY(filters)
-  const latest = cpasu[cpasu.length - 1] || { asu: 0, sr: 0, cpasu: 0 }
-  return IMPACT_REGIONS.map(region => {
-    const share = REGION_SHARE[region] ?? 1 / IMPACT_REGIONS.length
-    const asu = Math.round(latest.asu * share)
-    const sr = Math.round(latest.sr * share)
-    return { region, asu, sr, cpasu: asu ? +(sr / asu).toFixed(2) : 0 }
-  })
-}
-
-// Now driven by the global granularity toggle instead of inferring granularity from
-// which time filter happened to be selected — the toggle is the one control meant to
-// answer "what granularity" for every time-axis chart on the page, this one included.
-// A falsy/'Year' value (the toggle's default, nothing selected) means plain fiscal
-// years, same as every other chart's untouched default — not "fall back to Quarter."
-export function regionTrendGranularity(filters = {}, granularity) {
-  const years = tsaEffectiveFiscalYears(filters)
-  if (!granularity || granularity === 'Year') return { granularity: 'Year', periods: years }
-  return { granularity, periods: periodsForGranularity(granularity, years) }
-}
-
-function periodsPerYear(granularity) {
-  return granularity === 'Week' ? 52 : granularity === 'Month' ? 12 : granularity === 'Quarter' ? 4 : 1
-}
-
-export function cpasuTrendByRegion(filters = {}, region, granularity) {
-  const { periods } = regionTrendGranularity(filters, granularity)
-  const share = REGION_SHARE[region] ?? 1 / IMPACT_REGIONS.length
-  const ratio = lobScopeRatio(filters)
-  const divisor = periodsPerYear(granularity)
-  const ri = IMPACT_REGIONS.indexOf(region)
-  return periods.map((period, i) => {
-    const year = period.slice(0, 4)
-    const baseAsu = (BASE_ASU[year] ?? BASE_ASU.FY27) / divisor
-    const baseSr = (BASE_SR[year] ?? BASE_SR.FY27) / divisor
-    const wobble = 0.92 + ((i * 13 + ri * 7) % 17) / 100
-    const asu = Math.round(baseAsu * share * ratio * wobble)
-    const sr = Math.round(baseSr * share * ratio * wobble)
-    return { period, asu, sr, cpasu: asu ? +(sr / asu).toFixed(2) : 0 }
-  })
-}
-
-// ── Geo Map: LOB adherence by region (choropleth, reuses Forecasting's country lookup) ─
-// Colors the map by the SAME ASU/SR adherence the hover popup's per-LOB breakdown
 // (Removed 2026-09-07: geoAdherenceWobble/geoAdherenceByRegion and the
 // `export { regionForCountry }` re-export — all backed TsaGeoMap, removed entirely
 // per direct request; these were their only consumers. regionForCountry's own

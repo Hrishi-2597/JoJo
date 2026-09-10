@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: CPASU Trend Simplified to a Plain Fiscal-Period Chart (2026-09-10)
+
+- Per direct request with a reference screenshot, "CPASU Trend" (`AsuSrTrendLayer.jsx` Visual1, Layer 03 "CPASU/UCR Trend") no longer groups by region or supports click-to-drill-into-a-region — its X-axis is now plain fiscal period (FY25/FY26/FY27 by default, or Quarter/Month/Week if the page's own View By toggle is set), with ASU/SR bars and a CPASU line, matching the picture exactly.
+- Reuses the existing `cpasuByFY(filters, granularity)` selector directly (already used elsewhere on this page for the KPI card) instead of the region-based `cpasuByRegion`/`cpasuTrendByRegion` — no new data-layer code was needed.
+- Removed the now-fully-dead region selectors from `tsaData.js`: `cpasuByRegion`, `cpasuTrendByRegion`, `regionTrendGranularity`, and their private helpers (`REGION_SHARE`, `periodsPerYear`) — `AsuSrTrendLayer.jsx`'s Visual1 was their only consumer. `IMPACT_REGIONS` also removed — its last real consumer was this same region logic (its earlier consumer, "Plan Impact," was already removed 2026-09-07). Also removed the now-unused `HOLIDAY_REGION_MAP`/`PillButton` from `AsuSrTrendLayer.jsx` and the now-unused `periodsForGranularity` import from `tsaData.js`.
+- Touched up 2 stale historical comments (in `mockData.js` and `msgCapacityData.js`) that cited the now-removed `cpasuByRegion`/`cpasuTrendByRegion` as a technique precedent — repointed to still-alive selectors using the same pattern.
+- **Verified**: `npm run build` clean (1185 modules); Node smoke tests confirming `cpasuByFY` returns FY25/FY26/FY27 periods matching the screenshot's shape (ASU/SR/CPASU magnitudes line up with the picture), respects the Quarter granularity toggle correctly, and that Visual2/Visual3's own selectors (`srBotsByFY`, `ucrByFY`, `topNonAdherentLobsByYear`) are unaffected.
+
 ## HES Forecasting: "Plan Impact" and the Geo Map Removed; HES Capacity: "Plan vs Coverage HC" Removed (2026-09-07)
 
 - Per direct request, "Plan Impact" (Visual3 in both `AsuLayer.jsx`'s "ASU Trend" and `SrLayer.jsx`'s "SR Trend") was removed entirely — both layers now show exactly 2 visuals (Actuals vs Plan Comparison, Plan vs Plan Comparison), each filling the row via its own `flex-1`, no layout change needed.

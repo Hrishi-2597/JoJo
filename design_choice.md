@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## CPASU Trend's Region Breakdown Removed Entirely, Reusing the Existing `cpasuByFY` Instead of Writing a New Selector (2026-09-10)
+
+**Decision:** "CPASU Trend" (`AsuSrTrendLayer.jsx` Visual1) dropped its region-grouped default view and click-to-drill-into-a-region mechanic entirely, replaced with a plain fiscal-period chart (ASU/SR bars + CPASU line, X-axis = FY25/FY26/FY27 or Quarter/Month/Week per the page's View By toggle) rendered directly from `cpasuByFY(filters, granularity)` — a selector that already existed and already backed this same page's CPASU KPI card. `cpasuByRegion`, `cpasuTrendByRegion`, `regionTrendGranularity`, their private helpers (`REGION_SHARE`, `periodsPerYear`), and `IMPACT_REGIONS` (now fully unused) were all removed from `tsaData.js`; `HOLIDAY_REGION_MAP` and `PillButton`'s only remaining use were removed from `AsuSrTrendLayer.jsx` along with them.
+
+**Why:** Requested directly with a reference screenshot — a plain FY25/FY26/FY27 chart with no region grouping. Reusing `cpasuByFY` rather than writing a new selector kept the change to a rewire: it already returns exactly `{period, asu, sr, cpasu}` shaped data and already respects the page's granularity toggle, so no new data-layer code was needed at all, and the chart now behaves identically to every other simple FY-trend chart on this page rather than introducing a bespoke shape. This follows the same "remove the chart AND its now-dead selectors" precedent as every other chart removal this project has done (see below) — `cpasuByRegion`/`cpasuTrendByRegion`/`regionTrendGranularity` had no other consumer once this chart stopped calling them, confirmed via grep before deleting.
+
 ## Three Charts Removed Entirely, Following This Project's Own Established "Remove the Chart AND Its Dead Selectors" Precedent (2026-09-07)
 
 **Decision:** "Plan Impact" (HES Forecasting's `AsuLayer`/`SrLayer` Visual3), HES Forecasting's Geo Map (`TsaGeoMap.jsx`, deleted as a file), and HES Capacity's "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx` Visual1b) were all removed completely — not hidden behind a flag — along with every backing selector confirmed (via grep) to have no other consumer.
@@ -15,6 +21,8 @@ A record of every significant design decision made, with the reasoning behind it
 **Decision:** Removing "Plan Impact" and the Geo Map did NOT remove `IMPACT_REGIONS` (tsaData.js) or `asuSrPerformanceByLob()` (tsaData.js), even though both were introduced/discussed in the same historical context as the removed selectors.
 
 **Why:** Both are still genuinely depended on by code that isn't going anywhere: `IMPACT_REGIONS` by CPASU Trend's region breakdown (`AsuSrTrendLayer.jsx`, untouched), and `asuSrPerformanceByLob()` by the ASU/SR Performance table that used to sit directly above the now-removed Geo Map (`AsuSrPerformanceTable.jsx`, also untouched). Removing a piece of shared code just because it was ORIGINALLY introduced alongside something now-dead — without checking whether something else came to depend on it since — is exactly the kind of mistake grep-verifying every removal candidate is meant to catch.
+
+**Superseded (2026-09-10):** `IMPACT_REGIONS`'s remaining consumer, CPASU Trend's region breakdown, was itself removed per direct request — see "CPASU Trend's Region Breakdown Removed Entirely" below. `IMPACT_REGIONS` was removed along with it, this time with zero remaining consumers. `asuSrPerformanceByLob()` is unaffected and still stands.
 
 ## HES Capacity's LOB/Global Grouping Removal Needed No Data-Layer Changes (2026-09-03)
 

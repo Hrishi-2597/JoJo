@@ -169,9 +169,10 @@ export function attritionByDimension(filters = {}, dimension = 'Region') {
 }
 
 // FY/granularity trend for one clicked region/sub-region key — same "click a region
-// to drill into its own time trend" mechanic as tsaData.js's cpasuByRegion/
-// cpasuTrendByRegion, scaled by that key's share of the currently in-scope queues
-// so the drilled trend still respects whatever the top filters/granularity are set to.
+// to drill into its own time trend" mechanic as tsaData.js's tsaAttritionByDimension/
+// tsaAttritionTrendByDimension, scaled by that key's share of the currently in-scope
+// queues so the drilled trend still respects whatever the top filters/granularity
+// are set to.
 export function attritionTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
   const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const scoped = filterCapacityQueues(filters)

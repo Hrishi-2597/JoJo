@@ -64,8 +64,8 @@ function periodsPerYear(granularity) {
 
 // Expands an FY-level {period, ...rawFields} series into quarter/month/week-level
 // synthetic points, dividing each FY's raw values across the periods within it with
-// a small deterministic wobble — same technique TSA's cpasuTrendByRegion already
-// used for its own region-drill trend. Callers recompute any derived/getter field
+// a small deterministic wobble — same technique tsaData.js's own region/plan-drill
+// trend selectors use. Callers recompute any derived/getter field
 // (adherence, variance, etc.) from the divided raw fields afterward; ratios stay
 // approximately consistent since both sides of a ratio scale down together.
 export function expandToGranularity(fySeries, granularity, rawFields) {
