@@ -1086,3 +1086,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Touched up 2 stale historical comments (in `mockData.js` and `msgCapacityData.js`) that cited the now-removed `cpasuByRegion`/`cpasuTrendByRegion` as a technique precedent — repointed to still-alive selectors using the same drill pattern.
 - Verified with `npm run build` (clean, 1185 modules, bundle size dropped slightly) and Node smoke tests confirming `cpasuByFY` returns FY25/FY26/FY27 periods with ASU/SR/CPASU magnitudes matching the screenshot's proportions, correctly respects the Quarter granularity toggle, and that Visual2/Visual3's own selectors (`srBotsByFY`, `ucrByFY`, `topNonAdherentLobsByYear`) are unaffected.
 - Updated `handoff.md`, `tech_spec.md` (swept every stale reference to the removed identifiers — component-tree diagram, state table, shared-selector reference block, the dedicated "CPASU Trend: region breakdown" data-model section, and a Known Limitations item), `design_choice.md` (new entry + superseded note on the 2026-09-07 entry that had justified keeping `IMPACT_REGIONS`); committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 86 — 2026-10-07
+**Input:** remove the queue name slicer from the HES forecasting page
+
+**Action:**
+- "Queue Name" removed from HES Forecasting's top filter bar — `TsaForecastingPage.jsx` no longer passes `includeQueue` to `TsaFilterPanel.jsx` and dropped `queue: []` from its own `DEFAULT_FILTERS`; the filter cluster is back to Business Partner, LOB, Global Grouping, and the 4 fiscal calendars.
+- Confirmed via grep that this is a pure opt-out, not a feature removal: `TsaFilterPanel.jsx`'s `includeQueue` prop is shared with HES Capacity Planning's filter bar (`TsaCapacityPage.jsx`), which still passes `includeQueue` and still depends on Queue as its primary scoping filter (replacing LOB there since 2026-09-03) — so `TsaFilterPanel.jsx` itself and every backing `tsaData.js` selector (`queueOptionsForFilters`, `matchesQueueFilter`, `QUEUE_LOB_ASSIGNMENTS`) were left untouched; HES Capacity Planning is still a real, active consumer of all of it.
+- Every HES Forecasting selector reading `filters.queue` already treats a missing/empty key as "no restriction" (the same convention every other unselected filter follows), so no other code needed to change.
+- Verified with `npm run build` (clean, 1185 modules, bundle size effectively unchanged).
+- Updated `handoff.md`, `tech_spec.md` (component-tree entry for `TsaFilterPanel.jsx`'s consumer list, `tsaData.js`'s Queue Name filter description, and Known Limitations item 28), `design_choice.md`; committed, pushed to `main`, and redeployed.

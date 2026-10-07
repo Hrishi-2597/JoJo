@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: Queue Name Filter Removed From the Filter Bar (2026-10-07)
+
+- Per direct request, "Queue Name" no longer appears in HES Forecasting's top filter bar (`TsaForecastingPage.jsx`) — the page's filter cluster is back to Business Partner, LOB, Global Grouping, and the 4 fiscal calendars, same as before the Queue filter was ever added (2026-08-04).
+- Pure opt-out, not a feature removal: `TsaFilterPanel.jsx`'s `includeQueue` prop already defaulted to `false` (opt-in) and is shared with HES Capacity Planning's own filter bar, which still passes `includeQueue` (and still relies on Queue as its primary scoping filter, replacing LOB there since 2026-09-03). `TsaForecastingPage.jsx` simply stopped passing the prop and dropped `queue: []` from its `DEFAULT_FILTERS` — no change to `TsaFilterPanel.jsx`, `tsaData.js`'s `queueOptionsForFilters()`/`matchesQueueFilter()`/`QUEUE_LOB_ASSIGNMENTS`, or any other code, since HES Capacity Planning is still a live consumer of all of it.
+- Every HES Forecasting selector that reads `filters.queue` (e.g. `tsaData.js`'s `filterLobs()`, `tsaCardData()`'s `activeQueueCount`, `TsaMetricCards.jsx`'s `scopedQueues`) already treats a missing/empty `queue` key as "no restriction," the same convention every other unselected filter on this page follows — so the page's charts/cards are unaffected beyond no longer offering Queue as something to narrow by.
+- **Verified**: `npm run build` clean (1185 modules, bundle size effectively unchanged).
+
 ## HES Forecasting: CPASU Trend Simplified to a Plain Fiscal-Period Chart (2026-09-10)
 
 - Per direct request with a reference screenshot, "CPASU Trend" (`AsuSrTrendLayer.jsx` Visual1, Layer 03 "CPASU/UCR Trend") no longer groups by region or supports click-to-drill-into-a-region — its X-axis is now plain fiscal period (FY25/FY26/FY27 by default, or Quarter/Month/Week if the page's own View By toggle is set), with ASU/SR bars and a CPASU line, matching the picture exactly.

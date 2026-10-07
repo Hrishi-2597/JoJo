@@ -168,10 +168,13 @@ SPoG/
 │   │       │                            tsaData.js's filterLobs()/QUEUE_LOB_ASSIGNMENTS below for how the selection
 │   │       │                            genuinely narrows the page, not just decorative. `includeLob`/
 │   │       │                            `includeGlobalGrouping` (2026-09-03, both default true, opt-OUT) let a
-│   │       │                            consumer drop LOB/Global Grouping — TsaForecastingPage.jsx passes only
-│   │       │                            `includeQueue` (keeps LOB+Global Grouping+Queue, all 3); TsaCapacityPage.jsx
-│   │       │                            (2026-09-03) passes `includeQueue includeLob={false}
-│   │       │                            includeGlobalGrouping={false}` (Queue only, no LOB/Global Grouping) — no
+│   │       │                            consumer drop LOB/Global Grouping. TsaForecastingPage.jsx no longer passes
+│   │       │                            `includeQueue` (removed 2026-10-07, per direct request — "Queue Name" no
+│   │       │                            longer shows on HES Forecasting; keeps LOB+Global Grouping only, same as
+│   │       │                            before the filter was ever added); TsaCapacityPage.jsx (2026-09-03) still
+│   │       │                            passes `includeQueue includeLob={false}
+│   │       │                            includeGlobalGrouping={false}` (Queue only, no LOB/Global Grouping) — it
+│   │       │                            remains this page's only consumer of Queue. No
 │   │       │                            data-layer change needed, since every consumer already funnels through
 │   │       │                            filterLobs(), which already applies the Queue filter regardless of whether
 │   │       │                            the LOB filter's own UI is shown.
@@ -210,10 +213,16 @@ SPoG/
 │       │                         (2026-07-03), and other primitives tsaData.js/msgCapacityData.js/tsaCapacityData.js reuse
 │       ├── tsaData.js          # TSA Forecasting page's data model (LOB list, ASU/SR/UCR series, LOB_QUEUES, region-impact deltas).
 │       │                         New QUEUE_LOB_ASSIGNMENTS (2026-08-04) — deterministic round-robin queue→LOB map (each of
-│       │                         TSA_ACTIVE_QUEUE_NAMES' 78 real names assigned one of the 33 real LOBs) backing the new
-│       │                         Queue Name filter; filterLobs() now also checks it via matchesQueueFilter(), so every
+│       │                         TSA_ACTIVE_QUEUE_NAMES' 78 real names assigned one of the 33 real LOBs) backing the
+│       │                         Queue Name filter; filterLobs() also checks it via matchesQueueFilter(), so every
 │       │                         selector already scaling off filterLobs()'s in-scope count (via lobScopeRatio) reacts to
 │       │                         it automatically. tsaCardData()'s totalQueues.active also narrows to the selection.
+│       │                         (Queue Name's own UI was removed from HES Forecasting 2026-10-07, per direct
+│       │                         request — TsaForecastingPage.jsx no longer opts into TsaFilterPanel's
+│       │                         `includeQueue`; nothing here changed, since HES Capacity Planning's filter bar
+│       │                         still opts in and remains this logic's real consumer. `filters.queue` simply
+│       │                         stays empty/absent on HES Forecasting now, which every reader above already
+│       │                         treats as "no restriction," same as any other unselected filter.)
 │       │                         New lobOptionsForFilters()/queueOptionsForFilters() (2026-08-16) — power
 │       │                         TsaFilterPanel.jsx's cascading LOB/Queue dropdown OPTIONS (distinct from filterLobs(),
 │       │                         which narrows chart DATA) using the same LOB_FACTS/QUEUE_LOB_ASSIGNMENTS relationships.
@@ -1178,7 +1187,7 @@ Steps:
 25. Every "Plan Name" dropdown is multi-select (2026-07-30), but only period-trend Bar+Line charts actually render one series per selected plan — ranked-by-queue/LOB charts (`UtilizationLayer` Visual2/3, both `QueuePerformanceTable`s, `Layer2ActualVsPlan` Visual3), both Performance matrix tables, and both Geo Maps all use only `selectedPlans[0]` for calculation regardless of how many plans are checked; see design_choice.md for why full N-way support wasn't built for these chart shapes
 26. Same as #25 but for every "Plan A / Plan B" `PlanDropdowns` (2026-07-31): full N-series rendering only on the charts whose entire purpose IS the Plan A/B comparison (`AsuLayer`/`SrLayer` Visual2, `Layer1PlanOverPlan` Visual1, both Capacity pages' `PlanOverPlanVariationLayer` `MainChart`s) — the region/impact/ranked-variance charts sharing those same widgets (`AsuLayer`/`SrLayer` Visual3, `Layer1PlanOverPlan` Visual2/3, `LobVarianceChart`, `QueueVarianceChart`) use only `plansA[0]`/`plansB[0]` regardless of how many plans are checked on either side, same rationale as #25
 27. The `ComingSoonOverlay` (2026-07-31) only covers ESG/HES Forecasting's graph pop-ups (the `table`-prop Modal+PopupTable mechanic, plus `AsuSrTrendLayer`'s separate bar-click "Top 5 Non-Adherent LOBs" modal) — it deliberately does NOT cover the smaller per-row "RCA/CLCA" pill popups (`PerformanceMatrixTable.jsx`, both `QueuePerformanceTable.jsx` files), since those are a different, pre-existing interaction (not "click the graph's title") and are shared with Capacity pages, which were out of scope for this request
-28. HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship
+28. ~~HES Forecasting's new Queue Name filter (2026-08-04) narrows via `QUEUE_LOB_ASSIGNMENTS`, a deterministic round-robin queue→LOB assignment — not a real per-queue LOB tag (none exists, same illustrative-structure caveat as `LOB_FACTS`' own businessPartner/globalGrouping tags and `LOB_REGION_ASSIGNMENTS`/`GEO_LOB_REGIONS` elsewhere on this page). Picking specific queues narrows to whichever LOBs they happen to round-robin onto, not a real queue-to-LOB business relationship~~ — moot on this page: the Queue Name filter's UI was removed from HES Forecasting entirely 2026-10-07, per direct request. The same caveat still applies where Queue Name actually lives now — HES Capacity Planning's filter bar (`TsaCapacityPage.jsx`, since 2026-09-03)
 29. The HES filter panel's cascading dropdowns (2026-08-16) are one-directional only (Business Partner/Global Grouping → LOB → Queue) — picking a LOB or Queue never narrows Business Partner/Global Grouping's own options, per the request's own example. Also inherits item #28's illustrative-mapping caveat: since the underlying LOB↔BusinessPartner/GlobalGrouping and Queue↔LOB relationships are round-robin assignments rather than real business data, the specific LOBs/Queues that appear after narrowing reflect that round-robin pattern, not genuine business relationships
 30. ~~"Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07
 31. ~~"Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07

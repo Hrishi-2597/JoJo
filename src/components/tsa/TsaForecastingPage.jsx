@@ -10,7 +10,6 @@ import SectionDivider from '../SectionDivider'
 // Every filter is multi-select: [] means "no selection = All" — same convention as
 // the Forecasting page's filters.
 const DEFAULT_FILTERS = {
-  queue: [],
   lob: [],
   fiscalYear: [],
   fiscalQuarter: [],
@@ -31,7 +30,7 @@ export default function TsaForecastingPage() {
 
   return (
     <>
-      <TsaFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} includeQueue />
+      <TsaFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
 
       <SectionDivider label="Key Metrics" />
       <TsaMetricCards filters={filters} granularity={granularity} />

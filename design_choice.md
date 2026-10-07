@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Queue Name Filter Dropped From HES Forecasting via the Existing Opt-Out Prop, Not a Feature Removal (2026-10-07)
+
+**Decision:** `TsaForecastingPage.jsx` stopped passing `includeQueue` to `TsaFilterPanel.jsx` and dropped `queue: []` from its own `DEFAULT_FILTERS`. `TsaFilterPanel.jsx` itself, and every `tsaData.js` selector backing the Queue filter (`queueOptionsForFilters`, `matchesQueueFilter`, `QUEUE_LOB_ASSIGNMENTS`), were left completely untouched.
+
+**Why:** Requested directly — remove the Queue Name slicer from HES Forecasting specifically. Unlike the chart removals elsewhere in this log, Queue isn't exclusive to this page: HES Capacity Planning (`TsaCapacityPage.jsx`, since 2026-09-03) uses Queue as its *primary* scoping filter in place of LOB, so deleting the underlying selectors would have broken a different, currently-shipping page. `includeQueue` already defaulted to `false` (opt-in) specifically so each consumer could decide independently whether to show it — this is exactly the scenario that opt-in prop was built for, the mirror image of HES Capacity's own `includeLob={false}`/`includeGlobalGrouping={false}` opt-out (2026-09-03). No selector was removed because none became dead — grepping confirmed HES Capacity Planning is still a real, active consumer of all of it.
+
 ## CPASU Trend's Region Breakdown Removed Entirely, Reusing the Existing `cpasuByFY` Instead of Writing a New Selector (2026-09-10)
 
 **Decision:** "CPASU Trend" (`AsuSrTrendLayer.jsx` Visual1) dropped its region-grouped default view and click-to-drill-into-a-region mechanic entirely, replaced with a plain fiscal-period chart (ASU/SR bars + CPASU line, X-axis = FY25/FY26/FY27 or Quarter/Month/Week per the page's View By toggle) rendered directly from `cpasuByFY(filters, granularity)` — a selector that already existed and already backed this same page's CPASU KPI card. `cpasuByRegion`, `cpasuTrendByRegion`, `regionTrendGranularity`, their private helpers (`REGION_SHARE`, `periodsPerYear`), and `IMPACT_REGIONS` (now fully unused) were all removed from `tsaData.js`; `HOLIDAY_REGION_MAP` and `PillButton`'s only remaining use were removed from `AsuSrTrendLayer.jsx` along with them.
