@@ -389,13 +389,20 @@ export const LOB_QUEUES = {
 // used by the Total Queues card below instead.
 
 // ── TSA Total Queues (Key Metrics card) ────────────────────────────────────────
-// The business-supplied active/inactive queue lists for this page — same role
-// ACTIVE_QUEUE_NAMES/INACTIVE_QUEUE_NAMES play for the Forecasting page's Total
-// Queues card. Sourced from LOB_QUEUES['High End Storage'], the only per-queue
-// list supplied so far; treated as the page-level TSA queue roster rather than
-// scoped to one LOB, since it's the only real queue-name data this page has.
+// The business-supplied active queue list for this page — same role
+// ACTIVE_QUEUE_NAMES plays for the Forecasting page's own Total Queues card.
+// Sourced from LOB_QUEUES['High End Storage'], the only per-queue list supplied
+// so far; treated as the page-level TSA queue roster rather than scoped to one
+// LOB, since it's the only real queue-name data this page has. The "Total Queues"
+// card itself was transferred from HES Forecasting to HES Capacity Planning
+// (2026-10-07, per direct request, unchanged) — TsaCapacityMetricCards.jsx is now
+// its only UI consumer, importing this roster directly.
 export const TSA_ACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].active
-export const TSA_INACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].inactive
+
+// (Removed 2026-10-07: TSA_INACTIVE_QUEUE_NAMES — was only read by tsaCardData's
+// now-removed `totalQueues` field, which the card never actually displayed on its
+// face to begin with; the transferred Total Queues card only ever showed the
+// active count. This was its only consumer.)
 
 // Deterministic queue → LOB assignment (2026-08-04, round-robin over LOB_LIST) — no
 // real per-queue LOB tag exists, only the real queue NAMES themselves (this roster).
@@ -447,10 +454,10 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // Latest in-scope fiscal year's snapshot for each of the 5 KPI cards, plus a
 // YTD-vs-prior-year delta for the 3 cards that show a YTD message (ASU/SR/CPASU).
-// totalQueues doesn't depend on lob/businessPartner/globalGrouping (the TSA queue
-// roster has no per-queue tags for those, same reasoning as why "UCR Runrate with
-// Target" ignores Quarter/Week filters) but DOES honor the new Queue filter itself
-// (2026-08-04) — selecting specific queues narrows the count to just those.
+// totalLobs (2026-10-07, replaces the old totalQueues here — see design_choice.md
+// and handoff.md for why) honors every LOB-scoping filter (lob/businessPartner/
+// globalGrouping/queue) via filterLobs(), since LOB_FACTS genuinely carries those
+// tags — unlike the old Total Queues card, which only ever honored the Queue filter.
 export function tsaCardData(filters = {}, granularity) {
   const asu = asuByFY(filters, granularity)
   const sr = srByFY(filters, granularity)
@@ -466,9 +473,8 @@ export function tsaCardData(filters = {}, granularity) {
   const latestUcr = ucr[ucr.length - 1]
   const latestCpasu = cpasu[cpasu.length - 1]
   const prevCpasu = cpasu[cpasu.length - 2]
-  const activeQueueCount = filters.queue?.length ? filters.queue.length : TSA_ACTIVE_QUEUE_NAMES.length
   return {
-    totalQueues: { active: activeQueueCount, inactive: TSA_INACTIVE_QUEUE_NAMES.length },
+    totalLobs: { active: filterLobs(filters).length },
     asuActuals: {
       value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0,
       period: latestAsu?.period, prevPeriod: prevAsu?.period, yoyPct: yoyPct(latestAsu?.actual, prevAsu?.actual),

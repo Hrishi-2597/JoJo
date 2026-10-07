@@ -1098,3 +1098,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Every HES Forecasting selector reading `filters.queue` already treats a missing/empty key as "no restriction" (the same convention every other unselected filter follows), so no other code needed to change.
 - Verified with `npm run build` (clean, 1185 modules, bundle size effectively unchanged).
 - Updated `handoff.md`, `tech_spec.md` (component-tree entry for `TsaFilterPanel.jsx`'s consumer list, `tsaData.js`'s Queue Name filter description, and Known Limitations item 28), `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 87 — 2026-10-07
+**Input:** Show Total LOB card instead of Total queues in hes forecasting and on the Pop -up in pie chart show gLOBAL grpuping when we click on a particular Global group it should show the LOB's under it...Transfer the Total Queues card in HES Capacity page as it is
+
+**Action:**
+- HES Forecasting's "Total Queues" KPI card (`TsaMetricCards.jsx`) replaced with "Total LOB" — same position (first card), headline is now the count of in-scope LOBs (`tsaData.js`'s new `filterLobs(filters).length`, exposed as `tsaCardData().totalLobs.active`, replacing the old `totalQueues` field).
+- The drill-down pop-up's donut now breaks down by Global Grouping (COMPUTE/NETWORKING, DPU/UDX, HCX, OTHER, PRIMARY/MIDRANGE) instead of Region — clicking a Global Grouping slice (or its legend entry) narrows the table below to just the LOBs under that grouping, same click-to-drill mechanic as the old region donut. New components `LobsByGlobalGroupingChart`/`LobTable`/`TotalLobsSection` replace `QueuesByRegionChart`/`QueueTable`/`TotalQueuesSection` in this file.
+- The displaced "Total Queues" card (region donut + queue table) was transferred, unchanged, to HES Capacity Planning's `TsaCapacityMetricCards.jsx` as that page's new first card — reused `tsaData.js`'s already-exported `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` directly and the page's existing `filters.queue` (its primary scoping filter since 2026-09-03). Extended that file's own `Card` component with the optional `sublabel` header line the transferred card needs (copied from HES Forecasting's `Card`; inert for the other 4 cards there).
+- `tsaData.js`: removed `TSA_INACTIVE_QUEUE_NAMES` (dead — was only read by the now-removed `totalQueues.inactive`, which the card never displayed anyway; confirmed via grep it had no other consumers).
+- Verified with `npm run build` (clean, 1185 modules) and a Node smoke test confirming `filterLobs({})` returns all 33 LOBs, narrows correctly by `globalGrouping`, `tsaCardData({}).totalLobs` reports `{ active: 33 }` with no stray `totalQueues`, and the transferred `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` are unaffected (78 active queues).
+- Updated `handoff.md`, `tech_spec.md` (swept component-tree entries for both `TsaMetricCards.jsx`/`TsaCapacityMetricCards.jsx`, the state table, the `TSA_ACTIVE_QUEUE_NAMES`/`TSA_ACTIVE_QUEUES`/`GLOBAL_GROUPING_LIST` data-model block — also fixed a pre-existing stale `GLOBAL_GROUPING_LIST` value found while editing — the `tsaCardData()` reference block, and 2 Known Limitations items), `design_choice.md`; committed, pushed to `main`, and redeployed.

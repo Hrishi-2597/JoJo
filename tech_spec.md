@@ -135,10 +135,13 @@ SPoG/
 │   │       │                                   includeQueue/includeLob={false}/includeGlobalGrouping={false}, 2026-09-03
 │   │       │                                   — was LOB+Global Grouping, no Queue, before) + cards + 4 layers (RCA/CLCA
 │   │       │                                   sidebar removed 2026-07-20)
-│   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %).
-│   │       │                                   Avg Case Time's pop-up (AvgCaseTimeTrendChart) drops its Plan line
-│   │       │                                   (2026-09-03, actuals-only now) — display-only, actHrsByFY() itself
-│   │       │                                   still computes plan/adherence for the card's own headline math.
+│   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards: Total Queues/Staffing Summary/Attrition/Cases per FTE/Avg
+│   │       │                                   Case Time (SLO % removed 2026-07-23 — was 5, then 4; Total Queues
+│   │       │                                   transferred in from HES Forecasting 2026-10-07, per direct request,
+│   │       │                                   unchanged — back to 5). Avg Case Time's pop-up (AvgCaseTimeTrendChart)
+│   │       │                                   drops its Plan line (2026-09-03, actuals-only now) — display-only,
+│   │       │                                   actHrsByFY() itself still computes plan/adherence for the card's own
+│   │       │                                   headline math.
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Attrition" (renamed 2026-07-28, was "...and Utilization") — staffing + region/sub-region attrition drill (Utilization Variance visual removed 2026-07-28).
 │   │       │                                   "Plan vs Coverage HC" (Visual1b, 2026-08-16 - 2026-08-16 follow-ups) was
 │   │       │                                   REMOVED ENTIRELY 2026-09-07, per direct request — layer is back to exactly
@@ -164,7 +167,8 @@ SPoG/
 │   │       │                            LOB/Global Grouping/Queue as opt-in/opt-out props — reused, configured
 │   │       │                            differently per consumer, by tsaCapacity/TsaCapacityPage.jsx. `includeQueue` prop
 │   │       │                            (2026-08-04, default false, opt-in) adds "Queue Name", options
-│   │       │                            TSA_ACTIVE_QUEUE_NAMES (same roster as the Total Queues card). See
+│   │       │                            TSA_ACTIVE_QUEUE_NAMES (same roster as HES Capacity Planning's own Total
+│   │       │                            Queues card, since 2026-10-07 — see below). See
 │   │       │                            tsaData.js's filterLobs()/QUEUE_LOB_ASSIGNMENTS below for how the selection
 │   │       │                            genuinely narrows the page, not just decorative. `includeLob`/
 │   │       │                            `includeGlobalGrouping` (2026-09-03, both default true, opt-OUT) let a
@@ -193,7 +197,8 @@ SPoG/
 │   │       │                            changes makes them invalid. One-directional (see design_choice.md).
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
-│   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
+│   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total LOB/ASU/SR/CPASU/UCR
+│   │       │                            — was Total Queues until 2026-10-07, see below)
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan. "Plan Impact" (Visual3,
 │   │       │                            region→LOB drill) REMOVED ENTIRELY 2026-09-07, per direct request — layer is
 │   │       │                            back to exactly 2 visuals, each filling the row via its own flex-1
@@ -216,11 +221,12 @@ SPoG/
 │       │                         TSA_ACTIVE_QUEUE_NAMES' 78 real names assigned one of the 33 real LOBs) backing the
 │       │                         Queue Name filter; filterLobs() also checks it via matchesQueueFilter(), so every
 │       │                         selector already scaling off filterLobs()'s in-scope count (via lobScopeRatio) reacts to
-│       │                         it automatically. tsaCardData()'s totalQueues.active also narrows to the selection.
-│       │                         (Queue Name's own UI was removed from HES Forecasting 2026-10-07, per direct
-│       │                         request — TsaForecastingPage.jsx no longer opts into TsaFilterPanel's
-│       │                         `includeQueue`; nothing here changed, since HES Capacity Planning's filter bar
-│       │                         still opts in and remains this logic's real consumer. `filters.queue` simply
+│       │                         it automatically. (Queue Name's own UI was removed from HES Forecasting
+│       │                         2026-10-07, per direct request — TsaForecastingPage.jsx no longer opts into
+│       │                         TsaFilterPanel's `includeQueue`; nothing here changed, since HES Capacity
+│       │                         Planning's filter bar still opts in and remains this logic's real consumer
+│       │                         — it's also, since the same day, the Total Queues card's own page; see below.
+│       │                         `filters.queue` simply
 │       │                         stays empty/absent on HES Forecasting now, which every reader above already
 │       │                         treats as "no restriction," same as any other unselected filter.)
 │       │                         New lobOptionsForFilters()/queueOptionsForFilters() (2026-08-16) — power
@@ -275,9 +281,10 @@ App
 TsaForecastingPage
 ├── TsaFilterPanel        — Controlled: filters state lifted to TsaForecastingPage
 ├── TsaMetricCards(filters, granularity) — tsaCardData(filters, granularity) recomputed on every change
-│   └── DrillDownModal     — Popup (TsaChartKit's Modal), one of TotalQueuesSection/AsuTrendChart/
-│                            SrDbOspChart/CpasuChart/CurrentUcrChart; closing it only clears local
-│                            `active` state, filters prop is untouched
+│   └── DrillDownModal     — Popup (TsaChartKit's Modal), one of TotalLobsSection (was TotalQueuesSection
+│                            until 2026-10-07 — see below)/AsuTrendChart/SrDbOspChart/CpasuChart/
+│                            CurrentUcrChart; closing it only clears local `active` state, filters prop
+│                            is untouched
 ├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01" (2 visuals, was 3 — see below)
 │   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters) + Adherence% line, "Plan Name" dropdown
 │   └── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
@@ -367,13 +374,16 @@ TsaCapacityPage
 │                                                                          unmodified (identical field set: LOB/FY-Qtr-
 │                                                                          Month-Week/Business Partner/Global Grouping;
 │                                                                          Global Grouping options corrected 2026-07-03)
-├── TsaCapacityMetricCards(filters, granularity) — tsaCapacityCardData(filters, granularity); 4 cards with YTD/YoY
-│   │                          sub-messages (ytdSub, same pattern as TsaMetricCards.jsx/MsgCapacityMetricCards.jsx) for
-│   │                          Staffing Summary (renamed from Total FTE)/Attrition/Avg Case Time; Cases per FTE
-│   │                          unchanged. SLO % card removed 2026-07-23 (see design_choice.md) — was 5 cards, now 4.
-│   │                          Each card a Modal drill-down
-│   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
-│                         AvgCaseTimeTrendChart (line)
+├── TsaCapacityMetricCards(filters, granularity) — tsaCapacityCardData(filters, granularity) for 4 of its 5 cards,
+│   │                          with YTD/YoY sub-messages (ytdSub, same pattern as TsaMetricCards.jsx/
+│   │                          MsgCapacityMetricCards.jsx) for Staffing Summary (renamed from Total FTE)/Attrition/
+│   │                          Avg Case Time; Cases per FTE unchanged. SLO % card removed 2026-07-23 (see
+│   │                          design_choice.md) — was 5 cards, then 4. Total Queues (2026-10-07, transferred from
+│   │                          HES Forecasting's TsaMetricCards.jsx unchanged, see below and design_choice.md) is
+│   │                          back to 5 — its own headline/drill-down reads tsaData.js's TSA_ACTIVE_QUEUES/
+│   │                          TSA_ACTIVE_QUEUE_NAMES directly, not tsaCapacityCardData(). Each card a Modal drill-down
+│   └── DrillDownModal — TotalQueuesSection (region donut + queue table) / FteTrendChart / AttritionTrendChart /
+│                         CasesPerFteTrendChart (line) / AvgCaseTimeTrendChart (line)
 ├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Attrition" (2026-07-28, was "...and
 │   │                                                Utilization" — see below), badge "01"
 │   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity, planName); line
@@ -545,12 +555,13 @@ No external state library. All state is local React `useState`:
 | `Layer2ActualVsPlan` | `plan` (reset by `filters.planName` via `useEffect`), `open` | String, Boolean |
 | `Layer3GeoMap` | `viewMode` (Region/Country), `hovered`, `open` | String, Object, Boolean |
 | `TsaForecastingPage` | `filters`; `granularity` (null\|'Quarter'\|'Month'\|'Week', default null = Fiscal Year) | Object (7 filter keys), String or null |
-| `TsaMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill) | String or null, String or null |
+| `TsaMetricCards` | `active` (which card's modal is open); `TotalLobsSection`'s `selectedGroup` (Global Grouping donut drill, was `TotalQueuesSection`'s `selectedRegion` until 2026-10-07) | String or null, String or null |
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open` (Visual3 "Plan Impact"'s own `selectedRegion` drill state removed with it, 2026-09-07) | String, Object, Boolean |
 | `AsuSrTrendLayer` | `open`; Visual2's `plan`; Visual3's `modalPeriod` (Visual1's `selectedRegion` CPASU Trend drill removed with it, 2026-09-10) | Boolean, String, String or null |
 (`TsaGeoMap` — REMOVED ENTIRELY 2026-09-07, per direct request)
 | `MsgCapacityPage` / `TsaCapacityPage` | `filters`; `granularity` (same null-default convention) | Object, String or null |
-| `MsgCapacityMetricCards` / `TsaCapacityMetricCards` | `active` (which card's modal is open) | String or null |
+| `MsgCapacityMetricCards` | `active` (which card's modal is open) | String or null |
+| `TsaCapacityMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill, transferred from HES Forecasting 2026-10-07) | String or null, String or null |
 | `PlanOverPlanLayer` (shared) | `open`, `plans` (planA/planB) | Boolean, Object |
 | `HeadcountLayer` / `HeadcountAttritionLayer` / `UtilizationLayer` / `WorkloadDistributionLayer` | `open`; per-visual `lens` (Region/Country) where applicable | Boolean, String |
 | `MsgCapacityGeoMap` | `open`, `metric` (Headcount/SL%), `viewMode` (Region/Country), `hovered` | Boolean, String, String, Object |
@@ -721,7 +732,10 @@ Same conventions as `mockData.js`: static exports are datasets, lowercase functi
 ### Constants
 ```
 LOB_LIST              — 33 real LOB names (business-supplied verbatim)
-GLOBAL_GROUPING_LIST  — ['Consumer', 'Commercial', 'Enterprise'] — inferred, not yet user-confirmed
+GLOBAL_GROUPING_LIST  — ['COMPUTE/NETWORKING', 'DPU/UDX', 'HCX', 'OTHER', 'PRIMARY/MIDRANGE'] — real
+                         business-supplied groupings (confirmed 2026-07-03 via screenshot, replacing an
+                         earlier inferred ['Consumer','Commercial','Enterprise'] placeholder — see
+                         design_choice.md). Backs the Total LOB card's Global Grouping donut (2026-10-07).
 FISCAL_MONTH_LIST     — FY25M01 ... FY27M12 (36 values, derived from FISCAL_YEARS) — filter only
 (IMPACT_REGIONS — REMOVED ENTIRELY 2026-09-10: was the 4-region set shared by "Plan Impact",
                   removed 2026-09-07, and CPASU Trend's region breakdown, removed 2026-09-10 —
@@ -729,13 +743,17 @@ FISCAL_MONTH_LIST     — FY25M01 ... FY27M12 (36 values, derived from FISCAL_YE
 LOB_QUEUES            — { 'High End Storage': { active: [...71 real names], inactive: [...~150 real names] } }
                          (business-supplied verbatim); other LOBs have no entry yet. Backs
                          TSA_ACTIVE_QUEUE_NAMES/TSA_ACTIVE_QUEUES below (Total Queues card).
-TSA_ACTIVE_QUEUE_NAMES / TSA_INACTIVE_QUEUE_NAMES — = LOB_QUEUES['High End Storage'].active/.inactive,
-                         used as the page-level TSA queue roster (not scoped to one LOB) since it's
-                         the only real per-queue name data this page has
+TSA_ACTIVE_QUEUE_NAMES — = LOB_QUEUES['High End Storage'].active, used as the page-level TSA queue
+                         roster (not scoped to one LOB) since it's the only real per-queue name data
+                         this page has (TSA_INACTIVE_QUEUE_NAMES removed 2026-10-07 — see Cards below)
 TSA_ACTIVE_QUEUES     — TSA_ACTIVE_QUEUE_NAMES.map(name => ({ name, region: inferRegion(name) })) —
                          inferRegion() is imported from mockData.js (newly exported), same
                          APJ/EMEA/LATAM/NAMER-prefix-else-Global logic as the Forecasting page's
-                         own queue fact table. Backs the Total Queues card's region donut + table.
+                         own queue fact table. Backs the Total Queues card's region donut + table —
+                         that card (and this file's 2 exports above) now live on HES Capacity
+                         Planning's TsaCapacityMetricCards.jsx (transferred 2026-10-07, per direct
+                         request, unchanged); tsaData.js still owns the data, just a different
+                         page's UI consumes it now.
 ```
 
 ### LOB fact table
@@ -826,11 +844,11 @@ topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × cou
 
 ### Cards
 ```
-tsaCardData(filters, granularity) → { totalQueues, asuActuals, srActuals, cpasu, currentUcr }, each the
+tsaCardData(filters, granularity) → { totalLobs, asuActuals, srActuals, cpasu, currentUcr }, each the
   latest-period snapshot (asu[asu.length-1] etc., where asu = asuByFY(filters, granularity)) off the
-  selector functions above, except totalQueues ({ active, inactive } = TSA_ACTIVE_QUEUE_NAMES.length/
-  TSA_INACTIVE_QUEUE_NAMES.length — `inactive` still computed, only the CARD FACE stopped displaying it
-  2026-07-30, see design_choice.md), which ignores filters entirely. asuActuals/srActuals/cpasu
+  selector functions above, except totalLobs ({ active } = filterLobs(filters).length — 2026-10-07,
+  replaces the old totalQueues here; honors every LOB-scoping filter, unlike totalQueues which only
+  ever honored Queue — see design_choice.md), which otherwise behaves the same. asuActuals/srActuals/cpasu
   additionally carry { period, prevPeriod, yoyPct } — yoyPct is the % change vs the prior in-scope
   period AT WHATEVER GRANULARITY THE PAGE IS SET TO (2026-07-20 fix — previously always ignored
   granularity and compared FY-over-FY regardless of the toggle), null if there isn't a prior period,
@@ -1167,7 +1185,7 @@ Steps:
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
 5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (146 real names as of 2026-07-02) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
-7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the TSA Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. ~~Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied~~ — moot: `CQN_LOB_ASSIGNMENTS` (tsaCapacityData.js) was removed 2026-09-07 along with its last consumer, "Plan vs Coverage HC"
+7. `LOB_QUEUES['High End Storage']`'s real active queue names now back HES Capacity Planning's Total Queues card (transferred there from HES Forecasting 2026-10-07, per direct request), but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs. ~~Same caveat applies to TSA Capacity's `CQN_LOB_ASSIGNMENTS` (2026-07-28) — its queue→LOB pairing is a round-robin placeholder, not a real mapping; replace it once a real one is supplied~~ — moot: `CQN_LOB_ASSIGNMENTS` (tsaCapacityData.js) was removed 2026-09-07 along with its last consumer, "Plan vs Coverage HC"
 8. `GLOBAL_GROUPING_LIST` (TSA Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
 9. ~~TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view~~ — moot: TSA Forecasting's Geo Map (`TsaGeoMap.jsx`) and "Plan Impact" (`asuRegionPlans`/`srRegionPlans`, AsuLayer/SrLayer Visual3) were both removed entirely 2026-09-07
 10. ~~CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page~~ — moot: CPASU Trend's region breakdown + click-to-drill was removed entirely 2026-09-10, per direct request; the chart now renders `cpasuByFY()` directly against plain fiscal periods
@@ -1192,5 +1210,5 @@ Steps:
 30. ~~"Plan vs Coverage HC"'s click-a-CQN trend pop-up (`planVsCoverageHcTrendByCqn`, 2026-08-16) recomputes that CQN's Plan/Coverage HC baseline independently of whatever happened to be showing in the bar chart at the moment of the click (it has no access to the bar chart's own capped/filtered array position) — same accepted convention as every other trend-drill selector in this app (e.g. `cpasuTrendByRegion`), and inherits the same illustrative round-robin queue→LOB mapping caveat as items #28/#29~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07
 31. ~~"Plan vs Coverage HC"'s Select Plan dropdown (2026-08-16 follow-up) genuinely rescales Plan HC, but per-queue headcount values here are small (roughly 1-10) — a plan's ~3-4% scale factor often rounds back to the same integer at that magnitude (verified: 19 of 78 rows visibly change under a sample plan, the rest don't)~~ — moot: "Plan vs Coverage HC" removed entirely 2026-09-07
 32. "ASU/SR HC Impact" (`WorkloadDistributionLayer.jsx`'s onetime 2nd chart) was removed entirely 2026-08-16, per direct request, so the Sankey could take the full row — this is intentional, not a partial implementation; `WorkloadDistributionLayer` now renders exactly 1 visual
-33. HES Capacity Plan's own "Key Metrics" KPI cards (Staffing Summary/Attrition %/Cases per FTE/Avg Case Time — `fteByFY`/`tsaAttritionByFY`/`cpfByFY`/`actHrsByFY`) don't scope by LOB or Queue at all — confirmed (2026-09-03, pre-existing, not introduced by that day's Queue-filter rollout) they're page-wide aggregates that never called `filterLobs()`, even back when a LOB filter was still shown on this page. Only the deeper Analysis Layer charts (Attrition/Plan-over-Plan/Workload Distribution/Geo Map, all via `filterCapacityLobs()`) genuinely narrow with the Queue filter — same split HES Forecasting's own Total Queues card has with `tsaCardData()` vs its Analysis Layers
+33. HES Capacity Plan's own "Key Metrics" KPI cards (Staffing Summary/Attrition %/Cases per FTE/Avg Case Time — `fteByFY`/`tsaAttritionByFY`/`cpfByFY`/`actHrsByFY`) don't scope by LOB or Queue at all — confirmed (2026-09-03, pre-existing, not introduced by that day's Queue-filter rollout) they're page-wide aggregates that never called `filterLobs()`, even back when a LOB filter was still shown on this page. Only the deeper Analysis Layer charts (Attrition/Plan-over-Plan/Workload Distribution/Geo Map, all via `filterCapacityLobs()`) genuinely narrow with the Queue filter. The page's 5th card, Total Queues (transferred in from HES Forecasting 2026-10-07), is the one exception — it always has, and still does, honor the Queue filter directly (it never went through `tsaCapacityCardData()` to begin with)
 34. HES Forecasting's "Plan Impact" (`AsuLayer`/`SrLayer` Visual3), its Geo Map (`TsaGeoMap.jsx`), and HES Capacity's "Plan vs Coverage HC" (`HeadcountAttritionLayer.jsx` Visual1b) were all removed entirely 2026-09-07, per direct request — this is intentional, not a partial implementation. `AsuLayer`/`SrLayer` now render exactly 2 visuals each; `TsaForecastingPage` no longer has a Layer 04; `HeadcountAttritionLayer` now renders exactly 2 visuals. Every backing selector exclusive to these charts was removed alongside them (see the relevant Data Model sections above) — anything still exported was independently confirmed to have another real consumer first

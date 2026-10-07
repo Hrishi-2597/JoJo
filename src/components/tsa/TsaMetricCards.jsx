@@ -4,14 +4,18 @@ import {
   Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
-  tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, TSA_ACTIVE_QUEUES,
+  tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, filterLobs,
 } from '../../data/tsaData'
 import { C, Tip, Modal, InfoButton } from './TsaChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
-// Same region palette as the Forecasting page's Total Queues donut (MetricCards.jsx)
-// — regions should look the same everywhere in the app, not just on this page.
-const REGION_COLORS = { APJ: 'var(--accent)', EMEA: '#fb923c', Global: '#a78bfa', LATAM: '#22d3ee', NAMER: '#fbbf24' }
+// Palette for the Total LOB card's Global Grouping donut (2026-10-07, replaces the
+// old Total Queues card's region palette — that card, and its region colors, moved
+// to HES Capacity Planning's own TsaCapacityMetricCards.jsx unchanged).
+const GLOBAL_GROUPING_COLORS = {
+  'COMPUTE/NETWORKING': 'var(--accent)', 'DPU/UDX': '#fb923c', HCX: '#a78bfa',
+  OTHER: '#22d3ee', 'PRIMARY/MIDRANGE': '#fbbf24',
+}
 
 function fmt(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -146,45 +150,46 @@ function CurrentUcrChart({ filters, granularity }) {
   )
 }
 
-// Region-breakdown donut for the Total Queues card — same mechanic as the
-// Forecasting page's QueuesByRegionChart (MetricCards.jsx): click a slice (or its
-// legend entry) to narrow the table below to that region; click again to clear.
-function QueuesByRegionChart({ rows, selectedRegion, onSelectRegion }) {
+// Global Grouping-breakdown donut for the Total LOB card (2026-10-07, replaces the
+// old Total Queues card's region donut here) — same click-a-slice-to-drill mechanic:
+// click a slice (or its legend entry) to narrow the table below to that Global
+// Grouping; click again to clear.
+function LobsByGlobalGroupingChart({ rows, selectedGroup, onSelectGroup }) {
   const data = useMemo(() => {
     const counts = {}
-    rows.forEach(q => { counts[q.region] = (counts[q.region] || 0) + 1 })
+    rows.forEach(l => { counts[l.globalGrouping] = (counts[l.globalGrouping] || 0) + 1 })
     return Object.entries(counts)
-      .map(([region, count]) => ({ region, count }))
+      .map(([globalGrouping, count]) => ({ globalGrouping, count }))
       .sort((a, b) => b.count - a.count)
   }, [rows])
   const total = rows.length
-  const centerCount = selectedRegion ? (data.find(d => d.region === selectedRegion)?.count ?? 0) : total
+  const centerCount = selectedGroup ? (data.find(d => d.globalGrouping === selectedGroup)?.count ?? 0) : total
 
   return (
     <div style={{ ...CHART_BOX, position: 'relative' }}>
-      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 6, textAlign: 'center' }}>Click a slice to see that region's queues</p>
+      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 6, textAlign: 'center' }}>Click a slice to see that grouping's LOBs</p>
       <ResponsiveContainer width="100%" height={230}>
         <PieChart>
           <Tooltip content={({ active, payload }) => {
             if (!active || !payload?.length) return null
-            const { region, count } = payload[0].payload
+            const { globalGrouping, count } = payload[0].payload
             return (
               <div className="chart-tooltip">
-                <p style={{ fontSize: 10, fontWeight: 700, color: REGION_COLORS[region] || 'var(--accent)', marginBottom: 3 }}>{region}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{count} queues <span style={{ color: 'var(--text-faint)' }}>({total ? Math.round(count / total * 100) : 0}%)</span></p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: GLOBAL_GROUPING_COLORS[globalGrouping] || 'var(--accent)', marginBottom: 3 }}>{globalGrouping}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{count} LOBs <span style={{ color: 'var(--text-faint)' }}>({total ? Math.round(count / total * 100) : 0}%)</span></p>
               </div>
             )
           }} />
           <Legend verticalAlign="bottom" height={30}
-            onClick={e => onSelectRegion(e.value)}
+            onClick={e => onSelectGroup(e.value)}
             wrapperStyle={{ fontSize: 10, color: C.tick, cursor: 'pointer' }} />
-          <Pie data={data} dataKey="count" nameKey="region" cx="50%" cy="46%"
+          <Pie data={data} dataKey="count" nameKey="globalGrouping" cx="50%" cy="46%"
             innerRadius={54} outerRadius={82} paddingAngle={2}
-            onClick={d => onSelectRegion(d.region)} style={{ cursor: 'pointer' }}>
+            onClick={d => onSelectGroup(d.globalGrouping)} style={{ cursor: 'pointer' }}>
             {data.map((d, i) => (
-              <Cell key={i} fill={REGION_COLORS[d.region] || C.tick}
+              <Cell key={i} fill={GLOBAL_GROUPING_COLORS[d.globalGrouping] || C.tick}
                 stroke="var(--bg-panel)" strokeWidth={2}
-                opacity={selectedRegion == null || selectedRegion === d.region ? 0.92 : 0.25} />
+                opacity={selectedGroup == null || selectedGroup === d.globalGrouping ? 0.92 : 0.25} />
             ))}
           </Pie>
         </PieChart>
@@ -194,29 +199,29 @@ function QueuesByRegionChart({ rows, selectedRegion, onSelectRegion }) {
         textAlign: 'center', pointerEvents: 'none',
       }}>
         <p className="num" style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{centerCount}</p>
-        <p style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>{selectedRegion || 'Queues'}</p>
+        <p style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>{selectedGroup || 'LOBs'}</p>
       </div>
     </div>
   )
 }
 
-function QueueTable({ rows }) {
+function LobTable({ rows }) {
   return (
     <div style={{ overflowX: 'auto', maxHeight: 220, overflowY: 'auto' }}>
       <table className="w-full" style={{ fontSize: 11, borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-            <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Queue</th>
-            <th style={{ textAlign: 'right', padding: '4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Region</th>
+            <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>LOB</th>
+            <th style={{ textAlign: 'right', padding: '4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Global Grouping</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((q, i) => (
+          {rows.map((l, i) => (
             <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <td style={{ padding: '5px 12px 5px 0', fontFamily: 'monospace', fontSize: 10, color: 'var(--text-dim)' }}>{q.name}</td>
-              <td style={{ padding: '5px 0', textAlign: 'right', color: 'var(--text-muted)' }}>{q.region}</td>
+              <td style={{ padding: '5px 12px 5px 0', fontFamily: 'monospace', fontSize: 10, color: 'var(--text-dim)' }}>{l.lob}</td>
+              <td style={{ padding: '5px 0', textAlign: 'right', color: 'var(--text-muted)' }}>{l.globalGrouping}</td>
             </tr>
           ))}
         </tbody>
@@ -225,35 +230,35 @@ function QueueTable({ rows }) {
   )
 }
 
-// `filters` (2026-08-04) — narrows the drill-down list/donut to the selected Queue
-// filter, matching the card's own headline count (tsaCardData's totalQueues.active)
-// so the two never disagree once a queue selection is in scope.
-function TotalQueuesSection({ filters }) {
-  const [selectedRegion, setSelectedRegion] = useState(null)
-  const scopedQueues = filters.queue?.length ? TSA_ACTIVE_QUEUES.filter(q => filters.queue.includes(q.name)) : TSA_ACTIVE_QUEUES
-  const filteredRows = selectedRegion ? scopedQueues.filter(q => q.region === selectedRegion) : scopedQueues
+// `filters` — narrows the drill-down list/donut by every LOB-scoping filter (lob/
+// businessPartner/globalGrouping/queue, via filterLobs()), matching the card's own
+// headline count (tsaCardData's totalLobs.active) so the two never disagree.
+function TotalLobsSection({ filters }) {
+  const [selectedGroup, setSelectedGroup] = useState(null)
+  const scopedLobs = useMemo(() => filterLobs(filters), [filters])
+  const filteredRows = selectedGroup ? scopedLobs.filter(l => l.globalGrouping === selectedGroup) : scopedLobs
   return (
     <>
-      <QueuesByRegionChart rows={scopedQueues} selectedRegion={selectedRegion}
-        onSelectRegion={r => setSelectedRegion(prev => prev === r ? null : r)} />
+      <LobsByGlobalGroupingChart rows={scopedLobs} selectedGroup={selectedGroup}
+        onSelectGroup={g => setSelectedGroup(prev => prev === g ? null : g)} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 6px' }}>
         <p style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-          {selectedRegion ? <><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{selectedRegion}</span> — {filteredRows.length} queues</> : `All regions — ${filteredRows.length} queues`}
+          {selectedGroup ? <><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{selectedGroup}</span> — {filteredRows.length} LOBs</> : `All groupings — ${filteredRows.length} LOBs`}
         </p>
-        {selectedRegion && (
-          <button onClick={() => setSelectedRegion(null)} style={{
+        {selectedGroup && (
+          <button onClick={() => setSelectedGroup(null)} style={{
             fontSize: 10, color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer',
             textDecoration: 'underline', textDecorationColor: 'rgba(127,168,204,0.3)',
           }}>Clear</button>
         )}
       </div>
-      <QueueTable rows={filteredRows} />
+      <LobTable rows={filteredRows} />
     </>
   )
 }
 
 const MODAL_TITLES = {
-  totalQueues: 'HES Queue Directory',
+  totalLobs: 'HES LOB Directory',
   asu:         'Active Service Units — Trend',
   sr:          'Service Requests — DB vs OSP',
   cpasu:       'CPASU Trend',
@@ -266,7 +271,7 @@ const MODAL_TITLES = {
 function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
-      {type === 'totalQueues' && <TotalQueuesSection filters={filters} />}
+      {type === 'totalLobs' && <TotalLobsSection filters={filters} />}
       {type === 'asu' && <AsuTrendChart filters={filters} granularity={granularity} />}
       {type === 'sr' && <SrDbOspChart filters={filters} granularity={granularity} />}
       {type === 'cpasu' && <CpasuChart filters={filters} granularity={granularity} />}
@@ -313,11 +318,11 @@ export default function TsaMetricCards({ filters, granularity }) {
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="⬡" label="Total Queues" sublabel="Active"
-          value={`${d.totalQueues.active}`}
-          sub="Active HES queues"
-          onClick={() => toggle('totalQueues')} active={active === 'totalQueues'}
-          info="Count of active HES queues by region." />
+        <Card icon="🗂" label="Total LOB" sublabel="Active"
+          value={`${d.totalLobs.active}`}
+          sub="Active HES LOBs"
+          onClick={() => toggle('totalLobs')} active={active === 'totalLobs'}
+          info="Count of in-scope HES LOBs by Global Grouping." />
         <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}

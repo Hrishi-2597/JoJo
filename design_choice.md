@@ -4,6 +4,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "Total Queues" Card Swapped for "Total LOB" on HES Forecasting; Transferred (Not Duplicated) to HES Capacity Planning (2026-10-07)
+
+**Decision:** HES Forecasting's "Total Queues" KPI card became "Total LOB" — headline count from `filterLobs(filters).length`, drill-down donut keyed by Global Grouping instead of Region, clicking a slice shows the LOBs under that grouping. The card it replaced — region donut, queue table, exact same mechanic — was moved, unchanged, to HES Capacity Planning's `TsaCapacityMetricCards.jsx` as that page's new first card, reusing `tsaData.js`'s `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` directly rather than going through either page's own `*CardData()` aggregator.
+
+**Why:** Requested directly, in two parts: replace Total Queues with a Global-Grouping-aware Total LOB card on Forecasting, and carry the displaced Total Queues card over to Capacity Planning "as it is." Global Grouping was the natural drill dimension for a LOB card — `LOB_FACTS` already tags every LOB with one (`globalGrouping`), the same way it's already a first-class filter on this page, whereas Region has no real relationship to a LOB. Reusing `filterLobs()` for the headline (rather than a narrower ad-hoc count) means Total LOB honors every LOB-scoping filter — lob/businessPartner/globalGrouping/queue — unlike the old Total Queues card, which only ever honored the Queue filter because the TSA queue roster had no other per-queue tags to filter on.
+
+Transferring Total Queues to HES Capacity Planning worked with zero data-layer changes: that page's filters already carry `queue` (it's been Capacity Planning's primary scoping filter since 2026-09-03 — see "HES Capacity's LOB/Global Grouping Removal..." below), and `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` were already exported constants in `tsaData.js`, same cross-page-shared-constant pattern `TsaFilterPanel.jsx` itself already established. The only non-data change needed was teaching `TsaCapacityMetricCards.jsx`'s own `Card` component the optional two-line header (icon + label + sublabel) the transferred card expects — copied verbatim from HES Forecasting's `Card`, and inert for the other 4 cards on that page since they don't pass a `sublabel`.
+
+`tsaData.js`'s `TSA_INACTIVE_QUEUE_NAMES` was removed outright (not transferred) — it was only ever read by `tsaCardData()`'s old `totalQueues.inactive` field, which the card never actually rendered on its face even before this change (confirmed via grep: zero other consumers). No reason to carry dead weight across the transfer just because the active half of the pair was genuinely still in use.
+
 ## Queue Name Filter Dropped From HES Forecasting via the Existing Opt-Out Prop, Not a Feature Removal (2026-10-07)
 
 **Decision:** `TsaForecastingPage.jsx` stopped passing `includeQueue` to `TsaFilterPanel.jsx` and dropped `queue: []` from its own `DEFAULT_FILTERS`. `TsaFilterPanel.jsx` itself, and every `tsaData.js` selector backing the Queue filter (`queueOptionsForFilters`, `matchesQueueFilter`, `QUEUE_LOB_ASSIGNMENTS`), were left completely untouched.
