@@ -1111,3 +1111,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `tsaData.js`: removed `TSA_INACTIVE_QUEUE_NAMES` (dead — was only read by the now-removed `totalQueues.inactive`, which the card never displayed anyway; confirmed via grep it had no other consumers).
 - Verified with `npm run build` (clean, 1185 modules) and a Node smoke test confirming `filterLobs({})` returns all 33 LOBs, narrows correctly by `globalGrouping`, `tsaCardData({}).totalLobs` reports `{ active: 33 }` with no stray `totalQueues`, and the transferred `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` are unaffected (78 active queues).
 - Updated `handoff.md`, `tech_spec.md` (swept component-tree entries for both `TsaMetricCards.jsx`/`TsaCapacityMetricCards.jsx`, the state table, the `TSA_ACTIVE_QUEUE_NAMES`/`TSA_ACTIVE_QUEUES`/`GLOBAL_GROUPING_LIST` data-model block — also fixed a pre-existing stale `GLOBAL_GROUPING_LIST` value found while editing — the `tsaCardData()` reference block, and 2 Known Limitations items), `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 88 — 2026-10-07
+**Input:** [screenshot of "LOBs with Highest Variation" diverging bar chart] changw the name from LOB's with highest variation to CQN'S with highest variation
+
+**Action:**
+- Renamed the title of HES Capacity Planning's `PlanOverPlanVariationLayer.jsx` → `LobVarianceChart` from "LOBs with Highest Variation" to "CQNs with Highest Variation" — title text only.
+- Left everything else untouched: the component name (`LobVarianceChart`), its selector (`planOverPlanLobVariance`), the rendered row labels (still real LOB names — Networking, OBJ, FlexCore, etc.), the table title, tooltip, and info/RCA/CLCA copy — same minimal-scope precedent as the earlier "CPASU/UCR Trend" layer rename.
+- Verified with `npm run build` (clean, 1185 modules).
+- Updated `handoff.md`, `tech_spec.md` (2 stale references to the old title in the component-tree entry and the `planOverPlanLobVariance` reference block), `design_choice.md`; committed, pushed to `main`, and redeployed.

@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity Planning: "LOBs with Highest Variation" Renamed "CQNs with Highest Variation" (2026-10-07)
+
+- Per direct request with a screenshot, the ranked diverging-bar chart in HES Capacity Planning's "Plan over Plan Variation" layer (`PlanOverPlanVariationLayer.jsx`'s `LobVarianceChart`) now titles itself "CQNs with Highest Variation" — title text only.
+- Nothing else changed: the component name (`LobVarianceChart`), its backing selector (`planOverPlanLobVariance`), the chart's `name` values (still real LOB names, e.g. Networking/OBJ/FlexCore), the table title, tooltip labels, and the info/RCA/CLCA copy are all untouched — same minimal-scope precedent as the earlier "CPASU/UCR Trend" layer rename (title only, nothing underneath touched).
+- **Verified**: `npm run build` clean (1185 modules).
+
 ## HES Forecasting: "Total Queues" Card Replaced With "Total LOB"; Transferred to HES Capacity Planning (2026-10-07)
 
 - HES Forecasting's "Total Queues" KPI card (`TsaMetricCards.jsx`) is now "Total LOB" — same position (first card), same card shape, but the headline is the count of in-scope LOBs (`tsaData.js`'s `filterLobs(filters).length`, now exposed as `tsaCardData().totalLobs.active`), not queues.

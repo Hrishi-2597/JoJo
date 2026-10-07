@@ -182,7 +182,7 @@ function LobVarianceChart({ filters, plansA, plansB }) {
   }
 
   return (
-    <Visual title="LOBs with Highest Variation" subtitle="Plan A vs Plan B, worst variance first"
+    <Visual title="CQNs with Highest Variation" subtitle="Plan A vs Plan B, worst variance first"
       info="Ranks LOBs by how far the selected Plan A and Plan B headcount diverge."
       rca="A small number of LOBs account for most of the plan-to-plan swing."
       clca="Review these LOBs' plans first — they carry the most headcount risk."

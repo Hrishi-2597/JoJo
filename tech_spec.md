@@ -400,8 +400,10 @@ TsaCapacityPage
 │   │                                          to drill into tsaPlanOverPlanTrendByDimension; shared Plan A/Plan B
 │   │                                          PlanDropdowns (2026-07-23, replacing the old fixed "Plan A"/"Plan B"
 │   │                                          series) live here, driving both this chart and LobVarianceChart below
-│   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters,
-│                                                         planA, planB), worst |variance| first, value-labeled
+│   └── LobVarianceChart "CQNs with Highest Variation" (renamed 2026-10-07, was "LOBs with Highest
+│   │                     Variation" — title only, data/component name unchanged) — diverging horizontal
+│   │                     bars: planOverPlanLobVariance(filters, planA, planB), worst |variance| first,
+│   │                     value-labeled
 ├── WorkloadDistributionLayer(filters) — badge "03" (dropped its unused `granularity` prop 2026-07-28 — see below).
 │                                        Now a SINGLE full-width visual (2026-08-16, see below) — no `display:flex` row
 │                                        layout needed anymore, though the surrounding div keeps it for consistency
@@ -1006,7 +1008,9 @@ tsaPlanOverPlanByDimension(filters, dimension) — {key, plan1, plan2, variance}
 tsaPlanOverPlanTrendByDimension(filters, key, dimension, granularity) — {period, plan1, plan2, variance} — FY/granularity
   trend for one clicked key
 planOverPlanLobVariance(filters, topN=8)  — {name, plan1, plan2, variance} sorted by |variance| DESCENDING — the
-  "LOBs with Highest Variation" ranked chart (analogous to MSG's planOverPlanQueueVariance, ranking LOBs not queues)
+  "CQNs with Highest Variation" ranked chart (renamed 2026-10-07, was "LOBs with Highest Variation" —
+  title only; `name` values are still real LOB names, analogous to MSG's planOverPlanQueueVariance,
+  ranking LOBs not queues)
 workloadSankey(filters, mode='LOB')       — {nodes, links} recharts Sankey shape. mode 'LOB': 3 illustrative CQN
   priority-tier sources → 4 real LOB targets (Networking/Storage/Server/ScaleVault). mode 'CQN': 3 illustrative LOB
   priority-tier sources → 4 real TSA queue targets (filtered against LOB_QUEUES['High End Storage'].active to

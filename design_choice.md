@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "LOBs with Highest Variation" Renamed "CQNs with Highest Variation" — Title Only, Data Unchanged (2026-10-07)
+
+**Decision:** `PlanOverPlanVariationLayer.jsx`'s `LobVarianceChart` (HES Capacity Planning) now titles itself "CQNs with Highest Variation." The component name, `planOverPlanLobVariance()`, the rendered row labels (still real LOB names), and every other piece of copy on the chart (table title, tooltip, info/RCA/CLCA) were left exactly as they were.
+
+**Why:** Requested directly, with a screenshot pointing at the chart title specifically — a plain relabeling, same scope as the earlier "CPASU/UCR Trend" rename (see below): change what the user reads, not what the code or data represents. Renaming the underlying identifiers/data to match would have been unrequested scope creep, and more importantly would have been misleading — the rows are still genuinely LOB names (Networking, OBJ, FlexCore, etc.), not real CQN codes; relabeling those values as "CQN" without a real CQN dataset behind them would manufacture a false impression of real data, the same risk this project's "real names, illustrative structure" convention exists to avoid elsewhere.
+
 ## "Total Queues" Card Swapped for "Total LOB" on HES Forecasting; Transferred (Not Duplicated) to HES Capacity Planning (2026-10-07)
 
 **Decision:** HES Forecasting's "Total Queues" KPI card became "Total LOB" — headline count from `filterLobs(filters).length`, drill-down donut keyed by Global Grouping instead of Region, clicking a slice shows the LOBs under that grouping. The card it replaced — region donut, queue table, exact same mechanic — was moved, unchanged, to HES Capacity Planning's `TsaCapacityMetricCards.jsx` as that page's new first card, reusing `tsaData.js`'s `TSA_ACTIVE_QUEUES`/`TSA_ACTIVE_QUEUE_NAMES` directly rather than going through either page's own `*CardData()` aggregator.
