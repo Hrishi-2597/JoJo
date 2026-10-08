@@ -130,7 +130,13 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
 // layer reductions). `plans`/`handlePlanChange` state below stays — Visual2 ("Plan
 // vs Plan Comparison") still needs it.
 
+// Defaults to Quarter instead of Year when the page's "View By" toggle is unset
+// (2026-10-08, per direct request, "ASU and SR trend at quarter level only") — SR
+// Trend's own default export makes the identical choice; every other chart on this
+// page (CPASU Trend, the KPI cards) still defaults to Year, since an explicit
+// Month/Week pick on the shared toggle still overrides this fallback either way.
 export default function AsuLayer({ filters, granularity }) {
+  const effectiveGranularity = granularity ?? 'Quarter'
   const [open, setOpen] = useState(true)
   // Visual1's own multi-select Plan Name (2026-07-30, was a single pre-picked
   // string) — empty array shows "Select Plan" and the baseline, unscaled numbers.
@@ -153,8 +159,8 @@ export default function AsuLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
-          <Visual2 filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <Visual1 filters={filters} granularity={effectiveGranularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
+          <Visual2 filters={filters} granularity={effectiveGranularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
         </div>
       )}
     </div>

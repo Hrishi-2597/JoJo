@@ -124,7 +124,13 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
 // change needed. `plans`/`handlePlanChange` state below stays — Visual2 ("Plan vs
 // Plan Comparison") still needs it.
 
+// Defaults to Quarter instead of Year when the page's "View By" toggle is unset
+// (2026-10-08, per direct request, "ASU and SR trend at quarter level only") — same
+// change as AsuLayer.jsx's own default export; every other chart on this page
+// (CPASU Trend, the KPI cards) still defaults to Year, since an explicit Month/Week
+// pick on the shared toggle still overrides this fallback either way.
 export default function SrLayer({ filters, granularity }) {
+  const effectiveGranularity = granularity ?? 'Quarter'
   const [open, setOpen] = useState(true)
   const [selectedPlans, setSelectedPlans] = useState([])
   const [plans, setPlans] = useState({ planA: [], planB: [] })
@@ -142,8 +148,8 @@ export default function SrLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
-          <Visual2 filters={filters} granularity={granularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
+          <Visual1 filters={filters} granularity={effectiveGranularity} selectedPlans={selectedPlans} onPlansChange={setSelectedPlans} />
+          <Visual2 filters={filters} granularity={effectiveGranularity} plansA={plans.planA} plansB={plans.planB} onPlansChange={handlePlanChange} />
         </div>
       )}
     </div>

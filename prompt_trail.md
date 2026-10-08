@@ -1122,3 +1122,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Left everything else untouched: the component name (`LobVarianceChart`), its selector (`planOverPlanLobVariance`), the rendered row labels (still real LOB names — Networking, OBJ, FlexCore, etc.), the table title, tooltip, and info/RCA/CLCA copy — same minimal-scope precedent as the earlier "CPASU/UCR Trend" layer rename.
 - Verified with `npm run build` (clean, 1185 modules).
 - Updated `handoff.md`, `tech_spec.md` (2 stale references to the old title in the component-tree entry and the `planOverPlanLobVariance` reference block), `design_choice.md`; committed, pushed to `main`, and redeployed.
+
+---
+
+## Prompt 89 — 2026-10-08
+**Input:** Change the default view of ASU and SR trend at quarter level only ..
+
+**Action:**
+- `AsuLayer.jsx` ("ASU Trend") and `SrLayer.jsx` ("SR Trend") now default to Quarter granularity instead of Fiscal Year — each computes `effectiveGranularity = granularity ?? 'Quarter'` in its default export and passes that down to Visual1/Visual2 instead of the raw page `granularity` prop.
+- Scoped to just these two layers, per "ASU and SR trend... only": `TsaForecastingPage.jsx`'s shared `granularity` state (still defaults to `null`/Fiscal Year), the "View By" toggle, CPASU Trend (`AsuSrTrendLayer.jsx`), and the KPI cards are all untouched. An explicit Month/Week pick on the shared toggle still reaches ASU/SR Trend normally — `??` only fires on the toggle's own unset `null`.
+- No data-layer changes — `asuByFY`/`srByFY`/`asuPlanVsPlanByFY`/`srPlanVsPlanByFY` already fully supported a `'Quarter'` argument.
+- Accepted trade-off, documented in design_choice.md: the shared toggle can show nothing highlighted while ASU/SR Trend render Quarter-level data and everything else on the page renders Year-level — judged acceptable since the toggle represents "what's explicitly selected," not "what every chart is showing."
+- Verified with `npm run build` (clean, 1185 modules) and a Node smoke test confirming `asuByFY`/`srByFY(..., 'Quarter')` return the expected 12 `FY25Q1`...`FY27Q4` periods and `asuPlanVsPlanByFY(..., 'Quarter')` returns correctly-shaped quarterly rows, with the ungranularized (Year) calls unaffected.
+- Updated `handoff.md`, `tech_spec.md` (component-tree entries for both layers, plus a new note in the "Global Time-Granularity Toggle" section documenting this per-layer override), `design_choice.md`; committed, pushed to `main`, and redeployed.

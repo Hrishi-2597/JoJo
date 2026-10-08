@@ -201,9 +201,14 @@ SPoG/
 │   │       │                            — was Total Queues until 2026-10-07, see below)
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan. "Plan Impact" (Visual3,
 │   │       │                            region→LOB drill) REMOVED ENTIRELY 2026-09-07, per direct request — layer is
-│   │       │                            back to exactly 2 visuals, each filling the row via its own flex-1
+│   │       │                            back to exactly 2 visuals, each filling the row via its own flex-1. Defaults
+│   │       │                            to Quarter granularity (2026-10-08, per direct request) when the page's
+│   │       │                            shared "View By" toggle is unset — `effectiveGranularity = granularity ??
+│   │       │                            'Quarter'` computed in the default export, passed to both visuals instead
+│   │       │                            of the raw page prop; an explicit Month/Week pick on the toggle still wins.
 │   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric; "Plan Impact"
-│   │       │                            removed the same day, for the same reason
+│   │       │                            removed the same day, for the same reason. Same Quarter-default fallback
+│   │       │                            as AsuLayer.jsx, added the same day, for the same reason.
 │   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis") — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above where the Geo Map used to sit — toggle
 │   │       │                               ASU/SR retitles "ASU Performance"/"SR Performance"; wraps
@@ -285,12 +290,16 @@ TsaForecastingPage
 │                            until 2026-10-07 — see below)/AsuTrendChart/SrDbOspChart/CpasuChart/
 │                            CurrentUcrChart; closing it only clears local `active` state, filters prop
 │                            is untouched
-├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01" (2 visuals, was 3 — see below)
-│   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters) + Adherence% line, "Plan Name" dropdown
-│   └── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
+├── AsuLayer(filters, granularity) — "ASU Trend", collapsible, badge "01" (2 visuals, was 3 — see below). Own
+│   │                                 `effectiveGranularity = granularity ?? 'Quarter'` (2026-10-08, per direct
+│   │                                 request) — defaults to Quarter instead of the page's own Year default,
+│   │                                 passed to both visuals below; unlike every other chart on this page
+│   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters, effectiveGranularity) + Adherence% line, "Plan Name" dropdown
+│   └── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters, effectiveGranularity) + Variance% line, Plan A/B dropdowns
 │   (Visual3 "Plan Impact" removed entirely 2026-09-07, per direct request — asuRegionPlans/asuLobImpact and their
 │    backing consts/builders removed from tsaData.js too, this was their only consumer)
-├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 2-visual structure/names as AsuLayer, SR metric
+├── SrLayer(filters, granularity) — "SR Trend", collapsible, badge "02"; same 2-visual structure/names as AsuLayer,
+│   │                                SR metric, and same Quarter-default `effectiveGranularity` fallback (2026-10-08)
 │   (its own "Plan Impact" — srRegionPlans/srLobImpact — removed the same day, for the same reason)
 └── AsuSrTrendLayer(filters) — "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis"), collapsible, badge "03"
 │   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByFY(filters, granularity) directly, plain fiscal-period
@@ -506,6 +515,17 @@ in `ForecastingPage`/`TsaForecastingPage` state (`granularity`, default `null` �
 Year, same convention as every value filter defaulting to "All") alongside `filters`,
 and flows down as a plain prop to every chart-rendering component — no context, no separate store, same
 pattern as `filters` itself.
+
+**Per-layer override (2026-10-08):** `AsuLayer.jsx`/`SrLayer.jsx` ("ASU Trend"/"SR Trend") are the one
+exception to "the page's `granularity` flows down unchanged" above — each computes its own
+`effectiveGranularity = granularity ?? 'Quarter'` in its default export and passes that to its own visuals
+instead of the raw prop, per direct request ("ASU and SR trend at quarter level only"). The toggle itself,
+its `null` default, and every other consumer (CPASU Trend, the KPI cards) are unaffected — an explicit
+Month/Week pick on the shared toggle still reaches ASU/SR Trend normally, since `??` only fires on `null`.
+One side effect: the toggle can show no option highlighted while ASU/SR Trend render Quarter-level data and
+CPASU Trend/cards render Year-level data, since the toggle reflects the shared page setting, not any one
+layer's own effective value — accepted as the direct, intentional consequence of scoping the change to just
+these two layers, per design_choice.md.
 
 Shared math, in `mockData.js` (imported by `tsaData.js` where needed):
 ```

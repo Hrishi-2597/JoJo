@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## ASU Trend / SR Trend Default to Quarter via a Per-Layer Override, Not a Page-Wide Default Change (2026-10-08)
+
+**Decision:** `AsuLayer.jsx` and `SrLayer.jsx` each compute their own `effectiveGranularity = granularity ?? 'Quarter'` inside their default export and pass that down to their visuals, instead of changing `TsaForecastingPage.jsx`'s own `granularity` state default (still `null` = Fiscal Year) or the shared `GranularityToggle.jsx`.
+
+**Why:** The request named "ASU and SR trend... only" — not the page as a whole. Changing the page-wide default would have also shifted CPASU Trend and the KPI cards to Quarter by default, which nobody asked for and which would have silently changed behavior the user didn't mention. A per-layer fallback keeps the blast radius exactly as scoped as the request, at the cost of one accepted inconsistency: the shared "View By" toggle can show nothing highlighted while ASU/SR Trend are actually rendering at Quarter and everything else on the page is at Year. That tradeoff was judged acceptable — the toggle has always represented "what's explicitly selected," not "what every chart happens to be showing," and an explicit Month/Week pick on it still reaches ASU/SR Trend exactly like any other chart (the `??` fallback only ever fires on the toggle's own unset `null` state, never overriding a real selection). No data-layer change was needed — `asuByFY`/`srByFY`/`asuPlanVsPlanByFY`/`srPlanVsPlanByFY` already fully supported a `'Quarter'` argument; this only changes what each layer passes in by default.
+
 ## "LOBs with Highest Variation" Renamed "CQNs with Highest Variation" — Title Only, Data Unchanged (2026-10-07)
 
 **Decision:** `PlanOverPlanVariationLayer.jsx`'s `LobVarianceChart` (HES Capacity Planning) now titles itself "CQNs with Highest Variation." The component name, `planOverPlanLobVariance()`, the rendered row labels (still real LOB names), and every other piece of copy on the chart (table title, tooltip, info/RCA/CLCA) were left exactly as they were.

@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: ASU Trend and SR Trend Now Default to Quarter, Not Fiscal Year (2026-10-08)
+
+- Per direct request, `AsuLayer.jsx` ("ASU Trend") and `SrLayer.jsx` ("SR Trend") now render at Quarter granularity by default — both layers compute `effectiveGranularity = granularity ?? 'Quarter'` in their default export and pass that (not the raw page `granularity` prop) down to their own Visual1/Visual2.
+- Scoped to just these two layers, as requested ("ASU and SR trend... only"): the page's shared "View By" toggle, its `null` (= Fiscal Year) default state, CPASU Trend (`AsuSrTrendLayer.jsx`), and the KPI cards are all untouched — they still default to Fiscal Year. If the user explicitly picks Month or Week on the shared toggle, that choice still reaches ASU/SR Trend normally (`??` only fires on the toggle's own default `null`, never overriding an explicit Quarter/Month/Week pick).
+- No data-layer changes — `asuByFY`/`srByFY`/`asuPlanVsPlanByFY`/`srPlanVsPlanByFY` already fully supported a `'Quarter'` granularity argument; this only changes what gets passed in by default.
+- **Known trade-off** (intentional, not a bug): the "View By" toggle itself still shows no option highlighted in this default state, even though ASU/SR Trend are now rendering Quarter-level data while CPASU Trend/cards render Year-level — the toggle reflects the shared page setting, not any one layer's own effective granularity.
+- **Verified**: `npm run build` clean (1185 modules); Node smoke test confirming `asuByFY/srByFY(..., 'Quarter')` return the expected 12 `FY25Q1`...`FY27Q4` periods, `asuPlanVsPlanByFY(..., 'Quarter')` returns correctly-shaped quarterly plan-variance rows, and the un-granularity'd (Year) calls are unaffected.
+
 ## HES Capacity Planning: "LOBs with Highest Variation" Renamed "CQNs with Highest Variation" (2026-10-07)
 
 - Per direct request with a screenshot, the ranked diverging-bar chart in HES Capacity Planning's "Plan over Plan Variation" layer (`PlanOverPlanVariationLayer.jsx`'s `LobVarianceChart`) now titles itself "CQNs with Highest Variation" — title text only.
