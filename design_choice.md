@@ -4,6 +4,30 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## HES Forecasting's Column-Chart Palette Lives in `tsa/TsaChartKit.jsx`, Not the Shared `ChartKit.jsx` (2026-10-11)
+
+**Decision:** New color tokens (`TSA_PLAN_COLORS`, `TSA_TREND_COLORS`) and color-cycling helpers (`tsaPlanColor`, `tsaPlanSideColor`, `tsaTrendPlanColor`) were added as new named exports inside `tsa/TsaChartKit.jsx`, sitting alongside its existing `export * from '../ChartKit'`. The shared `ChartKit.jsx` — its `C` object and `planSeriesColor`/`planVsPlanSeriesColor` — was not touched at all.
+
+**Why:** The request was explicit — "DO this only for HES Forecasting Page." `ChartKit.jsx`'s `C` and its two plan-color-cycling functions are reused by MSG Forecasting (`Layer1PlanOverPlan.jsx`) and both Capacity pages (`HeadcountLayer.jsx`, `UtilizationLayer.jsx`, both `PlanOverPlanVariationLayer.jsx`/`HeadcountAttritionLayer.jsx`); editing them in place would have recolored every one of those pages too. `tsa/TsaChartKit.jsx`, by contrast, is already — structurally, not by convention — imported exclusively by `tsa/*.jsx` (HES Forecasting's own components); HES Capacity imports `../ChartKit` directly, confirmed via grep before relying on this boundary. That made it the one place new exports were guaranteed to never leak onto a page outside the request's scope, with zero risk of an accidental collision (the new names don't overlap anything `ChartKit.jsx` already exports).
+
+## Plan A/Plan B Now Get a Firm Color Identity Instead of Collision-Avoidance Cycling (2026-10-11)
+
+**Decision:** `tsaPlanSideColor(side, index)` replaces the shared `planVsPlanSeriesColor`'s single combined-index 3-hue cycle for AsuLayer/SrLayer's "Plan vs Plan Comparison" chart. Every Plan A bar renders in Light Blue and every Plan B bar renders in Medium Blue, regardless of how many plans are selected on either side (opacity steps down per additional selection on that side).
+
+**Why:** The original `planVsPlanSeriesColor` was designed to solve a narrower problem — make sure two ADJACENT bars never render in the same hue, cycling through 3 generic hues (`metric1`/`metric2`/`trend`) across the combined Plan-A-then-Plan-B list. That meant a Plan A bar and a Plan B bar could end up the same color by coincidence (e.g., 2 Plan A selections followed by 1 Plan B selection puts the Plan B bar on the 3rd hue, cycling back toward the 1st for a 4th selection). The new request — "Plan A Light Blue, Plan B Med Blue" — asks for something stronger: the COLOR itself should tell you which side a bar belongs to, every time, not just "this bar looks different from its neighbor." A per-side color function is the direct way to guarantee that.
+
+## Reserved Status Colors (`C.ahead`/`C.behind`) and Off-Family Trend Lines Were Left Out of the Recolor (2026-10-11)
+
+**Decision:** The palette change didn't touch `C.ahead`/`C.behind` anywhere (e.g., AsuSrTrendLayer's "UCR Runrate with Target" Target line), and left the Actuals-vs-Plan family's own Adherence%/Variance% lines on the shared violet `C.trend` rather than moving them onto `TSA_PLAN_COLORS`.
+
+**Why:** `ChartKit.jsx`'s own top-of-file comment calls out green/red as a reserved "ahead/behind" status convention used app-wide — repurposing it as a generic per-metric identity color inside one chart would quietly break that convention exactly where "ahead vs behind target" semantics matter most. The request's own language ("make sure the colors for each metric are different... any palette apart from actuals vs plan colors") is about identity colors for value SERIES, not status indicators, so status colors were treated as out of scope throughout. The Adherence%/Variance% lines were left alone for a narrower reason: the request named "ASU and SR trend" bars and set an explicit "ALL charts" exception for CPASU/UCR Trend specifically — it never said the same for the Actuals-vs-Plan family's own trend lines, so changing them would have been scope the request didn't ask for.
+
+## CPASU/UCR Trend's Reference-Swatch Magenta Was Brightened for Dark-Theme Legibility (2026-10-11)
+
+**Decision:** `TSA_TREND_COLORS.magenta` is `#d946ef`, not the reference image's literal `#800074`.
+
+**Why:** The reference swatch is a light-background, corporate-report-style palette guide — its "Teal + Magenta" pairing uses `#800074`, a fairly dark plum that reads clearly on white paper but would have low contrast as a 2px line stroke against this dashboard's dark navy panels. Every other value from the reference (gold, orange, the 3 blue/teal tones) is already bright enough to read well on dark backgrounds as-is and was used verbatim; magenta was the one color that needed adjusting to stay legible while keeping it recognizably the same hue family the reference specified, rather than silently keeping an illegible value just to match the swatch exactly.
+
 ## ASU Trend / SR Trend Default to Quarter via a Per-Layer Override, Not a Page-Wide Default Change (2026-10-08)
 
 **Decision:** `AsuLayer.jsx` and `SrLayer.jsx` each compute their own `effectiveGranularity = granularity ?? 'Quarter'` inside their default export and pass that down to their visuals, instead of changing `TsaForecastingPage.jsx`'s own `granularity` state default (still `null` = Fiscal Year) or the shared `GranularityToggle.jsx`.

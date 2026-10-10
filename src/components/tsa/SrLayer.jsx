@@ -6,14 +6,15 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import { srByFY, srPlanVsPlanByFY } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect, planSeriesColor, planVsPlanSeriesColor } from './TsaChartKit'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect, TSA_PLAN_COLORS, tsaPlanColor, tsaPlanSideColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
 // See AsuLayer.jsx's Visual1 for the full rationale — same multi-select Plan Name
 // treatment (2026-07-30): empty selection shows the baseline Plan; 1 selected plan
 // renders identically to the old single-select behavior; 2+ add one Plan bar per
-// plan (planSeriesColor) and drop the Adherence line.
+// plan (tsaPlanColor, 2026-10-11 — Light Blue/Medium Blue cycle) and drop the
+// Adherence line.
 function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
   const plans = selectedPlans.length ? selectedPlans : [undefined]
   const perPlan = useMemo(() => plans.map(p => srByFY(filters, granularity, p)), [filters, granularity, plans])
@@ -45,9 +46,9 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 3" />
-          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={TSA_PLAN_COLORS.actual} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
           {plans.map((p, pi) => {
-            const { color, opacity } = planSeriesColor(pi)
+            const { color, opacity } = tsaPlanColor(pi)
             return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
           })}
           {plans.length === 1 && (
@@ -102,11 +103,11 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
           {aPlans.map((p, pi) => {
-            const { color, opacity } = planVsPlanSeriesColor(pi)
+            const { color, opacity } = tsaPlanSideColor('A', pi)
             return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
           })}
           {bPlans.map((p, pi) => {
-            const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
+            const { color, opacity } = tsaPlanSideColor('B', pi)
             return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
           })}
           {aPlans.length === 1 && bPlans.length === 1 && (

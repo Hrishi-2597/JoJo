@@ -6,7 +6,7 @@ import {
 import {
   tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, filterLobs,
 } from '../../data/tsaData'
-import { C, Tip, Modal, InfoButton } from './TsaChartKit'
+import { C, Tip, Modal, InfoButton, TSA_TREND_COLORS } from './TsaChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
 // Palette for the Total LOB card's Global Grouping donut (2026-10-07, replaces the
@@ -90,6 +90,9 @@ function AsuTrendChart({ filters, granularity }) {
 
 // Grouped columns, not stacked — DB and OSP render as two side-by-side bars per
 // fiscal year instead of one stacked bar, per the requested chart-type change.
+// Colors (2026-10-11): not an Actuals-vs-Plan chart, so it uses the warm CPASU/UCR
+// Trend family (TSA_TREND_COLORS) rather than the blue/teal Plan palette, same as
+// AsuSrTrendLayer.jsx and CurrentUcrChart below.
 function SrDbOspChart({ filters, granularity }) {
   const data = useMemo(() => srDbOspByFY(filters, granularity), [filters, granularity])
   return (
@@ -101,8 +104,8 @@ function SrDbOspChart({ filters, granularity }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="db" name="DB" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar dataKey="osp" name="OSP" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="db" name="DB" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="osp" name="OSP" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -110,7 +113,10 @@ function SrDbOspChart({ filters, granularity }) {
 }
 
 // Line-only, CPASU alone — the bars (SR/ASU) that used to share this chart were
-// dropped per the requested "just CPASU over years" redesign.
+// dropped per the requested "just CPASU over years" redesign. Colors (2026-10-11):
+// part of the CPASU/UCR Trend family — same Magenta as AsuSrTrendLayer.jsx's own
+// CPASU line, per direct request that "ALL charts" in this family get the warm
+// CPASU/UCR Trend palette rather than the shared trend-violet.
 function CpasuChart({ filters, granularity }) {
   const data = useMemo(() => cpasuByFY(filters, granularity), [filters, granularity])
   return (
@@ -119,16 +125,18 @@ function CpasuChart({ filters, granularity }) {
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Line type="monotone" dataKey="cpasu" name="CPASU" stroke={C.trend} strokeWidth={2.5} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta} strokeWidth={2.5} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
+// Colors (2026-10-11): part of the CPASU/UCR Trend family — same Gold/Orange/Magenta
+// as AsuSrTrendLayer.jsx's own UCR-related visuals, per direct request.
 function CurrentUcrChart({ filters, granularity }) {
   const data = useMemo(() => ucrByFY(filters, granularity), [filters, granularity])
   return (
@@ -138,12 +146,12 @@ function CurrentUcrChart({ filters, granularity }) {
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0,100]} tickFormatter={v => `${v}%`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="current" name="Current" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Bar yAxisId="l" dataKey="target" name="Target" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Bar yAxisId="l" dataKey="current" name="Current" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
+          <Bar yAxisId="l" dataKey="target" name="Target" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
+          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={TSA_TREND_COLORS.magenta} strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

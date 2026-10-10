@@ -86,12 +86,18 @@ SPoG/
 │   │   │                         now a thin wrapper around MultiSelectField.jsx (`value`/`onChange` are now an
 │   │   │                         ARRAY of plan names, emptyLabel="Select Plan" override) — see design_choice.md.
 │   │   │                         New planSeriesColor(index) cycles metric2/trend with stepped opacity for the
-│   │   │                         Nth selected plan on charts that render one extra series per plan.
+│   │   │                         Nth selected plan on charts that render one extra series per plan. (HES
+│   │   │                         Forecasting's AsuLayer/SrLayer/AsuSrTrendLayer stopped using this one specific
+│   │   │                         function 2026-10-11, in favor of their own tsaPlanColor/tsaTrendPlanColor in
+│   │   │                         tsa/TsaChartKit.jsx — see "HES Forecasting Column-Chart Palette" below. Every
+│   │   │                         other consumer — MSG Forecasting, both Capacity pages — is unaffected.)
 │   │   │                         PlanDropdowns (2026-07-31, same signature change) — was two plain single-value
 │   │   │                         <select>s, now two MultiSelectFields (planA/planB are ARRAYs, onChange(key, val)
 │   │   │                         unchanged). New planVsPlanSeriesColor(index) cycles all 3 non-status hues
 │   │   │                         (metric1/metric2/trend — no competing "Actual" series in a pure Plan A vs Plan
 │   │   │                         B context, unlike planSeriesColor) across the combined A-then-B series list.
+│   │   │                         (HES Forecasting's AsuLayer/SrLayer stopped using this one specific function
+│   │   │                         2026-10-11 too, in favor of tsaPlanSideColor — same note as above.)
 │   │   │                         New ComingSoonOverlay (2026-07-31) — wraps a popup's real children in a dark+blur
 │   │   │                         layer with a large "Coming Soon" pill, without removing the content underneath.
 │   │   │                         Visual gained an opt-in `comingSoon` prop (default false, wraps table's PopupTable
@@ -196,9 +202,18 @@ SPoG/
 │   │       │                            lob/queue selections when an upstream Business Partner/Global Grouping/LOB
 │   │       │                            changes makes them invalid. One-directional (see design_choice.md).
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
-│   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
+│   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03).
+│   │       │                            Also now the ONLY home of HES Forecasting's own column-chart palette
+│   │       │                            (2026-10-11, per direct request) — `TSA_PLAN_COLORS`/`TSA_TREND_COLORS` plus
+│   │       │                            `tsaPlanColor`/`tsaPlanSideColor`/`tsaTrendPlanColor`, additive local exports
+│   │       │                            alongside the `export *` from `../ChartKit` (no name collisions). Safe to add
+│   │       │                            here specifically because this file is imported ONLY by tsa/*.jsx — HES
+│   │       │                            Capacity imports `../ChartKit` directly — so these tokens can never reach a
+│   │       │                            page outside HES Forecasting. See "Column-Chart Palette" below for the values.
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total LOB/ASU/SR/CPASU/UCR
-│   │       │                            — was Total Queues until 2026-10-07, see below)
+│   │       │                            — was Total Queues until 2026-10-07, see below). SrDbOspChart/CurrentUcrChart's
+│   │       │                            bars and CurrentUcrChart/CpasuChart's lines recolored 2026-10-11 (see below) —
+│   │       │                            AsuTrendChart (line-only) and the Total LOB donut are unaffected.
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan. "Plan Impact" (Visual3,
 │   │       │                            region→LOB drill) REMOVED ENTIRELY 2026-09-07, per direct request — layer is
 │   │       │                            back to exactly 2 visuals, each filling the row via its own flex-1. Defaults
@@ -206,13 +221,21 @@ SPoG/
 │   │       │                            shared "View By" toggle is unset — `effectiveGranularity = granularity ??
 │   │       │                            'Quarter'` computed in the default export, passed to both visuals instead
 │   │       │                            of the raw page prop; an explicit Month/Week pick on the toggle still wins.
+│   │       │                            Bars recolored 2026-10-11 (TSA_PLAN_COLORS, see below) — Adherence%/
+│   │       │                            Variance% lines stay the shared violet C.trend, untouched.
 │   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric; "Plan Impact"
 │   │       │                            removed the same day, for the same reason. Same Quarter-default fallback
-│   │       │                            as AsuLayer.jsx, added the same day, for the same reason.
-│   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis") — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
+│   │       │                            as AsuLayer.jsx, added the same day, for the same reason; same bar recolor
+│   │       │                            2026-10-11, for the same reason.
+│   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "CPASU/UCR Trend" (renamed 2026-07-31, was "ASU/UCR Impact on SR Analysis") — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal.
+│   │       │                            Every visual's bars AND lines recolored 2026-10-11 (TSA_TREND_COLORS, see
+│   │       │                            below) — the one exception is Visual3's Target line, which stays the shared
+│   │       │                            status color C.behind (reserved for ahead/behind semantics app-wide, not a
+│   │       │                            per-metric identity color the request's palette change was meant to touch).
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above where the Geo Map used to sit — toggle
 │   │       │                               ASU/SR retitles "ASU Performance"/"SR Performance"; wraps
-│   │       │                               PerformanceMatrixTable.jsx + tsaData.js's asuSrPerformanceByLob()
+│   │       │                               PerformanceMatrixTable.jsx + tsaData.js's asuSrPerformanceByLob() — no
+│   │       │                               column charts here (a table), unaffected by the 2026-10-11 palette change
 │   │       (TsaGeoMap.jsx — Layer 04 — REMOVED ENTIRELY 2026-09-07, per direct request; the file itself was deleted, along
 │   │        with its exclusive backing selectors in tsaData.js (geoAdherenceByRegion/geoAdherenceWobble/
 │   │        geoLobPerformanceByRegion/GEO_LOB_REGIONS/LOB_REGION_ASSIGNMENTS and the regionForCountry re-export) — this
@@ -561,6 +584,53 @@ is selected — a clicked bar can carry a quarter/month/week label, not just a b
 Charts whose x-axis isn't time — region (e.g. ESG's Plan Impact, every remaining Geo Map), queue (Top
 Queues by Variance), or LOB (the LOB donut breakdowns) — don't take a `granularity` argument at all;
 there's no sub-year view of "which region," so the toggle doesn't apply to them by design.
+
+---
+
+## HES Forecasting Column-Chart Palette (2026-10-11)
+
+Per direct request with a reference swatch image ("make sure the colors for each metric are different...
+make the dashboard look industry standard"), every column/bar chart on HES Forecasting (`tsa/*.jsx`) now
+draws from one of two small, fixed palettes defined in `tsa/TsaChartKit.jsx` — scoped to this page only,
+since that file is imported exclusively by `tsa/*.jsx` (HES Capacity imports `../ChartKit` directly). The
+shared `C` object and `planSeriesColor`/`planVsPlanSeriesColor` (`ChartKit.jsx`, reused by MSG Forecasting
+and both Capacity pages) are completely untouched.
+
+```
+TSA_PLAN_COLORS — { planA: '#8cc5e3' (Light Blue), planB: '#1a80bb' (Medium Blue), actual: '#298c8c'
+  (Medium Teal) } — backs AsuLayer.jsx/SrLayer.jsx's Actuals-vs-Plan charts (both visuals in each): the
+  Actuals bar is always `actual`; Visual1's single multi-select "Plan" dimension and Visual2's Plan A side
+  use `planA`; Visual2's Plan B side uses `planB`. Exact mapping requested directly ("Plan A Light Blue,
+  Plan B Med Blue, Actuals Med Teal").
+TSA_TREND_COLORS — { gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef' } — backs AsuSrTrendLayer.jsx's
+  "CPASU/UCR Trend" layer (all 3 visuals — bars AND lines, since the request said "ALL charts" for this
+  layer specifically) plus TsaMetricCards.jsx's CpasuChart/CurrentUcrChart/SrDbOspChart drill-downs (none
+  of which are Actuals-vs-Plan charts either). `gold`/`orange` are the two primary bars in every chart here
+  (ASU/SR, SR's/UCR-Handled-SR's, DB/OSP, Current/Target); `magenta` is every CPASU/Adherence% line.
+  Deliberately a different hue family from TSA_PLAN_COLORS, per direct request ("any palette apart from
+  actuals vs plan colors") — a reader should be able to tell the two chart families apart at a glance.
+tsaPlanColor(index) — alternates planA/planB with stepped opacity for AsuLayer/SrLayer Visual1's
+  open-ended multi-select "Plan" bars (replaces the shared planSeriesColor's metric2/trend cycle here only)
+tsaPlanSideColor(side, index) — side is 'A' or 'B'; returns planA/planB respectively with per-side stepped
+  opacity, for AsuLayer/SrLayer Visual2's Plan A vs Plan B bars (replaces the shared planVsPlanSeriesColor's
+  single combined-index 3-hue cycle here only) — every Plan A bar is Light Blue and every Plan B bar is
+  Medium Blue regardless of how many are selected on either side, a firmer guarantee than the shared
+  function's "avoid colliding with the neighboring bar" approach
+tsaTrendPlanColor(index) — alternates magenta/gold with stepped opacity for AsuSrTrendLayer Visual2's
+  open-ended multi-select "SR Plan" bars (replaces the shared planSeriesColor here only)
+```
+
+**Adaptation note:** the reference swatch's exact hex values are light-background, corporate-report tones.
+Every value is used verbatim except `magenta`, brightened from the reference's `#800074` to `#d946ef` for
+legibility as a thin line stroke against this dashboard's dark panels — same hue family, adapted for
+contrast (see design_choice.md).
+
+**Deliberately left unchanged:** reserved status colors (`C.ahead`/`C.behind`, the app-wide green/red
+"ahead of target"/"behind target" convention) everywhere, including AsuSrTrendLayer Visual3's Target line;
+Adherence%/Variance% trend lines in the Actuals-vs-Plan family (AsuLayer/SrLayer — still the shared violet
+`C.trend`, since the "any palette" instruction was scoped to CPASU/UCR Trend specifically); and
+`TsaMetricCards.jsx`'s `AsuTrendChart` (a line-only chart — not a column chart, and not part of the
+CPASU/UCR Trend family either).
 
 ---
 

@@ -9,7 +9,7 @@ import {
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, Modal, planSeriesColor, ComingSoonOverlay } from './TsaChartKit'
+import { C, Visual, Tip, PlanSelect, Modal, TSA_TREND_COLORS, tsaTrendPlanColor, ComingSoonOverlay } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -49,13 +49,13 @@ function Visual1({ filters, granularity }) {
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={C.trend}
-            strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_TREND_COLORS.gold} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_TREND_COLORS.orange} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta}
+            strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
@@ -65,8 +65,9 @@ function Visual1({ filters, granularity }) {
 // Multi-select Plan (2026-07-30, also closes a known cosmetic gap — srBotsByFY
 // never fed the Plan Name into its calculation before today). The humanSR/botsSR
 // stack IS the actual total regardless of which plan(s) are picked, so only the "SR
-// Plan" comparison bar multiplies per selected plan (planSeriesColor), same pattern
-// as every other trend chart in this rollout.
+// Plan" comparison bar multiplies per selected plan (tsaTrendPlanColor, 2026-10-11 —
+// Magenta/Gold cycle, this layer's own warm palette), same pattern as every other
+// trend chart in this rollout.
 function Visual2({ filters, granularity }) {
   const [selectedPlans, setSelectedPlans] = useState([])
   const plans = selectedPlans.length ? selectedPlans : [undefined]
@@ -95,10 +96,10 @@ function Visual2({ filters, granularity }) {
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={C.metric1} opacity={0.85} maxBarSize={44} />
-          <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={C.trend} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.gold} opacity={0.85} maxBarSize={44} />
+          <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
           {plans.map((p, pi) => {
-            const { color, opacity } = planSeriesColor(pi)
+            const { color, opacity } = tsaTrendPlanColor(pi)
             return <Bar key={pi} dataKey={`plan_${pi}`} name={p ? `SR Plan (${p})` : 'SR Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={44} />
           })}
         </BarChart>
@@ -158,7 +159,7 @@ function Visual3({ filters, granularity }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="current" name="Runrate" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40}
+          <Bar dataKey="current" name="Runrate" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40}
             onClick={d => setModalPeriod(d.period)} style={{ cursor: 'pointer' }} />
           <Line type="monotone" dataKey="target" name="Target" stroke={C.behind} strokeWidth={2} strokeDasharray="4 3"
             dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} />
