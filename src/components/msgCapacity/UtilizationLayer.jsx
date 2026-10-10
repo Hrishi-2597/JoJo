@@ -79,16 +79,16 @@ function Visual1({ filters, granularity }) {
       table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<UtilFyTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="actual" name="Actual" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
           {plans.map((p, pi) => {
             const { color, opacity } = planSeriesColor(pi)
-            return <Bar key={pi} yAxisId="l" dataKey={`target_${pi}`} name={p ? `Target (${p})` : 'Target'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={44} />
+            return <Bar key={pi} yAxisId="l" dataKey={`target_${pi}`} name={p ? `Target (${p})` : 'Target'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={44} />
           })}
           {plans.length === 1 && (
             <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -121,13 +121,13 @@ function QueueBarChart({ data, actualLabel, targetLabel, actualColor, targetColo
   return (
     <ResponsiveContainer width="100%" height={230}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
+        <CartesianGrid horizontal={false} stroke={C.grid} />
         <XAxis type="number" tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" tick={<CategoryTick />} width={140} axisLine={false} tickLine={false} />
         <Tooltip content={<QueueTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
         <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-        <Bar dataKey="actual" name={actualLabel} fill={actualColor} opacity={0.85} radius={[0,3,3,0]} maxBarSize={16} />
-        <Bar dataKey="target" name={targetLabel} fill={targetColor} opacity={0.85} radius={[0,3,3,0]} maxBarSize={16} />
+        <Bar dataKey="actual" name={actualLabel} fill={actualColor} radius={[0,2,2,0]} maxBarSize={16} />
+        <Bar dataKey="target" name={targetLabel} fill={targetColor} radius={[0,2,2,0]} maxBarSize={16} />
       </BarChart>
     </ResponsiveContainer>
   )

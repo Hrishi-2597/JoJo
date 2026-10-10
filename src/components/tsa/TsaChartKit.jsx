@@ -34,7 +34,7 @@ export const TSA_TREND_COLORS = { gold: '#f1a226', orange: '#ea801c', magenta: '
 // an open-ended number of selected plans stays distinguishable without adding hues.
 export function tsaPlanColor(index) {
   const hue = index % 2 === 0 ? TSA_PLAN_COLORS.planA : TSA_PLAN_COLORS.planB
-  const opacity = Math.max(0.35, 0.85 - Math.floor(index / 2) * 0.25)
+  const opacity = Math.max(0.35, 1 - Math.floor(index / 2) * 0.25)
   return { color: hue, opacity }
 }
 
@@ -46,7 +46,7 @@ export function tsaPlanColor(index) {
 // combined-index cycle, which this layer's explicit Plan A/Plan B request calls for.
 export function tsaPlanSideColor(side, index) {
   const hue = side === 'A' ? TSA_PLAN_COLORS.planA : TSA_PLAN_COLORS.planB
-  const opacity = Math.max(0.4, 0.95 - index * 0.2)
+  const opacity = Math.max(0.4, 1 - index * 0.2)
   return { color: hue, opacity }
 }
 
@@ -56,6 +56,6 @@ export function tsaPlanSideColor(side, index) {
 // Trend family since this chart isn't an Actuals-vs-Plan comparison.
 export function tsaTrendPlanColor(index) {
   const hue = index % 2 === 0 ? TSA_TREND_COLORS.magenta : TSA_TREND_COLORS.gold
-  const opacity = Math.max(0.35, 0.85 - Math.floor(index / 2) * 0.25)
+  const opacity = Math.max(0.35, 1 - Math.floor(index / 2) * 0.25)
   return { color: hue, opacity }
 }

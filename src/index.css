@@ -28,12 +28,17 @@
   --scrollbar-track: #0c1929;
   --scrollbar-thumb: #1a3050;
   --scrollbar-thumb-hover: #2a5298;
-  --chart-grid: rgba(148,163,184,0.22);
+  /* Gridlines dropped from 0.22 to 0.10 alpha (2026-10-11) — supportive, not
+     competing with the data. Enterprise chart grids sit just above the noise floor. */
+  --chart-grid: rgba(148,163,184,0.10);
   --select-bg: rgba(255,255,255,0.025);
   --select-bg-hover: rgba(56,189,248,0.05);
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
-  --shadow-card-hover: 0 4px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.18);
-  --shadow-card-active: 0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(56,189,248,0.4), 0 0 24px rgba(56,189,248,0.1);
+  /* Neon accent rings/glows removed from all 3 (2026-10-11) — a dark shadow on a
+     dark page carries no contrast, so these were pure glow, and glow is the loudest
+     "funky" tell. Dark mode signals elevation with luminance + borders instead. */
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-card-active: none;
   --accent-contrast: #070f1a;
   color-scheme: dark;
 }
@@ -58,12 +63,15 @@
   --scrollbar-track: #eef2f8;
   --scrollbar-thumb: #c3d0e0;
   --scrollbar-thumb-hover: #9fb2c9;
-  --chart-grid: rgba(71,94,122,0.18);
+  --chart-grid: rgba(71,94,122,0.14);
   --select-bg: rgba(15,23,42,0.03);
   --select-bg-hover: rgba(2,132,199,0.06);
-  --shadow-card: 0 1px 3px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.6);
-  --shadow-card-hover: 0 4px 16px rgba(15,23,42,0.1), 0 0 0 1px rgba(2,132,199,0.18);
-  --shadow-card-active: 0 4px 24px rgba(15,23,42,0.12), 0 0 0 1px rgba(2,132,199,0.4), 0 0 24px rgba(2,132,199,0.08);
+  /* Light theme keeps a real (restrained) shadow — unlike dark, a shadow genuinely
+     reads here, and a white card on a near-white page needs some lift. The accent
+     glow rings are gone in both themes. */
+  --shadow-card: 0 1px 2px rgba(15,23,42,0.06);
+  --shadow-card-hover: 0 2px 6px rgba(15,23,42,0.10);
+  --shadow-card-active: 0 2px 8px rgba(15,23,42,0.12);
   --accent-contrast: #ffffff;
   color-scheme: light;
 }
@@ -96,69 +104,68 @@
 
 @layer components {
 
-  /* ── Signature: luminous top-edge card glow ─────────────────────── */
+  /* ── KPI card ───────────────────────────────────────────────────── */
+  /* The animated "luminous top-edge glow" (an accent gradient ::before bar that
+     widened and lit up on hover, plus neon box-shadow rings) was removed
+     2026-10-11, per direct request to stop the dashboard looking "funky". Glowing
+     accent furniture is the single loudest amateur signal in an analytics UI, and
+     the glow rings it relied on don't read on dark backgrounds anyway — there's no
+     meaningful contrast between a dark shadow and a dark page. State is now carried
+     by border-color alone (quiet default -> accent on hover -> stronger on active),
+     which stays legible in both themes and costs no visual noise. */
   .card-panel {
     position: relative;
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
     border-radius: 8px;
     /* No overflow: hidden here (2026-07-20) — it was clipping the card's insight
-       popup, which needs to render outside the card's own bounds. Not load-bearing
-       for anything else: the ::before/active glow bars are already inset within the
-       card's width and don't need corner clipping. */
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+       popup, which needs to render outside the card's own bounds. */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     box-shadow: var(--shadow-card);
   }
-  .card-panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 20%; right: 20%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.45;
-    transition: left 0.25s ease, right 0.25s ease, opacity 0.25s ease;
-  }
   .card-panel:hover {
-    border-color: rgba(56,189,248,0.3);
+    border-color: var(--border-strong);
     box-shadow: var(--shadow-card-hover);
   }
-  .card-panel:hover::before {
-    left: 5%; right: 5%;
-    opacity: 0.85;
-  }
   .card-panel.active {
-    border-color: rgba(56,189,248,0.5);
+    border-color: var(--accent);
     box-shadow: var(--shadow-card-active);
-  }
-  .card-panel.active::before {
-    left: 0; right: 0;
-    opacity: 1;
-    box-shadow: 0 0 10px rgba(56,189,248,0.6);
   }
 
   /* ── Chart/visual panel ─────────────────────────────────────────── */
+  /* Transparent, not --bg-inset (2026-10-11, per direct request to "remove the
+     grey background from all the charts"). The old fill was an inverted-elevation
+     bug, not just a color preference: --bg-inset (#0a1522) is DARKER than the
+     --bg-panel (#0c1929) layer container these panels sit inside, and a dark-mode
+     surface that recedes as it comes forward reads as a muddy grey well. Dropping
+     the fill collapses two competing elevation levels into one — the chart now
+     sits directly on its layer surface, defined by its 1px border alone, which is
+     also what Grafana's own "Transparent background" panel toggle does. */
   .chart-panel {
-    background: var(--bg-inset);
+    background: transparent;
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     padding: 12px;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: border-color 0.2s ease;
   }
 
   /* ── Layer section header ────────────────────────────────────────── */
+  /* Flat tint + a bottom rule instead of an accent gradient wash and a 2px accent
+     bar down the left edge (2026-10-11) — gradients on structural chrome are
+     decorative noise; a section header's job is to separate, not to glow. */
   .layer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 16px;
-    background: linear-gradient(90deg, rgba(56,189,248,0.06) 0%, transparent 55%);
-    border-left: 2px solid var(--accent);
+    background: transparent;
+    border-bottom: 1px solid var(--border-subtle);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background-color 0.15s ease;
     user-select: none;
   }
   .layer-header:hover {
-    background: linear-gradient(90deg, rgba(56,189,248,0.1) 0%, transparent 55%);
+    background: rgba(148,163,184,0.04);
   }
 
   /* ── Field select ───────────────────────────────────────────────── */
@@ -326,10 +333,12 @@
   .drill-btn.active  { background: var(--accent); color: var(--accent-contrast); }
 
   /* ── Tooltip ─────────────────────────────────────────────────────── */
+  /* Neutral border, not an accent-tinted one (2026-10-11) — a tooltip is chrome,
+     and tinting it competes with the series colors it's there to report. */
   .chart-tooltip {
     background: var(--tooltip-bg);
-    border: 1px solid rgba(56,189,248,0.25);
-    border-radius: 7px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
     padding: 8px 11px;
     font-size: 11px;
     backdrop-filter: blur(8px);

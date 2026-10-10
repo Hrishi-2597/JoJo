@@ -113,21 +113,21 @@ function MainChart({ filters, granularity, plansA, plansB }) {
       table={table}>
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
           <XAxis dataKey={xKey} tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
           {aPlans.map((p, pi) => {
             const { color, opacity } = planVsPlanSeriesColor(pi)
-            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={50}
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={50}
               onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           })}
           {bPlans.map((p, pi) => {
             const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
-            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={50}
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={50}
               onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           })}
           {aPlans.length === 1 && bPlans.length === 1 && (
@@ -189,14 +189,14 @@ function LobVarianceChart({ filters, plansA, plansB }) {
       table={table}>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
+          <CartesianGrid horizontal={false} stroke={C.grid} />
           <XAxis type="number" domain={[-domainMax, domainMax]} ticks={ticks} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <YAxis type="category" dataKey="name" tick={<CategoryTick />} width={150} axisLine={false} tickLine={false} />
           <Tooltip content={<LobTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
-          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={18}>
-            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.9} />)}
+          <Bar dataKey="variance" name="Variance %" radius={[2,2,2,2]} maxBarSize={18}>
+            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} />)}
             <LabelList dataKey={d => d.variance >= 0 ? d.variance : undefined} position="right"
               formatter={v => `+${v}%`} style={{ fontSize: 10.5, fontWeight: 700, fill: C.ahead }} />
             <LabelList dataKey={d => d.variance < 0 ? d.variance : undefined} position="left"

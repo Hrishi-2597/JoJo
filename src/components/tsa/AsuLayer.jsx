@@ -40,19 +40,19 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" domain={[60,110]} tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" domain={[60,110]} tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 3" />
-          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={TSA_PLAN_COLORS.actual} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={TSA_PLAN_COLORS.actual} radius={[2,2,0,0]} maxBarSize={40} />
           {plans.map((p, pi) => {
             const { color, opacity } = tsaPlanColor(pi)
-            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {plans.length === 1 && (
             <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %"
@@ -98,22 +98,22 @@ function Visual2({ filters, granularity, plansA, plansB, onPlansChange }) {
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
           {aPlans.map((p, pi) => {
             const { color, opacity } = tsaPlanSideColor('A', pi)
-            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {bPlans.map((p, pi) => {
             const { color, opacity } = tsaPlanSideColor('B', pi)
-            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {aPlans.length === 1 && bPlans.length === 1 && (
             <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}

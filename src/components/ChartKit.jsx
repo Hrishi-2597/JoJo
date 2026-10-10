@@ -11,10 +11,15 @@ import MultiSelectField from './MultiSelectField'
 
 // Same color-role convention established on the Forecasting page: blue/orange compare
 // two neutral quantities, violet is a neutral trend line, green/red mean ahead/behind.
+//
+// `tick` was #4a6a85 until 2026-10-11 — that measured ~3.1:1 against the --bg-panel
+// surface charts sit on, under the 4.5:1 WCAG AA floor for text (axis labels are text,
+// not graphical objects, so the looser 3:1 rule doesn't apply). Raised to the existing
+// --text-dim value, ~6.9:1. This was a real accessibility defect, not a style tweak.
 export const C = {
   metric1: '#38bdf8', metric2: '#fb923c', trend: '#a78bfa',
   ahead: '#34d399', behind: '#f87171',
-  grid: 'var(--chart-grid)', tick: '#4a6a85',
+  grid: 'var(--chart-grid)', tick: '#7fa8cc',
 }
 
 // Color for the Nth "extra Plan" series once a Plan Name dropdown allows selecting
@@ -24,9 +29,12 @@ export const C = {
 // — see design_choice.md). Opacity steps down each time the pair repeats, so an
 // open-ended number of selected plans stays visually distinguishable without
 // expanding the palette.
+// Opacity base raised 0.85 -> 1 (2026-10-11): the FIRST (and usually only) selected
+// plan now renders at full strength, with the step-down reserved for 3rd+ selections.
+// Diluting a deliberately-chosen hue to 85% just muddies it against a dark ground.
 export function planSeriesColor(index) {
   const hue = index % 2 === 0 ? C.metric2 : C.trend
-  const opacity = Math.max(0.35, 0.85 - Math.floor(index / 2) * 0.25)
+  const opacity = Math.max(0.35, 1 - Math.floor(index / 2) * 0.25)
   return { color: hue, opacity }
 }
 
@@ -40,7 +48,7 @@ export function planSeriesColor(index) {
 export function planVsPlanSeriesColor(index) {
   const hues = [C.metric1, C.metric2, C.trend]
   const hue = hues[index % hues.length]
-  const opacity = Math.max(0.35, 0.85 - Math.floor(index / hues.length) * 0.25)
+  const opacity = Math.max(0.35, 1 - Math.floor(index / hues.length) * 0.25)
   return { color: hue, opacity }
 }
 

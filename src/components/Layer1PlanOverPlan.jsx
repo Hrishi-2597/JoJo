@@ -112,22 +112,22 @@ function Visual1({ filters, granularity, plansA, plansB, onPlansChange }) {
       info="Plan A vs Plan B volume by fiscal year (or sub-period), with percent variance shown when exactly one plan is selected on each side.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.variance, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.variance, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
           {aPlans.map((p, pi) => {
             const { color, opacity } = planVsPlanSeriesColor(pi)
-            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {bPlans.map((p, pi) => {
             const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
-            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {aPlans.length === 1 && bPlans.length === 1 && (
             <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.variance}
@@ -159,17 +159,17 @@ function Visual2({ filters, plansA, plansB, onPlansChange }) {
       info="Plan A vs Plan B volume by region, with the resulting variance % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.variance, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.variance, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name={planA || 'Plan A'} fill={C.plan1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
-          <Bar yAxisId="l" dataKey="plan2" name={planB || 'Plan B'} fill={C.plan2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50} />
+          <Bar yAxisId="l" dataKey="plan1" name={planA || 'Plan A'} fill={C.plan1} radius={[2,2,0,0]} maxBarSize={50} />
+          <Bar yAxisId="l" dataKey="plan2" name={planB || 'Plan B'} fill={C.plan2} radius={[2,2,0,0]} maxBarSize={50} />
           <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.variance}
             strokeWidth={2} dot={{ r: 3, fill: C.variance, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
@@ -216,14 +216,14 @@ function Visual3({ filters, plansA, plansB, onPlansChange }) {
       info="The queues with the largest Plan A vs Plan B variance, ranked by magnitude regardless of direction.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
+          <CartesianGrid horizontal={false} stroke={C.grid} />
           <XAxis type="number" domain={[-domainMax, domainMax]} ticks={ticks} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <YAxis type="category" dataKey="cqn" tick={<QueueTick />} width={148} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
-          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={20}>
-            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.9} />)}
+          <Bar dataKey="variance" name="Variance %" radius={[2,2,2,2]} maxBarSize={20}>
+            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} />)}
             <LabelList dataKey={d => d.variance >= 0 ? d.variance : undefined} position="right"
               formatter={v => `+${v}%`} style={{ fontSize: 10.5, fontWeight: 700, fill: C.ahead }} />
             <LabelList dataKey={d => d.variance < 0 ? d.variance : undefined} position="left"

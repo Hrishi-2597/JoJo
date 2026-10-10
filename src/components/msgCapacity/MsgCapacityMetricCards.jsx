@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import MetricIcon from '../MetricIcon'
 import {
   ComposedChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
@@ -16,7 +17,6 @@ function StatusPip({ ok }) {
     <span style={{
       display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
       background: ok ? '#34d399' : '#f87171',
-      boxShadow: ok ? '0 0 6px rgba(52,211,153,0.7)' : '0 0 6px rgba(248,113,113,0.7)',
       flexShrink: 0,
     }} />
   )
@@ -63,14 +63,14 @@ function StaffingTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual HC" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar yAxisId="l" dataKey="plan" name="Plan HC" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="actual" name="Actual HC" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="plan" name="Plan HC" fill={C.metric2} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="adherence" name="Staffing %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -84,13 +84,13 @@ function UtilizationTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="actual" name="Actual" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar dataKey="target" name="Target" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="actual" name="Actual" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar dataKey="target" name="Target" fill={C.metric2} radius={[2,2,0,0]} maxBarSize={44} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -105,9 +105,9 @@ function SlTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="slPct" name="SL %" stroke={C.trend} strokeWidth={2.5} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -126,9 +126,9 @@ function CasesPerFteTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="actual" name="Actual" stroke={C.metric1} strokeWidth={2.5} dot={{ r: 3, fill: C.metric1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -145,13 +145,13 @@ function AttritionTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="attrition" name="Attrition %" stroke={C.behind} strokeWidth={2} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -210,27 +210,27 @@ export default function MsgCapacityMetricCards({ filters, granularity }) {
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="👥" label="Staffing Summary"
+        <Card icon={<MetricIcon name="staffing" />} label="Staffing Summary"
           value={`${d.staffing.value}%`}
           sub={staffingYtd.text} trend={staffingYtd.trend}
           onClick={() => toggle('staffing')} active={active === 'staffing'}
           info="Actual headcount as a % of planned headcount for the latest in-scope period, vs the prior period." />
-        <Card icon="📊" label="Utilization %"
+        <Card icon={<MetricIcon name="utilization" />} label="Utilization %"
           value={`${d.utilization.actual}%`}
           sub={utilizationYtd.text} trend={utilizationYtd.trend}
           onClick={() => toggle('utilization')} active={active === 'utilization'}
           info="Actual utilization % against target for the latest in-scope period, vs the prior period." />
-        <Card icon="🎯" label="SL %"
+        <Card icon={<MetricIcon name="target" />} label="SL %"
           value={`${d.sl.actual}%`}
           sub={slYtd.text} trend={slYtd.trend}
           onClick={() => toggle('sl')} active={active === 'sl'}
           info="Actual Service Level % for the latest in-scope period, vs the prior period." />
-        <Card icon="📋" label="Cases per FTE"
+        <Card icon={<MetricIcon name="cases" />} label="Cases per FTE"
           value={d.casesPerFte.actual}
           sub={casesPerFteSub}
           onClick={() => toggle('casesPerFte')} active={active === 'casesPerFte'}
           info="Actual cases handled per FTE, year-to-date for the latest in-scope period." />
-        <Card icon="↩" label="Attrition %"
+        <Card icon={<MetricIcon name="attrition" />} label="Attrition %"
           value={`${d.attrition.actual}%`}
           sub={attritionYtd.text} trend={attritionYtd.trend}
           onClick={() => toggle('attrition')} active={active === 'attrition'}

@@ -65,6 +65,10 @@ SPoG/
 │   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by every page
 │   │   ├── Modal.jsx           # Shared popup modal — used by every page's Key Metrics card drill-downs
 │   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by every filter bar
+│   │   ├── MetricIcon.jsx      # (2026-10-11) 15 hand-written 24x24 stroked SVG glyphs for KPI-card icons,
+│   │   │                         replacing the emoji all 4 pages used to pass as `icon`. currentColor +
+│   │   │                         verticalAlign so it drops into each page's existing Card unchanged.
+│   │   │                         See "Enterprise-grade visual pass" below.
 │   │   ├── ChartKit.jsx        # Shared chart primitives (Visual, Tip, PlanDropdowns, PlanSelect, CategoryTick,
 │   │   │                         truncate, BinaryToggle, GraphInsightButton, InfoButton) — promoted from
 │   │   │                         tsa/TsaChartKit.jsx (2026-07-03) so both Capacity pages and both Forecasting pages
@@ -519,6 +523,46 @@ avoiding a flash of the wrong theme.
 --tooltip-bg, --chart-grid, --select-bg(-hover)         — component-specific tokens
 --scrollbar-track/-thumb(-hover), --shadow-card(-hover/-active) — misc
 ```
+
+### Enterprise-grade visual pass (2026-10-11)
+
+App-wide, not per-page — see design_choice.md for why this one wasn't fenced to HES Forecasting the way
+the column-chart palette before it was.
+
+```
+.chart-panel        background: var(--bg-inset) -> transparent. The old fill was an INVERTED-ELEVATION
+                    bug: --bg-inset (#0a1522) is darker than the --bg-panel (#0c1929) layer container
+                    these panels nest inside, and a dark surface that recedes as it comes forward reads
+                    as a muddy grey well — the "grey background" that prompted this pass. --bg-inset
+                    itself is unchanged; it's still correct for genuinely recessed controls (.ms-search,
+                    .drill-toggle track, .theme-toggle).
+.card-panel         ::before (animated accent gradient bar, widened + lit on hover) DELETED. Hover/active
+                    now signalled by border-color alone (--border-strong / --accent).
+--shadow-card*      all 3 -> none in dark (a dark shadow on a dark page is pure glow, no contrast to
+                    spend); light theme keeps restrained real shadows, minus the accent rings.
+.layer-header       accent gradient wash + 2px accent left border -> transparent + 1px bottom rule.
+.chart-tooltip      accent-tinted border -> --border-strong (chrome shouldn't compete with series colors).
+--chart-grid        dark 0.22 -> 0.10 alpha; light 0.18 -> 0.14.
+C.tick (ChartKit)   #4a6a85 -> #7fa8cc. ACCESSIBILITY FIX, not taste: ~3.1:1 on the chart surface, under
+                    the WCAG AA 4.5:1 floor for text (axis labels are text; the looser 3:1 graphical-
+                    object rule doesn't apply). Now ~6.9:1.
+CartesianGrid       37 sites: strokeDasharray="2 4" (both axes) -> vertical={false}, solid. The 5
+                    horizontal-bar charts keep horizontal={false} — their vertical lines ARE the value axis.
+<Bar> fills         42 literal opacity={0.8|0.85|0.9} props removed (full opacity); 58 radius props ->
+                    [2,2,0,0]. planSeriesColor/planVsPlanSeriesColor/tsaPlanColor/tsaPlanSideColor/
+                    tsaTrendPlanColor opacity BASE 0.85|0.95 -> 1, so the first/only selected plan is
+                    full strength and the step-down only kicks in for 3rd+ selections.
+axis tick labels    fontSize 10 -> 11 (96 sites; anchored to `tick={{` lines so 4 unrelated div styles
+                    at the same size weren't caught).
+StatusPip           glowing boxShadow removed in all 4 card files; flat 6px dot now.
+```
+
+`src/components/MetricIcon.jsx` (2026-10-11) — 15 hand-written 24x24 stroked SVG glyphs
+(`queues/callVolume/split/accuracy/variance/staffing/utilization/target/cases/attrition/lob/asu/sr/
+ratio/time`), `stroke="currentColor"` tinted via `--text-dim`, `verticalAlign: middle` so it drops
+straight into the inline `<span>` each page's local `Card` already wraps `icon` in — no `Card`
+component needed a layout change. Replaced all 20 emoji KPI-card icons across all 4 pages. Deliberately
+not an icon package: see design_choice.md.
 
 Every shared CSS class (`.card-panel`, `.chart-panel`, `.layer-header`, `.select-dark`, `.ms-*`,
 `.filter-chip`, `.drill-toggle`/`.drill-btn`, `.chart-tooltip`, `.theme-toggle`, scrollbars, `body`) and

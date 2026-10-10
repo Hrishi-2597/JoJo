@@ -42,16 +42,16 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
       table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={40} />
           {plans.map((p, pi) => {
             const { color, opacity } = planSeriesColor(pi)
-            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan FTE (${p})` : 'Plan FTE'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={40} />
+            return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan FTE (${p})` : 'Plan FTE'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />
           })}
           {plans.length === 1 && (
             <Line yAxisId="r" type="monotone" dataKey="adherence" name="Variation %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -131,13 +131,13 @@ function Visual2({ filters, granularity }) {
       table={table}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey={xKey} tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey={xKey} tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<AttritionTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
+          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={40}
             onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           <Line yAxisId="r" type="monotone" dataKey="attrition" name="Attrition %" stroke={C.behind} strokeWidth={2} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>

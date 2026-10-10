@@ -45,15 +45,15 @@ function Visual1({ filters, granularity }) {
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_TREND_COLORS.gold} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_TREND_COLORS.orange} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_TREND_COLORS.gold} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={40} />
           <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta}
             strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
@@ -90,17 +90,17 @@ function Visual2({ filters, granularity }) {
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={222}>
         <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.gold} opacity={0.85} maxBarSize={44} />
-          <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.gold} maxBarSize={44} />
+          <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={44} />
           {plans.map((p, pi) => {
             const { color, opacity } = tsaTrendPlanColor(pi)
-            return <Bar key={pi} dataKey={`plan_${pi}`} name={p ? `SR Plan (${p})` : 'SR Plan'} fill={color} opacity={opacity} radius={[3,3,0,0]} maxBarSize={44} />
+            return <Bar key={pi} dataKey={`plan_${pi}`} name={p ? `SR Plan (${p})` : 'SR Plan'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={44} />
           })}
         </BarChart>
       </ResponsiveContainer>
@@ -154,12 +154,12 @@ function Visual3({ filters, granularity }) {
       table={table} comingSoon>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="current" name="Runrate" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40}
+          <Bar dataKey="current" name="Runrate" fill={TSA_TREND_COLORS.gold} radius={[2,2,0,0]} maxBarSize={40}
             onClick={d => setModalPeriod(d.period)} style={{ cursor: 'pointer' }} />
           <Line type="monotone" dataKey="target" name="Target" stroke={C.behind} strokeWidth={2} strokeDasharray="4 3"
             dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} />

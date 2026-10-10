@@ -4,6 +4,36 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## The Chart "Grey Background" Was an Inverted-Elevation Bug, Fixed by Transparency Rather Than a New Grey (2026-10-11)
+
+**Decision:** `.chart-panel` went to `background: transparent` instead of being re-tinted to some better grey, and `--bg-inset` itself was left exactly as it is.
+
+**Why:** The reported "grey background" wasn't a bad color choice — it was a broken elevation relationship. `.chart-panel` filled itself with `--bg-inset` (`#0a1522`) while sitting *inside* layer containers painted `--bg-panel` (`#0c1929`). In a dark theme, surfaces are supposed to get **lighter** as they come forward; a nested box that's darker than its parent reads as a recessed, muddy well, which is exactly the "grey" the user was seeing. Picking a different fill would just have traded one arbitrary tint for another and kept two elevation levels competing where the design only needs one. Transparency collapses them: the chart sits directly on its layer surface, separated by its 1px border alone — the same approach Grafana ships as its "Transparent background" panel toggle. `--bg-inset` stayed untouched because it's still semantically right for genuinely recessed controls (search fields, the pill toggle's track); the bug was using an *inset* token for a surface that isn't inset.
+
+## Dark-Theme State Signalling Moved From Glow to Border (2026-10-11)
+
+**Decision:** Deleted `.card-panel::before` (the animated accent gradient bar) outright, set all three `--shadow-card-*` tokens to `none` in dark, and kept restrained real shadows only in the light theme. Hover/active are now communicated purely by `border-color`.
+
+**Why:** Two reasons, one aesthetic and one physical. Aesthetically, glowing accent furniture is the single loudest "this is a hobby project" signal in an analytics UI, and the user's complaint was specifically that it looks "funky." Physically, those dark-theme shadows weren't doing the job they were nominally there for: a dark shadow over a dark page has no contrast to spend, so `0 4px 24px rgba(0,0,0,0.7)` contributed nothing but the accent glow riding along with it. Dark interfaces convey elevation through luminance steps and borders, not drop shadows. Light theme is the opposite case — a shadow genuinely reads against a near-white page, and a white card needs the lift — so it keeps one, just without the accent ring.
+
+## Axis-Label Contrast Was Treated as a Bug Fix, Not a Style Preference (2026-10-11)
+
+**Decision:** `C.tick` changed `#4a6a85` → `#7fa8cc` as part of this pass, even though nobody reported it.
+
+**Why:** It measured ~3.1:1 against the surface charts render on, below the WCAG AA 4.5:1 minimum. The 3:1 allowance people often cite for charts applies to *graphical objects* — the bars and lines themselves — not to axis labels, which are text and carry the 4.5:1 requirement. That makes it a genuine accessibility defect that happened to be sitting in code this change was already touching, rather than scope creep: the fix is one token, and leaving a known contrast failure in place while explicitly doing a "make it industry standard" pass would have been the odd call.
+
+## Icons Were Hand-Written SVG Rather Than an Icon Package (2026-10-11)
+
+**Decision:** New `src/components/MetricIcon.jsx` with 15 inline 24×24 stroked paths, instead of adding `lucide-react`/`react-icons` or similar.
+
+**Why:** Emoji had to go — they're rendered by the OS, so the same card looked different per platform, they sat at inconsistent optical weights beside one another, and they injected their own colors into a palette the rest of the page controls deliberately. But the replacement didn't warrant a dependency: 15 glyphs of a few path commands each is a couple hundred bytes inline, against a package that would add a bundle entry and tree-shaking config to use roughly 1% of its surface. They take `currentColor`, so a card can tint them with a theme token — something an emoji could never do.
+
+## This Pass Was App-Wide, Unlike the Palette Change That Preceded It (2026-10-11)
+
+**Decision:** Where the previous turn's color work was deliberately fenced to HES Forecasting, this pass deliberately applied to all four pages.
+
+**Why:** The two requests were scoped differently and the code backs that up. The palette request said "DO this only for HES Forecasting Page," and metric colors are per-chart props, so fencing them was both wanted and mechanically possible. This request said "make **the dashboard** industry standard," and the things it targets — `.chart-panel`, `.card-panel`, `--chart-grid`, the shared `C.tick` — are single global definitions. Fixing the grey on one page only would have meant forking the shared CSS classes per page, which is a real maintenance cost to deliver a *worse* result: the same dashboard looking inconsistent from tab to tab.
+
 ## HES Forecasting's Column-Chart Palette Lives in `tsa/TsaChartKit.jsx`, Not the Shared `ChartKit.jsx` (2026-10-11)
 
 **Decision:** New color tokens (`TSA_PLAN_COLORS`, `TSA_TREND_COLORS`) and color-cycling helpers (`tsaPlanColor`, `tsaPlanSideColor`, `tsaTrendPlanColor`) were added as new named exports inside `tsa/TsaChartKit.jsx`, sitting alongside its existing `export * from '../ChartKit'`. The shared `ChartKit.jsx` — its `C` object and `planSeriesColor`/`planVsPlanSeriesColor` — was not touched at all.

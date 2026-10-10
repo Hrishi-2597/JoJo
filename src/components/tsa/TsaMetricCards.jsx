@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import MetricIcon from '../MetricIcon'
 import {
   ComposedChart, BarChart, LineChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell,
@@ -28,7 +29,6 @@ function StatusPip({ ok }) {
     <span style={{
       display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
       background: ok ? '#34d399' : '#f87171',
-      boxShadow: ok ? '0 0 6px rgba(52,211,153,0.7)' : '0 0 6px rgba(248,113,113,0.7)',
       flexShrink: 0,
     }} />
   )
@@ -76,9 +76,9 @@ function AsuTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="actual" name="ASU Actuals" stroke={C.metric1} strokeWidth={2.5} dot={{ r: 3, fill: C.metric1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -99,13 +99,13 @@ function SrDbOspChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="db" name="DB" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar dataKey="osp" name="OSP" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="db" name="DB" fill={TSA_TREND_COLORS.gold} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar dataKey="osp" name="OSP" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -123,9 +123,9 @@ function CpasuChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta} strokeWidth={2.5} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -143,14 +143,14 @@ function CurrentUcrChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0,100]} tickFormatter={v => `${v}%`} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0,100]} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="current" name="Current" fill={TSA_TREND_COLORS.gold} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Bar yAxisId="l" dataKey="target" name="Target" fill={TSA_TREND_COLORS.orange} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
+          <Bar yAxisId="l" dataKey="current" name="Current" fill={TSA_TREND_COLORS.gold} radius={[2,2,0,0]} maxBarSize={54} />
+          <Bar yAxisId="l" dataKey="target" name="Target" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={54} />
           <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={TSA_TREND_COLORS.magenta} strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -326,27 +326,27 @@ export default function TsaMetricCards({ filters, granularity }) {
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="🗂" label="Total LOB" sublabel="Active"
+        <Card icon={<MetricIcon name="lob" />} label="Total LOB" sublabel="Active"
           value={`${d.totalLobs.active}`}
           sub="Active HES LOBs"
           onClick={() => toggle('totalLobs')} active={active === 'totalLobs'}
           info="Count of in-scope HES LOBs by Global Grouping." />
-        <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
+        <Card icon={<MetricIcon name="asu" />} label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}
           onClick={() => toggle('asu')} active={active === 'asu'}
           info="Active Service Units (ASU) actuals to date, with year-over-year change." />
-        <Card icon="🎫" label="Service Requests" sublabel="DB / OSP handled"
+        <Card icon={<MetricIcon name="sr" />} label="Service Requests" sublabel="DB / OSP handled"
           value={fmt(d.srActuals.value)}
           sub={srYtd.text} trend={srYtd.trend}
           onClick={() => toggle('sr')} active={active === 'sr'}
           info="Service Requests handled across DB and OSP channels, with year-over-year change." />
-        <Card icon="➗" label="CPASU" sublabel="SR ÷ ASU"
+        <Card icon={<MetricIcon name="ratio" />} label="CPASU" sublabel="SR ÷ ASU"
           value={d.cpasu.value.toFixed(2)}
           sub={cpasuYtd.text} trend={cpasuYtd.trend}
           onClick={() => toggle('cpasu')} active={active === 'cpasu'}
           info="Cases Per Active Service Unit — Service Requests divided by ASU, with year-over-year change." />
-        <Card icon="🎯" label="Current UCR" sublabel="vs Target"
+        <Card icon={<MetricIcon name="target" />} label="Current UCR" sublabel="vs Target"
           value={`${d.currentUcr.value}%`}
           sub={`Target ${d.currentUcr.target}% · ${d.currentUcr.adherence}% adherence`}
           trend={d.currentUcr.adherence >= 95}

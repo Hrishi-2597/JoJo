@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import MetricIcon from '../MetricIcon'
 import {
   ComposedChart, LineChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell,
@@ -21,7 +22,6 @@ function StatusPip({ ok }) {
     <span style={{
       display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
       background: ok ? '#34d399' : '#f87171',
-      boxShadow: ok ? '0 0 6px rgba(52,211,153,0.7)' : '0 0 6px rgba(248,113,113,0.7)',
       flexShrink: 0,
     }} />
   )
@@ -71,14 +71,14 @@ function FteTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar yAxisId="l" dataKey="plan" name="Plan FTE" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="plan" name="Plan FTE" fill={C.metric2} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="adherence" name="Staffing %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -92,13 +92,13 @@ function AttritionTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="attrition" name="Attrition %" stroke={C.behind} strokeWidth={2} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -112,9 +112,9 @@ function CasesPerFteTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="actual" name="Cases/FTE" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -135,9 +135,9 @@ function AvgCaseTimeTrendChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}h`} />
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}h`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Line type="monotone" dataKey="actual" name="Avg Case Time (hrs)" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -307,28 +307,28 @@ export default function TsaCapacityMetricCards({ filters, granularity }) {
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="⬡" label="Total Queues" sublabel="Active"
+        <Card icon={<MetricIcon name="queues" />} label="Total Queues" sublabel="Active"
           value={`${activeQueueCount}`}
           sub="Active HES queues"
           onClick={() => toggle('totalQueues')} active={active === 'totalQueues'}
           info="Count of active HES queues by region." />
-        <Card icon="🧑‍💼" label="Staffing Summary"
+        <Card icon={<MetricIcon name="staffing" />} label="Staffing Summary"
           value={d.totalFte.actual.toLocaleString()}
           sub={staffingYtd.text} trend={staffingYtd.trend}
           onClick={() => toggle('fte')} active={active === 'fte'}
           info="Actual FTE staffing against the FTE plan for the latest in-scope period." />
-        <Card icon="↩" label="Attrition %"
+        <Card icon={<MetricIcon name="attrition" />} label="Attrition %"
           value={`${d.attrition.actual}%`}
           sub={attritionYtd.text} trend={attritionYtd.trend}
           onClick={() => toggle('attrition')} active={active === 'attrition'}
           info="Attrition rate for the latest in-scope period, compared against the prior period." />
-        <Card icon="📋" label="Cases per FTE"
+        <Card icon={<MetricIcon name="cases" />} label="Cases per FTE"
           value={d.casesPerFte.actual}
           sub={`Plan ${d.casesPerFte.plan}`}
           trend={d.casesPerFte.actual <= d.casesPerFte.plan}
           onClick={() => toggle('casesPerFte')} active={active === 'casesPerFte'}
           info="Average cases handled per FTE, compared against the planned cases-per-FTE rate." />
-        <Card icon="⏱" label="Avg Case Time"
+        <Card icon={<MetricIcon name="time" />} label="Avg Case Time"
           value={`${d.avgCaseTime.actual}h`}
           sub={avgCaseTimeYtd.text} trend={avgCaseTimeYtd.trend}
           onClick={() => toggle('avgCaseTime')} active={active === 'avgCaseTime'}

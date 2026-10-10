@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import MetricIcon from './MetricIcon'
 import {
   BarChart, LineChart, ComposedChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell,
@@ -32,7 +33,6 @@ function StatusPip({ ok }) {
     <span style={{
       display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
       background: ok ? '#34d399' : '#f87171',
-      boxShadow: ok ? '0 0 6px rgba(52,211,153,0.7)' : '0 0 6px rgba(248,113,113,0.7)',
       flexShrink: 0,
     }} />
   )
@@ -347,16 +347,16 @@ function VolumeByFYChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }} {...BAR_GAPS}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fill: C.pct, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fill: C.pct, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="offered" name="Offered" fill={C.offered} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Bar yAxisId="l" dataKey="handled" name="Handled" fill={C.handled} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
+          <Bar yAxisId="l" dataKey="offered" name="Offered" fill={C.offered} radius={[2,2,0,0]} maxBarSize={54} />
+          <Bar yAxisId="l" dataKey="handled" name="Handled" fill={C.handled} radius={[2,2,0,0]} maxBarSize={54} />
           <Line yAxisId="r" type="monotone" dataKey="abandonPct" name="Abandon %" stroke={C.pct}
             strokeWidth={2} dot={{ r: 3, fill: C.pct, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
@@ -421,9 +421,9 @@ function DbOspByFYChart({ filters, granularity }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
@@ -445,16 +445,16 @@ function ForecastByRegionChart({ filters, fy }) {
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }} {...BAR_GAPS}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-          <YAxis yAxisId="r" orientation="right" domain={[0,100]} tick={{ fill: C.line, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" domain={[0,100]} tick={{ fill: C.line, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual"   name="Actual"   fill={C.actual}   opacity={0.85} radius={[3,3,0,0]} maxBarSize={30} />
-          <Bar yAxisId="l" dataKey="forecast" name="Forecast" fill={C.forecast} opacity={0.85} radius={[3,3,0,0]} maxBarSize={30} />
+          <Bar yAxisId="l" dataKey="actual"   name="Actual"   fill={C.actual}   radius={[2,2,0,0]} maxBarSize={30} />
+          <Bar yAxisId="l" dataKey="forecast" name="Forecast" fill={C.forecast} radius={[2,2,0,0]} maxBarSize={30} />
           <Line yAxisId="r" type="monotone" dataKey="accuracy" name="Accuracy %" stroke={C.line}
             strokeWidth={2} dot={{ r: 3, fill: C.line, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
@@ -474,17 +474,17 @@ function ForecastByFYChart({ filters, onSelectYear }) {
       <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 6, textAlign: 'center' }}>Click a year to see that year's regional breakdown</p>
       <ResponsiveContainer width="100%" height={205}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }} {...BAR_GAPS}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-          <YAxis yAxisId="r" orientation="right" domain={[0,100]} tick={{ fill: C.line, fontSize: 10 }} axisLine={false} tickLine={false}
+          <YAxis yAxisId="r" orientation="right" domain={[0,100]} tick={{ fill: C.line, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual" fill={C.actual} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54}
+          <Bar yAxisId="l" dataKey="actual" name="Actual" fill={C.actual} radius={[2,2,0,0]} maxBarSize={54}
             onClick={d => onSelectYear(d.period)} style={{ cursor: 'pointer' }} />
-          <Bar yAxisId="l" dataKey="forecast" name="Forecast" fill={C.forecast} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54}
+          <Bar yAxisId="l" dataKey="forecast" name="Forecast" fill={C.forecast} radius={[2,2,0,0]} maxBarSize={54}
             onClick={d => onSelectYear(d.period)} style={{ cursor: 'pointer' }} />
           <Line yAxisId="r" type="monotone" dataKey="accuracy" name="Accuracy %" stroke={C.line}
             strokeWidth={2} dot={{ r: 3, fill: C.line, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -531,14 +531,14 @@ function VarianceByFYChart({ filters, onSelectYear }) {
       <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 6, textAlign: 'center' }}>Click a year to see example queues within the ±10% band</p>
       <ResponsiveContainer width="100%" height={205}>
         <BarChart data={CQN_VARIANCE_BY_FY} margin={{ top: 4, right: 16, left: 0, bottom: 0 }} barCategoryGap="30%">
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="fy" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
+          <CartesianGrid vertical={false} stroke={C.grid} />
+          <XAxis dataKey="fy" tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} domain={[0, 60]} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.06)' }} />
-          <Bar dataKey="pct" name="Within ±10%" radius={[4,4,0,0]} maxBarSize={90}
+          <Bar dataKey="pct" name="Within ±10%" radius={[2,2,0,0]} maxBarSize={90}
             onClick={d => onSelectYear(d.fy)} style={{ cursor: 'pointer' }}>
-            {CQN_VARIANCE_BY_FY.map((d, i) => <Cell key={i} fill="var(--accent)" opacity={0.85} />)}
+            {CQN_VARIANCE_BY_FY.map((d, i) => <Cell key={i} fill="var(--accent)" />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -633,14 +633,14 @@ export default function MetricCards({ filters, granularity }) {
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
         <Card id="queues"
-          icon="⬡" label="Total Queues" sublabel="Active"
+          icon={<MetricIcon name="queues" />} label="Total Queues" sublabel="Active"
           value={`${d.totalQueues.active}`}
           sub="Active queues"
           onClick={() => toggle('queues')} active={active === 'queues'}
           info="Count of active queues in the current roster, broken down by region and business partner."
         />
         <Card id="volume"
-          icon="📞" label="Call Volume" sublabel="Offered & Handled"
+          icon={<MetricIcon name="callVolume" />} label="Call Volume" sublabel="Offered & Handled"
           value={fmt(d.callVolume.offered)}
           sub={`${fmt(d.callVolume.handled)} handled · ${d.callVolume.abandonPct}% abandoned`}
           trend={d.callVolume.abandonPct <= 10}
@@ -648,7 +648,7 @@ export default function MetricCards({ filters, granularity }) {
           info="Offered and handled call volume for the selected period, with the resulting abandon rate."
         />
         <Card id="dbOsp"
-          icon="⚖" label="DB / OSP Split"
+          icon={<MetricIcon name="split" />} label="DB / OSP Split"
           sublabel={filters.dbOsp === 'DB' ? 'Offered volume · DB only' : filters.dbOsp === 'OSP' ? 'Offered volume · OSP only' : 'Offered volume'}
           value={
             filters.dbOsp === 'DB' ? `${d.dbOspSplit.db}%`
@@ -664,7 +664,7 @@ export default function MetricCards({ filters, granularity }) {
           info="Share of offered call volume routed through DB queues versus OSP queues."
         />
         <Card id="forecast"
-          icon="◎" label="Forecast Accuracy" sublabel=""
+          icon={<MetricIcon name="accuracy" />} label="Forecast Accuracy" sublabel=""
           value={`${d.forecastAccuracy.value}%`}
           sub={`Target ${d.forecastAccuracy.target}% · ${d.forecastAccuracy.value >= d.forecastAccuracy.target ? 'On track' : 'Below target'}`}
           trend={d.forecastAccuracy.value >= d.forecastAccuracy.target}
@@ -672,7 +672,7 @@ export default function MetricCards({ filters, granularity }) {
           info="Actual volume compared against forecast for the selected period, measured against the accuracy target."
         />
         <Card id="variance"
-          icon="±" label="Forecast Variance" sublabel="Within ±10%"
+          icon={<MetricIcon name="variance" />} label="Forecast Variance" sublabel="Within ±10%"
           value={`${d.cqnVariance.pct}%`}
           sub={`${d.cqnVariance.withinRange} of ${d.cqnVariance.total} queues`}
           trend={d.cqnVariance.pct >= 40}
