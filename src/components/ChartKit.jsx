@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal } from './Modal'
 import MultiSelectField from './MultiSelectField'
+import { deriveChartData, exportChartToExcel } from '../utils/chartExport'
 
 // Shared chart primitives used across every page (Forecasting, TSA Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
@@ -184,6 +185,11 @@ export function ComingSoonOverlay({ children }) {
 // small "i" popup — per direct request that the two not be the same button.
 export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca, table, info, comingSoon = false }) {
   const [tableOpen, setTableOpen] = useState(false)
+  // Derived from the rendered chart rather than passed in — see chartExport.js.
+  // Recomputed only when the chart element tree changes, which is also exactly
+  // when its underlying data changes (filters/granularity/plan selections all flow
+  // through props into a new element tree).
+  const chartData = useMemo(() => deriveChartData(children), [children])
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
@@ -196,7 +202,7 @@ export function Visual({ title, subtitle, children, controls, cornerControls, rc
           alignItems: 'center', justifyContent: 'center', gap: 5, cursor: table ? 'pointer' : undefined,
         }}
       >
-        {title}{info && <InfoButton info={info} />}
+        {title}{info && <InfoButton info={info} />}<ChartExportButton chartData={chartData} title={title} />
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
@@ -242,6 +248,51 @@ export function InfoButton({ info, align = 'left' }) {
         </div>
       )}
     </div>
+  )
+}
+
+// Per-graph Excel export (2026-10-11). Sits inline next to the title, beside the
+// InfoButton — the one slot that can't collide with anything: GraphInsightButton
+// owns the top-left corner and cornerControls (Region/Sub-region toggles etc.) owns
+// the top-right. The title row's own click-to-open-table handler already ignores
+// clicks that land on a <button>, so this needs no extra stopPropagation.
+//
+// Renders nothing at all when its chart's data couldn't be derived — see
+// chartExport.js for why this fails closed rather than exporting a guess.
+export function ChartExportButton({ chartData, title }) {
+  const [busy, setBusy] = useState(false)
+  if (!chartData) return null
+
+  const run = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await exportChartToExcel({ ...chartData, title })
+    } catch (err) {
+      console.error('Chart export failed:', err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={run}
+      disabled={busy}
+      title={`Export "${title}" to Excel`}
+      aria-label={`Export "${title}" to Excel`}
+      style={{
+        width: 15, height: 15, borderRadius: 3, border: '1px solid var(--border-default)',
+        background: 'var(--bg-inset)', color: 'var(--text-dim)', display: 'inline-flex',
+        alignItems: 'center', justifyContent: 'center', cursor: busy ? 'wait' : 'pointer',
+        padding: 0, flexShrink: 0, opacity: busy ? 0.5 : 1,
+      }}
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16" />
+      </svg>
+    </button>
   )
 }
 

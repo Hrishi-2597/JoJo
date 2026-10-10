@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { deriveChartData } from '../utils/chartExport'
 import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
@@ -8,7 +9,7 @@ import {
   contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS,
   allBucketsQueues, BUCKET_TABLE_COLUMNS,
 } from '../data/insightFactors'
-import { GraphInsightButton, InfoButton, PopupTable, PlanSelect, ComingSoonOverlay } from './ChartKit'
+import { GraphInsightButton, InfoButton, PopupTable, PlanSelect, ComingSoonOverlay, ChartExportButton } from './ChartKit'
 import { Modal } from './Modal'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
@@ -44,6 +45,8 @@ const Tip = ({ active, payload, label }) => {
 // button — see ChartKit.jsx's shared Visual for the full reasoning; this local copy
 // (predates the shared ChartKit promotion) mirrors the same behavior.
 function Visual({ title, subtitle, children, controls, rca, clca, table, info }) {
+  // Local Visual copy — predates ChartKit.jsx; mirrors its export wiring (2026-10-11).
+  const chartData = useMemo(() => deriveChartData(children), [children])
   const [tableOpen, setTableOpen] = useState(false)
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
@@ -56,7 +59,7 @@ function Visual({ title, subtitle, children, controls, rca, clca, table, info })
           alignItems: 'center', justifyContent: 'center', gap: 5, cursor: table ? 'pointer' : undefined,
         }}
       >
-        {title}{info && <InfoButton info={info} />}
+        {title}{info && <InfoButton info={info} />}<ChartExportButton chartData={chartData} title={title} />
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}

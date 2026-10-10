@@ -1176,3 +1176,19 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Removed the code the change made dead, each grep-confirmed first: `tsaTrendPlanColor` from `tsa/TsaChartKit.jsx` (this chart was its only consumer), plus the now-unused `PlanSelect` import, `PLANS` const, and `PLAN_NAMES` import in the layer file. The bar uses `TSA_TREND_COLORS.magenta` directly — the same color `tsaTrendPlanColor(0)` returned, so it renders identically.
 - Verified with `npm run build` (clean), a dead-reference sweep (0 remaining mentions of all four removed identifiers, app-wide), and a Node smoke test confirming `srBotsByFY()` without a plan name still returns a populated numeric `plan` on every row at both Year and Quarter granularity — the bar would have rendered silently empty otherwise.
 - Updated `handoff.md`, `tech_spec.md` (Visual2's component-tree entry, the palette reference block's `tsaTrendPlanColor` removal note, the shared-helper forward-pointer, the `<Bar> fills` note, and Known Limitation #11 struck through), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 93 — 2026-10-11
+**Input:** Give excel export for each and every graph - not tiles
+
+**Action:**
+- Added a per-graph Excel export button inline beside every chart title — 26 `Visual`-wrapped graphs across all 4 pages. KPI tiles and the charts inside their drill-down pop-ups deliberately get none, per "not tiles".
+- New `src/utils/chartExport.js`: `deriveChartData(children)` walks each `Visual`'s own rendered children for the element carrying `data`, and builds columns from every `dataKey` in JSX order, labelled with the series' `name` (the legend string) or a prettified key. Chose derivation over an `exportData={data}` prop at 26 call sites because a wrong-but-in-scope variable there fails *silently at runtime* and every future chart would have to opt in; deriving is correct-by-construction and automatic. Reads only public Recharts props.
+- Fails **closed** — anything uninterpretable returns `null` and renders no button, rather than producing a plausible-looking spreadsheet with wrong numbers.
+- Handles the awkward shapes: horizontal bar charts (category `dataKey` on `YAxis`), conditionally-rendered series (dropped when absent from the rows), and the Workload Distribution Sankey (`{nodes, links}` flattened to From/To/Value with node names resolved).
+- Library: `write-excel-file` over SheetJS/`exceljs` — write-only by design (no parser attack surface, which matters since we only ever write our own data) and much the smallest. Dynamically imported, so it code-splits into its own 71.7 kB chunk (19.9 kB gzip) fetched only on first export; main bundle grew ~3 kB. Added no audit advisories.
+- Also wired into the two pre-ChartKit local `Visual` copies (`Layer1PlanOverPlan.jsx`, `Layer2ActualVsPlan.jsx`).
+- Verified with `npm run build` (clean, 1271 modules), 7 unit tests of the derivation against realistic chart trees (standard / conditional-series / horizontal / Sankey / 2 fail-closed cases) all correct, and a real `.xlsx` generated and unzipped to confirm valid OOXML, correct headers including apostrophes, numbers stored as numbers not text, and nulls handled. **That testing caught two genuine v4 API bugs before shipping**: `schema` was removed in favour of `columns` (throws), and the browser build returns `{toBlob, toFile}` rather than downloading, so the first implementation would have silently done nothing on click.
+- Not visually verified in a browser — no browser-automation tool in this session, and the download itself is the one path only a real browser exercises.
+- Updated `handoff.md`, `tech_spec.md` (new "Per-Graph Excel Export" reference section + `utils/chartExport.js` in the project-structure tree), `design_choice.md` (2 entries: why derive instead of a prop, and the library/lazy-load choice); committed and pushed to `main`.

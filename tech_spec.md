@@ -245,6 +245,11 @@ SPoG/
 │   │        with its exclusive backing selectors in tsaData.js (geoAdherenceByRegion/geoAdherenceWobble/
 │   │        geoLobPerformanceByRegion/GEO_LOB_REGIONS/LOB_REGION_ASSIGNMENTS and the regionForCountry re-export) — this
 │   │        page now has only 3 Analysis Layers + AsuSrPerformanceTable, no Geo Map)
+│   ├── utils/
+│   │   └── chartExport.js      # (2026-10-11) Per-graph Excel export — derives {rows, columns} from a
+│   │                             Visual's own rendered children, then lazily imports
+│   │                             'write-excel-file/browser' to write the .xlsx. See
+│   │                             "Per-Graph Excel Export" below.
 │   └── data/
 │       ├── mockData.js         # MSG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
 │       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
@@ -632,6 +637,42 @@ is selected — a clicked bar can carry a quarter/month/week label, not just a b
 Charts whose x-axis isn't time — region (e.g. ESG's Plan Impact, every remaining Geo Map), queue (Top
 Queues by Variance), or LOB (the LOB donut breakdowns) — don't take a `granularity` argument at all;
 there's no sub-year view of "which region," so the toggle doesn't apply to them by design.
+
+---
+
+## Per-Graph Excel Export (2026-10-11)
+
+`src/utils/chartExport.js` + `ChartExportButton` (`ChartKit.jsx`). Every `Visual`-wrapped graph gets a
+download button inline beside its title — 26 graphs across all 4 pages. KPI tiles and the charts inside
+their drill-down pop-ups deliberately get none ("not tiles", per the request).
+
+```
+deriveChartData(children)  — walks the Visual's own children (max depth 10) for the element carrying a
+  `data` array, and collects every string `dataKey` it encounters IN JSX ORDER, labelling each with that
+  element's `name` prop (the legend string) or a prettified key ('humanSR' -> 'Human SR'). JSX order is
+  load-bearing: the axis is declared before the series, so the category column lands first for free, with
+  no component-type sniffing. Returns {rows, columns} or null.
+  - Horizontal bar charts work unchanged — the category dataKey sits on <YAxis> there, and the walker
+    doesn't care which axis component it came from.
+  - Columns whose key is absent from every row are dropped (e.g. the Adherence % line that only renders
+    when exactly one plan is selected).
+  - Sankey (<Sankey data={{nodes, links}}>, WorkloadDistributionLayer) has no row array and no dataKeys,
+    so it's special-cased: flattened to From / To / Value with node indices resolved to names.
+  - FAILS CLOSED. No interpretable data -> null -> no button rendered. Deliberate: a missing button is a
+    reportable bug, a silently wrong spreadsheet is not. See design_choice.md.
+exportChartToExcel({rows, columns, title}) — dynamic import() of 'write-excel-file/browser', so the
+  writer code-splits into its own ~71.7 kB chunk (19.9 kB gzip) fetched only on first export.
+  - The '/browser' subpath is REQUIRED: the package publishes no root "." export, so a bare
+    'write-excel-file' import fails the Vite build outright.
+  - v4 API, both parts easy to get wrong: options take `columns: [{header, cell}]` (v3's `schema` was
+    removed and now THROWS), and the call returns {toBlob, toFile} rather than downloading by itself —
+    without `.toFile(name)` it silently produces nothing.
+  - A column is written as numeric only if every present value in it is a number; otherwise the whole
+    column goes out as text, which avoids Excel's "number stored as text" warnings on mixed columns.
+```
+
+Also wired into the two pre-ChartKit local `Visual` copies (`Layer1PlanOverPlan.jsx`,
+`Layer2ActualVsPlan.jsx`), which keep their own implementation of the wrapper.
 
 ---
 

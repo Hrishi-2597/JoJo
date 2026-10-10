@@ -4,6 +4,20 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Chart Export Data Is Derived From the Rendered Children, Not Passed In as a Prop (2026-10-11)
+
+**Decision:** `Visual` figures out what to export by walking its own `children` for the element carrying `data` and the `dataKey`/`name` props on the series inside it, rather than taking an `exportData={data}` prop supplied at each of the 26 call sites.
+
+**Why:** The prop version looks more explicit but is actually the more dangerous option here. Every one of those 26 edits would pass a bare identifier, and JavaScript gives no compile-time signal when you pass the wrong in-scope variable — `exportData={data}` in a component where `data` is the *drilled* dataset rather than the displayed one produces a file full of plausible, wrong numbers, and nothing fails. It also makes export opt-in forever: every future chart silently ships without it until someone remembers. Deriving inverts both properties — correct by construction for charts that already render correctly, and automatic for charts added later. The inputs it reads (`data`, `dataKey`, `name`) are public Recharts props, not internals, and column ordering falls out of JSX order for free: the axis is declared before the series, which is exactly the column order a reader expects.
+
+The tradeoff accepted is that the walker can misread an unusual tree. That's handled by failing **closed** — anything it can't confidently interpret yields no button at all. A missing export button is a visible, reportable bug; a silently wrong spreadsheet is not, and in a forecasting tool someone would act on it.
+
+## `write-excel-file` Over SheetJS, and Loaded Only on Click (2026-10-11)
+
+**Decision:** Added `write-excel-file` rather than the more common `xlsx` (SheetJS) or `exceljs`, and imported it dynamically inside the click handler instead of at module scope.
+
+**Why:** Two separate considerations. On the library: this app only ever *writes* spreadsheets from data it already holds — it never parses a workbook. SheetJS ships a full parser whose advisories all live on that read path, so taking it on would mean carrying attack surface for a capability we never use; `write-excel-file` is write-only by design and is also the smallest of the three by a wide margin (`exceljs` unpacks to ~22 MB). On the loading: the main bundle already exceeds Vite's size warning, and the overwhelming majority of sessions never click export once. A dynamic import puts the whole writer in its own 71.7 kB chunk that's fetched the first time someone actually exports, so the feature costs ~3 kB on initial load instead of ~70 kB.
+
 ## Removing "UCR Impact on SR"'s Plan Picker Kept the SR Plan Bar, It Didn't Delete It (2026-10-11)
 
 **Decision:** The Plan Name dropdown came off `AsuSrTrendLayer.jsx` Visual2, but the "SR Plan" comparison bar stayed — now fixed to the baseline plan.
