@@ -724,11 +724,26 @@ shared `C` object and `planSeriesColor`/`planVsPlanSeriesColor` (`ChartKit.jsx`,
 and both Capacity pages) are completely untouched.
 
 ```
-TSA_PLAN_COLORS — { planA: '#8cc5e3' (Light Blue), planB: '#1a80bb' (Medium Blue), actual: '#298c8c'
-  (Medium Teal) } — backs AsuLayer.jsx/SrLayer.jsx's Actuals-vs-Plan charts (both visuals in each): the
-  Actuals bar is always `actual`; Visual1's single multi-select "Plan" dimension and Visual2's Plan A side
-  use `planA`; Visual2's Plan B side uses `planB`. Exact mapping requested directly ("Plan A Light Blue,
-  Plan B Med Blue, Actuals Med Teal").
+TSA_PLAN_COLORS — { planA: '#8cc5e3' (Light Blue), planB: '#1a80bb' (Medium Blue) } — backs the PLAN
+  side of AsuLayer.jsx/SrLayer.jsx's Actuals-vs-Plan charts: Visual1's single multi-select "Plan"
+  dimension and Visual2's Plan A side use `planA`; Visual2's Plan B side uses `planB`. Requested directly
+  ("Plan A Light Blue, Plan B Med Blue"). The `actual` key was removed 2026-10-11 — the Actuals bar now
+  takes its color from TSA_METRIC_COLORS instead, per metric. See below.
+TSA_METRIC_COLORS — { asu: '#298c8c' (teal), sr: '#ea801c' (orange) } — METRIC IDENTITY colors
+  (2026-10-11). ASU is always teal and SR always orange in every chart that plots either as a whole
+  metric: AsuLayer Visual1's Actuals bar, SrLayer Visual1's Actuals bar, CPASU Trend's ASU and SR bars,
+  and TsaMetricCards' ASU-card drill-down line. Fixed a real defect — AsuLayer and SrLayer both used
+  TSA_PLAN_COLORS.actual, so ASU actuals and SR actuals rendered in the SAME teal and couldn't be told
+  apart; ASU separately appeared in 3 colors across the page and SR in 3.
+  Teal/orange over reusing a blue: planA/planB already own the blues, so a metric sharing a plan's hue
+  inside the same layer would relocate the ambiguity rather than remove it; teal/orange is also a
+  complementary pair that survives common color-vision deficiencies.
+  SUPERSEDES, deliberately: "Actuals Med teal" (now ASU only — SR's actuals must differ) and
+  "CPASU/UCR Trend: any palette apart from actuals-vs-plan colors" (one color per metric is the
+  stronger guarantee). NOT applied to "UCR Impact on SR"'s humanSR/botsSR segments — those are a
+  human/bot BREAKDOWN of SR, not SR-as-a-whole, and that chart's palette was pinned by a separate
+  direct request; see design_choice.md.
+  TSA_PLAN_COLORS.actual was removed the same day — the Actuals bar is no longer a plan-palette color.
 TSA_TREND_COLORS — { gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef', blue: '#1a80bb',
   grey: '#b8b8b8' } — backs AsuSrTrendLayer.jsx's "CPASU/UCR Trend" layer (bars AND lines, since the
   request said "ALL charts" for this layer specifically) plus TsaMetricCards.jsx's CpasuChart/

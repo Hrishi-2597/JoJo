@@ -1221,3 +1221,19 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified with `npm run build` (clean) and 7 unit tests across the real chart shapes (Year/Quarter/Month combo, stacked, pure line, 8-row and 36-row horizontal) confirming both gating and positioning. **Caught a real bug in testing**: Recharts' `Line` declares `defaultProps.label = false`, which React merges into props, so an `=== undefined` guard silently skipped every line series while bars worked fine.
 - Not visually verified in a browser — no browser-automation tool in this session; flagged the density thresholds as the part most worth eyeballing since they're reasoned from geometry rather than measured.
 - Updated `handoff.md`, `tech_spec.md` (new "Per-Point Data Labels" reference section), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 96 — 2026-10-11
+**Input:** Make color coding same for all the ASU actuals,SR actuals wherever mentioned like ASU color should be differnet and SR color should be different.User should be able to identify the difference
+
+**Action:**
+- Added `TSA_METRIC_COLORS = { asu: '#298c8c', sr: '#ea801c' }` to `tsa/TsaChartKit.jsx` — ASU is now always teal and SR always orange, in every chart plotting either as a whole metric.
+- **This was a real defect, not just inconsistency**: `AsuLayer` and `SrLayer` both drew their Actuals bar from `TSA_PLAN_COLORS.actual`, so ASU actuals and SR actuals rendered in the *same* teal — exactly what the request says a user must be able to distinguish. ASU separately appeared in 3 colours page-wide (teal/gold/sky-blue), SR in 3 (teal/orange/blue).
+- Five series rebound: AsuLayer Actuals (teal, no visual change), SrLayer Actuals (teal → orange), CPASU Trend ASU (gold → teal) and SR (orange, unchanged), ASU card drill-down line (sky blue → teal).
+- Chose teal/orange over giving a metric a blue: Plan A/Plan B already own `#8cc5e3`/`#1a80bb`, so a metric sharing a plan's hue inside the same layer would relocate the ambiguity rather than remove it. Teal/orange is also complementary, so it survives common colour-vision deficiencies where blue-vs-teal would merge for some readers.
+- Deliberately supersedes two earlier instructions (documented in `design_choice.md`): "Actuals Med teal" now applies to ASU only, and CPASU/UCR Trend's "any palette apart from actuals-vs-plan colours" gives way — identity (one colour per metric) outranks family grouping, because identity is what a reader actually navigates by.
+- Removed the now-dead `TSA_PLAN_COLORS.actual` key, grep-confirmed unreferenced.
+- **Left one conflict unresolved on purpose and surfaced it**: "UCR Impact on SR" still shows `SR's` in blue — its palette was pinned by direct request one message earlier, its segments are a human/bot breakdown rather than SR-as-a-whole, and recolouring it orange would collide with "UCR Handled SR's" which is already orange. Two direct instructions genuinely conflict, so it went to the user rather than being silently resolved.
+- Verified with `npm run build` (clean) and greps confirming all five ASU/SR series resolve to the metric tokens with no code referencing the removed key.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

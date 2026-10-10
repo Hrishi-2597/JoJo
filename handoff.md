@@ -1,5 +1,16 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: ASU and SR Now Have One Consistent Colour Each (2026-10-11)
+
+- Per direct request ("make color coding same for all the ASU actuals, SR actuals wherever mentioned... user should be able to identify the difference"), **ASU is now always Teal `#298c8c` and SR is always Orange `#ea801c`**, in every chart where that metric is plotted as a whole. New `TSA_METRIC_COLORS` in `tsa/TsaChartKit.jsx`.
+- **This fixed a real defect, not just an inconsistency.** `AsuLayer` and `SrLayer` both drew their "Actuals" bar from `TSA_PLAN_COLORS.actual`, so **ASU actuals and SR actuals were the same teal** — precisely the thing the request says a reader must be able to tell apart. Separately, ASU appeared as 3 different colours across the page (teal / gold / sky-blue) and SR as 3 (teal / orange / blue).
+- Five series now bound to the metric tokens: `AsuLayer` Actuals (teal, unchanged visually), `SrLayer` Actuals (teal → **orange**), CPASU Trend's ASU bar (gold → **teal**) and SR bar (orange, unchanged), and the ASU card drill-down line (sky blue → **teal**).
+- Teal/orange was chosen over reusing a blue because Plan A (`#8cc5e3`) and Plan B (`#1a80bb`) already own the blues — a metric colour colliding with a plan colour inside the same layer would trade one ambiguity for another. It's also a complementary cool/warm pair, so it stays readable under common colour-vision deficiencies, which blue-vs-teal would not.
+- **Deliberately supersedes two earlier instructions**, both recorded in `design_choice.md`: "Actuals Med teal" now holds for ASU only (SR's actuals must differ), and "CPASU/UCR Trend: any palette apart from actuals-vs-plan colours" gives way, since one colour per metric everywhere is the stronger guarantee.
+- Removed the now-dead `TSA_PLAN_COLORS.actual` key — the Actuals bar is no longer a plan-palette colour at all; grep-confirmed no remaining consumers.
+- **One conflict left unresolved on purpose**: "UCR Impact on SR" still shows its `SR's` segment in **blue**, because that chart's Blue/Orange/Grey palette was pinned by direct request one message earlier, and its two segments are a human/bot *breakdown* of SR rather than SR-as-a-whole. Making that segment orange would also collide with "UCR Handled SR's", which is already orange. Flagged to the user rather than silently overriding either instruction.
+- **Verified**: `npm run build` clean; grep confirms all five ASU/SR series resolve to the metric tokens and no code references the removed key.
+
 ## All Pages: Per-Point Data Labels on Graphs (2026-10-11)
 
 - Per direct request ("give data labels as well for all the graphs" + "wherever applicable"), chart series now carry value labels, added centrally in `src/utils/chartLabels.js` by cloning each series element with a `label` prop — same central approach as the Excel export, so all ~26 graphs are consistent in font, position and number format, and future charts get it automatically.

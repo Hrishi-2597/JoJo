@@ -7,7 +7,7 @@ import {
 import {
   tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, filterLobs,
 } from '../../data/tsaData'
-import { C, Tip, Modal, InfoButton, TSA_TREND_COLORS } from './TsaChartKit'
+import { C, Tip, Modal, InfoButton, TSA_TREND_COLORS, TSA_METRIC_COLORS } from './TsaChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
 // Palette for the Total LOB card's Global Grouping donut (2026-10-07, replaces the
@@ -81,7 +81,7 @@ function AsuTrendChart({ filters, granularity }) {
           <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Line type="monotone" dataKey="actual" name="ASU Actuals" stroke={C.metric1} strokeWidth={2.5} dot={{ r: 3, fill: C.metric1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="actual" name="ASU Actuals" stroke={TSA_METRIC_COLORS.asu} strokeWidth={2.5} dot={{ r: 3, fill: TSA_METRIC_COLORS.asu, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>

@@ -12,14 +12,19 @@ export * from '../ChartKit'
 // This file is imported exclusively by tsa/*.jsx (HES Forecasting), so anything
 // defined only here can never leak onto a page the request didn't ask to change.
 //
-// TSA_PLAN_COLORS backs AsuLayer/SrLayer's Actuals-vs-Plan charts: Plan A (or the
-// single "Plan" dimension in Visual1) in Light Blue, Plan B in Medium Blue, Actuals
-// in Medium Teal — a provided 2-tone-blue + teal combination, not an invented one.
-// The reference swatch's exact hex values are light-background corporate-report
-// tones; `magenta` below is brightened from the reference's #800074 for legibility
-// as a thin line stroke against this dashboard's dark panels — same hue family,
-// adapted for contrast (see design_choice.md).
-export const TSA_PLAN_COLORS = { planA: '#8cc5e3', planB: '#1a80bb', actual: '#298c8c' }
+// TSA_PLAN_COLORS backs the PLAN side of AsuLayer/SrLayer's Actuals-vs-Plan charts:
+// Plan A (or the single "Plan" dimension in Visual1) in Light Blue, Plan B in
+// Medium Blue — a provided 2-tone-blue combination, not an invented one.
+// (Its `actual: '#298c8c'` key was removed 2026-10-11: the Actuals bar is no longer
+// a plan-palette color at all, it's whichever metric the chart plots — see
+// TSA_METRIC_COLORS below. Nothing else referenced the key.)
+//
+// Across all three palettes here, the reference swatch's hex values are used
+// verbatim — they're light-background corporate-report tones, but they read fine on
+// dark. The single exception is TSA_TREND_COLORS.magenta, brightened from the
+// reference's #800074 for legibility as a thin line stroke against this dashboard's
+// dark panels — same hue family, adapted for contrast (see design_choice.md).
+export const TSA_PLAN_COLORS = { planA: '#8cc5e3', planB: '#1a80bb' }
 
 // TSA_TREND_COLORS backs AsuSrTrendLayer's "CPASU/UCR Trend" layer and
 // TsaMetricCards' CPASU/UCR-card drill-downs — none of these are Actuals-vs-Plan
@@ -41,6 +46,31 @@ export const TSA_TREND_COLORS = {
   gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef',
   blue: '#1a80bb', grey: '#b8b8b8',
 }
+
+// Metric identity colors (2026-10-11, per direct request: "make color coding same
+// for all the ASU actuals, SR actuals wherever mentioned... user should be able to
+// identify the difference"). ASU is ALWAYS teal and SR is ALWAYS orange, in every
+// chart where that metric is plotted as a whole.
+//
+// This was a real defect before, not just an inconsistency: AsuLayer's and SrLayer's
+// "Actuals" bars both drew from TSA_PLAN_COLORS.actual, so ASU actuals and SR
+// actuals were the SAME teal — the exact thing the request says a reader must be
+// able to tell apart. Meanwhile ASU separately appeared as gold (CPASU Trend) and
+// sky blue (its own card drill-down), and SR as orange and blue elsewhere.
+//
+// Teal/orange was chosen over reusing either blue because both Plan A (#8cc5e3) and
+// Plan B (#1a80bb) already own blues, and a metric color that collides with a plan
+// color inside the same layer would trade one ambiguity for another. It's also a
+// complementary (cool/warm) pair, which keeps the two readable for the common forms
+// of color-vision deficiency — blue-vs-teal would not have.
+//
+// SUPERSEDES two earlier instructions, deliberately:
+//   - "Actuals Med teal" now holds for ASU's actuals only; SR's actuals are orange,
+//     because the two are explicitly required to differ.
+//   - "CPASU/UCR Trend: any palette apart from actuals-vs-plan colors" — that
+//     layer's ASU/SR bars now use these metric colors, since one color per metric
+//     everywhere is the stronger guarantee of the two.
+export const TSA_METRIC_COLORS = { asu: '#298c8c', sr: '#ea801c' }
 
 // Color for the Nth selected "Plan" in AsuLayer/SrLayer's Visual1 (one open-ended
 // multi-select Plan Name dimension, no A/B split) — alternates Light Blue/Medium

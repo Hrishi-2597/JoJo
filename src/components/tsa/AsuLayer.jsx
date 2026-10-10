@@ -6,7 +6,7 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import { asuByFY, asuPlanVsPlanByFY } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect, TSA_PLAN_COLORS, tsaPlanColor, tsaPlanSideColor } from './TsaChartKit'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect, TSA_METRIC_COLORS, tsaPlanColor, tsaPlanSideColor } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
@@ -49,7 +49,7 @@ function Visual1({ filters, granularity, selectedPlans, onPlansChange }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 3" />
-          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={TSA_PLAN_COLORS.actual} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="actual" name="Actuals" fill={TSA_METRIC_COLORS.asu} radius={[2,2,0,0]} maxBarSize={40} />
           {plans.map((p, pi) => {
             const { color, opacity } = tsaPlanColor(pi)
             return <Bar key={pi} yAxisId="l" dataKey={`plan_${pi}`} name={p ? `Plan (${p})` : 'Plan'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={40} />

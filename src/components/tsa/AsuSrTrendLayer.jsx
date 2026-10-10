@@ -8,7 +8,7 @@ import {
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
-import { C, Visual, Tip, Modal, TSA_TREND_COLORS, ComingSoonOverlay } from './TsaChartKit'
+import { C, Visual, Tip, Modal, TSA_TREND_COLORS, TSA_METRIC_COLORS, ComingSoonOverlay } from './TsaChartKit'
 
 // (Removed 2026-10-11: the PLAN_NAMES import and the PLANS list derived from it —
 // "UCR Impact on SR"'s Plan Name dropdown was this layer's only plan picker, so
@@ -53,8 +53,8 @@ function Visual1({ filters, granularity }) {
           <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_TREND_COLORS.gold} radius={[2,2,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_METRIC_COLORS.asu} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_METRIC_COLORS.sr} radius={[2,2,0,0]} maxBarSize={40} />
           <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta}
             strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>

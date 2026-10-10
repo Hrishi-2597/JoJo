@@ -12,6 +12,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 The grey is worth keeping for a reason beyond the request: a neutral plan/baseline series with the actuals carrying all the color is standard practice in business charts, and it happens to fix a small wart in the previous scheme, where the plan bar was magenta and competed with the data for attention.
 
+## One Colour Per Metric Outranks Both the Palette-Family Split and "Actuals = Teal" (2026-10-11)
+
+**Decision:** ASU is teal and SR is orange everywhere either is plotted as a whole metric, even though that breaks two rules set earlier in the same session: "Actuals Med teal" (which would make BOTH metrics' actuals teal) and "CPASU/UCR Trend: any palette apart from actuals-vs-plan colours" (which kept that layer off teal entirely).
+
+**Why:** Those two earlier rules were about *families* — which palette a chart belongs to. The new requirement is about *identity* — what a given metric looks like — and identity is the stronger constraint, because it's the one a reader actually uses to navigate. Keeping "Actuals = teal" literally would have left ASU actuals and SR actuals rendering in the same colour, which is exactly the confusion the request exists to remove; the family rule would have been satisfied while the user's actual problem got worse. When a cosmetic grouping rule and a legibility rule collide, the legibility rule wins.
+
+Teal/orange specifically, rather than giving one of the metrics a blue: Plan A and Plan B already own `#8cc5e3` and `#1a80bb`, and a metric sharing a hue with a plan *inside the same layer* would just relocate the ambiguity rather than remove it. Teal and orange are also complementary, so the pair survives the common forms of colour-vision deficiency — a blue/teal pairing would have looked fine to most readers and merged for some.
+
+**Left unresolved deliberately:** "UCR Impact on SR" still draws its `SR's` segment in blue. That chart's palette was pinned by explicit request one message before this one, its two segments are a human/bot breakdown rather than SR-as-a-whole, and recolouring that segment orange would collide with "UCR Handled SR's" which is already orange. Two direct instructions genuinely conflict there, so it was surfaced to the user instead of silently resolved in either direction.
+
 ## Data Labels Are Density-Gated, and Combo Charts Label Only Their Bars (2026-10-11)
 
 **Decision:** "All the graphs" was implemented as "every graph where a label can actually be read" — a point-count gate — and within a combo chart only the bar series get labels, never the percentage line over them.
