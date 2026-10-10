@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Removing "UCR Impact on SR"'s Plan Picker Kept the SR Plan Bar, It Didn't Delete It (2026-10-11)
+
+**Decision:** The Plan Name dropdown came off `AsuSrTrendLayer.jsx` Visual2, but the "SR Plan" comparison bar stayed — now fixed to the baseline plan.
+
+**Why:** The request was specifically "remove the plan selection dropdown," which is a statement about the *control*, not about the series it drove. Deleting the bar too would have quietly removed the chart's entire point of comparison — "UCR Impact on SR" exists to show human vs bot-handled SR volume *against plan*, and without the plan bar it's just a stacked total. Same minimal-scope reading applied to the earlier "remove plan line from Average Case Time" request, which *did* name the line and so did remove it. When a request names the widget, the widget is what goes.
+
+The removal did make real code dead, though, and that follows this project's other standing rule: `tsaTrendPlanColor` existed only to cycle colors across multiple selected plans on this one chart, so with exactly one fixed plan it had no remaining purpose or consumer and was deleted alongside the picker, rather than left as an orphaned export.
+
 ## The Chart "Grey Background" Was an Inverted-Elevation Bug, Fixed by Transparency Rather Than a New Grey (2026-10-11)
 
 **Decision:** `.chart-panel` went to `background: transparent` instead of being re-tinted to some better grey, and `--bg-inset` itself was left exactly as it is.

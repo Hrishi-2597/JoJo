@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: Plan Name Dropdown Removed From "UCR Impact on SR" (2026-10-11)
+
+- Per direct request, `AsuSrTrendLayer.jsx`'s Visual2 no longer has a Plan Name picker — it always plots the baseline SR plan.
+- Structurally cheap: the humanSR/botsSR stack was never plan-dependent (it's the actual SR total regardless of which plan is picked), so only the single "SR Plan" comparison bar ever reacted to the dropdown. With one fixed plan there's no series to multiply, so the component dropped its `selectedPlans` state and per-plan `.map()` and now reads `srBotsByFY()`'s own `plan` field straight into one `<Bar dataKey="plan">`.
+- Followed the project's standing "remove the feature AND its now-dead code" precedent, grep-confirming each before deleting: `tsaTrendPlanColor` (removed from `tsa/TsaChartKit.jsx` — this chart was its only consumer), plus the file's now-unused `PlanSelect` import, `PLANS` const, and `PLAN_NAMES` import. The bar takes `TSA_TREND_COLORS.magenta` directly — the same color `tsaTrendPlanColor(0)` returned, so it renders identically.
+- **Verified**: `npm run build` clean; a dead-reference sweep showing 0 remaining mentions of all four removed identifiers; and a Node smoke test confirming `srBotsByFY()` called without a plan name still returns a populated numeric `plan` on every row at both Year (FY25-27) and Quarter (12 rows) granularity — the bar would have silently rendered empty otherwise.
+
 ## All Pages: Chart Grey Background Removed + Enterprise-Grade Visual Pass (2026-10-11)
 
 Per direct request ("remove the grey background from all the charts and make the dashboard industry standard... still looks funky"), backed by a research pass on enterprise BI/dashboard conventions. **This one is app-wide, not HES-Forecasting-only** — the request named "the dashboard," and the styling involved (`index.css` classes, the shared `ChartKit.jsx` `C` object) is global by construction.

@@ -50,12 +50,9 @@ export function tsaPlanSideColor(side, index) {
   return { color: hue, opacity }
 }
 
-// Color for the Nth selected plan in AsuSrTrendLayer's "UCR Impact on SR" chart (its
-// one open-ended multi-select "SR Plan" bar) — alternates Magenta/Gold with the same
-// opacity-stepping convention as tsaPlanColor above, kept in the warm CPASU/UCR
-// Trend family since this chart isn't an Actuals-vs-Plan comparison.
-export function tsaTrendPlanColor(index) {
-  const hue = index % 2 === 0 ? TSA_TREND_COLORS.magenta : TSA_TREND_COLORS.gold
-  const opacity = Math.max(0.35, 1 - Math.floor(index / 2) * 0.25)
-  return { color: hue, opacity }
-}
+// (Removed 2026-10-11: tsaTrendPlanColor — it cycled Magenta/Gold for the Nth
+// selected plan on AsuSrTrendLayer's "UCR Impact on SR" chart, which was its only
+// consumer. That chart's Plan Name dropdown was removed the same day per direct
+// request, so with exactly one fixed plan there's no longer a series to cycle; the
+// bar now takes TSA_TREND_COLORS.magenta directly — the same color index 0 returned,
+// so the chart looks unchanged.)

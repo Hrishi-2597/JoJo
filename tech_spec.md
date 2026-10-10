@@ -91,8 +91,8 @@ SPoG/
 │   │   │                         ARRAY of plan names, emptyLabel="Select Plan" override) — see design_choice.md.
 │   │   │                         New planSeriesColor(index) cycles metric2/trend with stepped opacity for the
 │   │   │                         Nth selected plan on charts that render one extra series per plan. (HES
-│   │   │                         Forecasting's AsuLayer/SrLayer/AsuSrTrendLayer stopped using this one specific
-│   │   │                         function 2026-10-11, in favor of their own tsaPlanColor/tsaTrendPlanColor in
+│   │   │                         Forecasting's AsuLayer/SrLayer stopped using this one specific function
+│   │   │                         2026-10-11, in favor of their own tsaPlanColor in
 │   │   │                         tsa/TsaChartKit.jsx — see "HES Forecasting Column-Chart Palette" below. Every
 │   │   │                         other consumer — MSG Forecasting, both Capacity pages — is unaffected.)
 │   │   │                         PlanDropdowns (2026-07-31, same signature change) — was two plain single-value
@@ -209,7 +209,8 @@ SPoG/
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03).
 │   │       │                            Also now the ONLY home of HES Forecasting's own column-chart palette
 │   │       │                            (2026-10-11, per direct request) — `TSA_PLAN_COLORS`/`TSA_TREND_COLORS` plus
-│   │       │                            `tsaPlanColor`/`tsaPlanSideColor`/`tsaTrendPlanColor`, additive local exports
+│   │       │                            `tsaPlanColor`/`tsaPlanSideColor` (plus `tsaTrendPlanColor` until it was
+│   │       │                            removed 2026-10-11 with its only consumer), additive local exports
 │   │       │                            alongside the `export *` from `../ChartKit` (no name collisions). Safe to add
 │   │       │                            here specifically because this file is imported ONLY by tsa/*.jsx — HES
 │   │       │                            Capacity imports `../ChartKit` directly — so these tokens can never reach a
@@ -332,8 +333,11 @@ TsaForecastingPage
 │   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByFY(filters, granularity) directly, plain fiscal-period
 │   │                           X-axis (FY25/FY26/FY27, or Quarter/Month/Week per the page's View By toggle);
 │   │                           region breakdown + click-to-drill REMOVED ENTIRELY 2026-09-07, per direct request
-│   ├── Visual2 "UCR Impact on SR" — BarChart: srBotsByFY(filters), humanSR ("SR's") + botsSR ("UCR Handled SR's") stacked,
-│   │                                SR Plan as a separate bar; PlanSelect in the corner (cornerControls, unwired)
+│   ├── Visual2 "UCR Impact on SR" — BarChart: srBotsByFY(filters, granularity), humanSR ("SR's") + botsSR
+│   │                                ("UCR Handled SR's") stacked, SR Plan as a separate bar reading the
+│   │                                selector's own `plan` field. Plan Name dropdown REMOVED 2026-10-11,
+│   │                                per direct request — always the baseline plan now; the stack itself
+│   │                                was never plan-dependent, so only that one bar was ever affected
 │   └── Visual3 "UCR Runrate with Target" — ComposedChart: UCR_BY_FY directly (always all 3 FYs, ignores
 │                                            Quarter/Week filters); clicking a year's bar opens a Modal listing
 │                                            topNonAdherentLobsByYear(filters, year) — top 5 LOBs, not queues
@@ -549,8 +553,8 @@ C.tick (ChartKit)   #4a6a85 -> #7fa8cc. ACCESSIBILITY FIX, not taste: ~3.1:1 on 
 CartesianGrid       37 sites: strokeDasharray="2 4" (both axes) -> vertical={false}, solid. The 5
                     horizontal-bar charts keep horizontal={false} — their vertical lines ARE the value axis.
 <Bar> fills         42 literal opacity={0.8|0.85|0.9} props removed (full opacity); 58 radius props ->
-                    [2,2,0,0]. planSeriesColor/planVsPlanSeriesColor/tsaPlanColor/tsaPlanSideColor/
-                    tsaTrendPlanColor opacity BASE 0.85|0.95 -> 1, so the first/only selected plan is
+                    [2,2,0,0]. planSeriesColor/planVsPlanSeriesColor/tsaPlanColor/tsaPlanSideColor
+                    opacity BASE 0.85|0.95 -> 1, so the first/only selected plan is
                     full strength and the step-down only kicks in for 3rd+ selections.
 axis tick labels    fontSize 10 -> 11 (96 sites; anchored to `tick={{` lines so 4 unrelated div styles
                     at the same size weren't caught).
@@ -660,8 +664,11 @@ tsaPlanSideColor(side, index) — side is 'A' or 'B'; returns planA/planB respec
   single combined-index 3-hue cycle here only) — every Plan A bar is Light Blue and every Plan B bar is
   Medium Blue regardless of how many are selected on either side, a firmer guarantee than the shared
   function's "avoid colliding with the neighboring bar" approach
-tsaTrendPlanColor(index) — alternates magenta/gold with stepped opacity for AsuSrTrendLayer Visual2's
-  open-ended multi-select "SR Plan" bars (replaces the shared planSeriesColor here only)
+(tsaTrendPlanColor — REMOVED 2026-10-11: it alternated magenta/gold for AsuSrTrendLayer Visual2's
+  open-ended multi-select "SR Plan" bars, and that chart was its only consumer. Visual2's Plan Name
+  dropdown was removed the same day per direct request, leaving exactly one fixed plan and so no
+  series to cycle — the bar takes TSA_TREND_COLORS.magenta directly, the same color index 0 used to
+  return, so it renders identically.)
 ```
 
 **Adaptation note:** the reference swatch's exact hex values are light-background, corporate-report tones.
@@ -1327,7 +1334,7 @@ Steps:
 8. `GLOBAL_GROUPING_LIST` (TSA Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
 9. ~~TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view~~ — moot: TSA Forecasting's Geo Map (`TsaGeoMap.jsx`) and "Plan Impact" (`asuRegionPlans`/`srRegionPlans`, AsuLayer/SrLayer Visual3) were both removed entirely 2026-09-07
 10. ~~CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page~~ — moot: CPASU Trend's region breakdown + click-to-drill was removed entirely 2026-09-10, per direct request; the chart now renders `cpasuByFY()` directly against plain fiscal periods
-11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
+11. ~~The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown~~ — moot: that selector was wired into `srBotsByFY()` on 2026-07-30, and then removed entirely 2026-10-11 per direct request; the chart always plots the baseline SR plan now
 12. (Superseded 2026-07-20) All 4 pages' RCA/CLCA sidebars were removed entirely — RCA/Insights now live only on each graph/card's per-visual "i" button; that button's content remains illustrative example content, not yet connected to a real RCA workflow
 14. TSA Capacity's Sankey diagram (`workloadSankey()`) uses an illustrative 3-tier CQN taxonomy as flow sources since this page's filter set has no real per-queue dimension — only the 4 target LOB names are real
 15. TSA Capacity's Geo Map is single-metric (SLO only, region-only) — the mockup ("Layer 5", renumbered to 04) only specifies a region-level SLO heatmap, unlike MSG Capacity's dual metric/view-toggle map

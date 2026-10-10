@@ -3,15 +3,16 @@ import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { PLAN_NAMES } from '../../data/mockData'
 import {
   cpasuByFY, srBotsByFY,
   ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/tsaData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanSelect, Modal, TSA_TREND_COLORS, tsaTrendPlanColor, ComingSoonOverlay } from './TsaChartKit'
+import { C, Visual, Tip, Modal, TSA_TREND_COLORS, ComingSoonOverlay } from './TsaChartKit'
 
-const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
+// (Removed 2026-10-11: the PLAN_NAMES import and the PLANS list derived from it —
+// "UCR Impact on SR"'s Plan Name dropdown was this layer's only plan picker, so
+// nothing here needs the plan roster any more.)
 
 // "UCR Runrate with Target" ranks LOBs, not queues, so its variance-tier table gets
 // its own column labels (copy of insightFactors' VARIANCE_TABLE_COLUMNS shape with
@@ -62,29 +63,22 @@ function Visual1({ filters, granularity }) {
   )
 }
 
-// Multi-select Plan (2026-07-30, also closes a known cosmetic gap — srBotsByFY
-// never fed the Plan Name into its calculation before today). The humanSR/botsSR
-// stack IS the actual total regardless of which plan(s) are picked, so only the "SR
-// Plan" comparison bar multiplies per selected plan (tsaTrendPlanColor, 2026-10-11 —
-// Magenta/Gold cycle, this layer's own warm palette), same pattern as every other
-// trend chart in this rollout.
+// The "Plan Name" multi-select was removed 2026-10-11, per direct request — this
+// chart now always plots the baseline SR plan. Dropping it cost nothing structurally:
+// the humanSR/botsSR stack was never plan-dependent (it's the actual total no matter
+// which plan is picked), so only the single "SR Plan" comparison bar ever reacted to
+// the picker. With one fixed plan there's no longer a series to multiply, so the bar
+// reads srBotsByFY's own `plan` field directly instead of mapping over selections.
 function Visual2({ filters, granularity }) {
-  const [selectedPlans, setSelectedPlans] = useState([])
-  const plans = selectedPlans.length ? selectedPlans : [undefined]
-  const perPlan = useMemo(() => plans.map(p => srBotsByFY(filters, granularity, p)), [filters, granularity, plans])
-  const data = useMemo(() => perPlan[0].map((row, i) => {
-    const out = { period: row.period, humanSR: row.humanSR, botsSR: row.botsSR }
-    plans.forEach((p, pi) => { out[`plan_${pi}`] = perPlan[pi][i].plan })
-    return out
-  }), [perPlan, plans])
+  const data = useMemo(() => srBotsByFY(filters, granularity), [filters, granularity])
   const table = useMemo(() => ({
     title: 'What contributed, by period',
     columns: FACTOR_TABLE_COLUMNS,
     rows: data.flatMap(d => contributingFactors(d.period, null, 1).map(f => ({ ...f, factor: `${d.period} — ${f.factor}` }))),
   }), [data])
   return (
-    <Visual title="UCR Impact on SR" controls={<PlanSelect label="Plan Name" value={selectedPlans} onChange={setSelectedPlans} options={PLANS} />}
-      info="Human-handled vs bot (UCR) handled SR volume against the selected SR plan(s), by period."
+    <Visual title="UCR Impact on SR"
+      info="Human-handled vs bot (UCR) handled SR volume against the SR plan, by period."
       rca="Bot-handled SR's are growing faster than the plan assumed."
       clca="Fold observed bot deflection into next quarter's SR plan."
       table={table} comingSoon>
@@ -98,10 +92,7 @@ function Visual2({ filters, granularity }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.gold} maxBarSize={44} />
           <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={44} />
-          {plans.map((p, pi) => {
-            const { color, opacity } = tsaTrendPlanColor(pi)
-            return <Bar key={pi} dataKey={`plan_${pi}`} name={p ? `SR Plan (${p})` : 'SR Plan'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={44} />
-          })}
+          <Bar dataKey="plan" name="SR Plan" fill={TSA_TREND_COLORS.magenta} radius={[2,2,0,0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </Visual>

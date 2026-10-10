@@ -1164,3 +1164,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified with `npm run build` (clean, 1186 modules; CSS 15.54→14.66 kB from deleted glow rules), before/after greps on every bulk edit, and a check that all 15 `MetricIcon` names resolve to defined paths (a typo would have silently rendered nothing). **Not visually verified in a browser** — no browser-automation tool available in this session; flagged to the user rather than claiming a visual check that didn't happen.
 - Pushed to `main` and let the repo's own `deploy.yml` workflow publish, deliberately skipping the local `npm run deploy` this time — the two deploy paths race each other (diagnosed earlier this session: it cancelled a Pages build and caused the recurring "cannot lock ref" errors). Removing the redundant path from CI config was offered but not done, pending the user's go-ahead.
 - Updated `handoff.md`, `tech_spec.md` (new "Enterprise-grade visual pass" reference block + `MetricIcon.jsx` component-tree entry), `design_choice.md` (5 new entries: the inverted-elevation diagnosis, glow→border state signalling, contrast-as-bug-fix, hand-written icons over a package, and why this pass was app-wide).
+
+---
+
+## Prompt 92 — 2026-10-11
+**Input:** remove the plan selectiondropdown from UCR impact on SR
+
+**Action:**
+- Removed the Plan Name multi-select from `AsuSrTrendLayer.jsx`'s Visual2 ("UCR Impact on SR", HES Forecasting Layer 03) — the chart always plots the baseline SR plan now.
+- Kept the "SR Plan" comparison bar itself: the request named the dropdown, not the series, and without that bar the chart loses its whole point of comparison (it would just be a stacked SR total). The component dropped its `selectedPlans` state and per-plan `.map()`, and the bar now reads `srBotsByFY()`'s own `plan` field directly via `<Bar dataKey="plan">` — the humanSR/botsSR stack was never plan-dependent, so only that one bar was ever affected.
+- Removed the code the change made dead, each grep-confirmed first: `tsaTrendPlanColor` from `tsa/TsaChartKit.jsx` (this chart was its only consumer), plus the now-unused `PlanSelect` import, `PLANS` const, and `PLAN_NAMES` import in the layer file. The bar uses `TSA_TREND_COLORS.magenta` directly — the same color `tsaTrendPlanColor(0)` returned, so it renders identically.
+- Verified with `npm run build` (clean), a dead-reference sweep (0 remaining mentions of all four removed identifiers, app-wide), and a Node smoke test confirming `srBotsByFY()` without a plan name still returns a populated numeric `plan` on every row at both Year and Quarter granularity — the bar would have rendered silently empty otherwise.
+- Updated `handoff.md`, `tech_spec.md` (Visual2's component-tree entry, the palette reference block's `tsaTrendPlanColor` removal note, the shared-helper forward-pointer, the `<Bar> fills` note, and Known Limitation #11 struck through), `design_choice.md`; committed and pushed to `main`.
