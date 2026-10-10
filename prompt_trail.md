@@ -1237,3 +1237,18 @@ Chronological log of every user prompt and the corresponding actions taken.
 - **Left one conflict unresolved on purpose and surfaced it**: "UCR Impact on SR" still shows `SR's` in blue — its palette was pinned by direct request one message earlier, its segments are a human/bot breakdown rather than SR-as-a-whole, and recolouring it orange would collide with "UCR Handled SR's" which is already orange. Two direct instructions genuinely conflict, so it went to the user rather than being silently resolved.
 - Verified with `npm run build` (clean) and greps confirming all five ASU/SR series resolve to the metric tokens with no code referencing the removed key.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 97 — 2026-10-11
+**Input:** Also the the plan over plan colors should be different for ASU and SR ..For example - You used mid teal for actuals Plan light teal and then in plan over plan for ASU you used blue..choose your color pallete as needed apart from what i shared(must be corporate standard)
+
+**Action:**
+- Promoted each metric from a single colour to a **two-step sequential ramp**: ASU = Med Teal `#298c8c` (actuals) / Light Teal `#9fc8c8` (plan); SR = Orange `#ea801c` (actuals) / Light Orange `#f0bd8a` (plan). An ASU chart is now teal top to bottom and an SR chart orange top to bottom, across both Actuals-vs-Plan and Plan-vs-Plan.
+- **Root cause of the complaint**: `tsaPlanColor`/`tsaPlanSideColor` took only an index and never the metric, so the plan side of *both* layers resolved to one shared blue pair regardless of which metric the chart plotted. Both helpers now take the metric as their first argument.
+- Teal's two steps are the reference swatch's own sequential pair. The swatch had no light orange, so `sr.light` was derived the same way that pair is (same hue, ~half saturation, higher lightness) — a muted corporate tint, not a bright pastel, per "must be corporate standard".
+- Removed `TSA_PLAN_COLORS` (the planA/planB blues) entirely once grep confirmed it dead — leaving an orphan export would invite the exact reuse that caused this bug. Verified against the built bundle that `#8cc5e3` no longer appears in shipped JS at all.
+- Side benefit: retires the duplicate-hex caveat recorded hours earlier — `TSA_TREND_COLORS.blue` no longer collides with `planB`, and now appears exactly once in the bundle (the UCR Impact chart).
+- Accepted Plan B reusing the metric's `base`: Visual2 has no Actuals series so nothing collides in-chart, and a third ramp step would have to go darker (losing contrast on dark panels) or lighter (merging with `light`). Two well-separated steps beat three unreliable ones.
+- Verified with `npm run build` (clean) plus a bundle grep confirming all four family colours present, the retired blue absent, and `#1a80bb` down to a single occurrence.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.

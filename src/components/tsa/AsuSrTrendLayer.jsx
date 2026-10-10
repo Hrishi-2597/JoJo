@@ -53,8 +53,8 @@ function Visual1({ filters, granularity }) {
           <YAxis yAxisId="r" orientation="right" tick={{ fill: TSA_TREND_COLORS.magenta, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_METRIC_COLORS.asu} radius={[2,2,0,0]} maxBarSize={40} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_METRIC_COLORS.sr} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={TSA_METRIC_COLORS.asu.base} radius={[2,2,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="sr" name="SR" fill={TSA_METRIC_COLORS.sr.base} radius={[2,2,0,0]} maxBarSize={40} />
           <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={TSA_TREND_COLORS.magenta}
             strokeWidth={2} dot={{ r: 3, fill: TSA_TREND_COLORS.magenta, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
