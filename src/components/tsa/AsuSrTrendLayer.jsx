@@ -90,9 +90,12 @@ function Visual2({ filters, granularity }) {
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.gold} maxBarSize={44} />
+          {/* Blue / Orange / Grey, pinned by direct request with a reference image
+              (2026-10-11) — the stack's two actual components carry the color and
+              the plan sits behind them in neutral grey. */}
+          <Bar dataKey="humanSR" name="SR's" stackId="sr" fill={TSA_TREND_COLORS.blue} maxBarSize={44} />
           <Bar dataKey="botsSR"  name="UCR Handled SR's" stackId="sr" fill={TSA_TREND_COLORS.orange} radius={[2,2,0,0]} maxBarSize={44} />
-          <Bar dataKey="plan" name="SR Plan" fill={TSA_TREND_COLORS.magenta} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar dataKey="plan" name="SR Plan" fill={TSA_TREND_COLORS.grey} radius={[2,2,0,0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </Visual>

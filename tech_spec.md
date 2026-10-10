@@ -691,13 +691,19 @@ TSA_PLAN_COLORS — { planA: '#8cc5e3' (Light Blue), planB: '#1a80bb' (Medium Bl
   Actuals bar is always `actual`; Visual1's single multi-select "Plan" dimension and Visual2's Plan A side
   use `planA`; Visual2's Plan B side uses `planB`. Exact mapping requested directly ("Plan A Light Blue,
   Plan B Med Blue, Actuals Med Teal").
-TSA_TREND_COLORS — { gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef' } — backs AsuSrTrendLayer.jsx's
-  "CPASU/UCR Trend" layer (all 3 visuals — bars AND lines, since the request said "ALL charts" for this
-  layer specifically) plus TsaMetricCards.jsx's CpasuChart/CurrentUcrChart/SrDbOspChart drill-downs (none
-  of which are Actuals-vs-Plan charts either). `gold`/`orange` are the two primary bars in every chart here
-  (ASU/SR, SR's/UCR-Handled-SR's, DB/OSP, Current/Target); `magenta` is every CPASU/Adherence% line.
-  Deliberately a different hue family from TSA_PLAN_COLORS, per direct request ("any palette apart from
-  actuals vs plan colors") — a reader should be able to tell the two chart families apart at a glance.
+TSA_TREND_COLORS — { gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef', blue: '#1a80bb',
+  grey: '#b8b8b8' } — backs AsuSrTrendLayer.jsx's "CPASU/UCR Trend" layer (bars AND lines, since the
+  request said "ALL charts" for this layer specifically) plus TsaMetricCards.jsx's CpasuChart/
+  CurrentUcrChart/SrDbOspChart drill-downs (none of which are Actuals-vs-Plan charts either).
+  `gold`/`orange` are the two primary bars (ASU/SR, DB/OSP, Current/Target); `magenta` is every
+  CPASU/Adherence% line. Deliberately a different hue family from TSA_PLAN_COLORS, per direct request
+  ("any palette apart from actuals vs plan colors") — a reader should tell the two families apart at a glance.
+  `blue`/`grey` (2026-10-11) are the one exception, used ONLY by "UCR Impact on SR" (Visual2), pinned to a
+  specific Blue/Orange/Grey combination by a follow-up request with a reference image: SR's = blue,
+  UCR Handled SR's = orange, SR Plan = grey. NOTE `blue` is deliberately the same hex as
+  TSA_PLAN_COLORS.planB — harmless in practice, since planB only ever renders in AsuLayer/SrLayer's
+  Plan-vs-Plan visuals, a different layer, so the two never share a chart. Grey for the plan series also
+  lands on the standard business-chart convention of a neutral baseline with actuals carrying the color.
 tsaPlanColor(index) — alternates planA/planB with stepped opacity for AsuLayer/SrLayer Visual1's
   open-ended multi-select "Plan" bars (replaces the shared planSeriesColor's metric2/trend cycle here only)
 tsaPlanSideColor(side, index) — side is 'A' or 'B'; returns planA/planB respectively with per-side stepped

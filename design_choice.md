@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## "UCR Impact on SR" Reuses planB's Exact Blue, Accepted Rather Than Nudged (2026-10-11)
+
+**Decision:** That chart's Blue/Orange/Grey assignment uses `#1a80bb` for the SR's series — byte-identical to `TSA_PLAN_COLORS.planB` — instead of shifting it a few points to keep every hex on the page unique.
+
+**Why:** The request named the combination and supplied the swatch, so inventing a near-miss shade would have quietly delivered something other than what was asked for, and "almost the blue you picked" is a worse outcome than a shared hex. The collision is also inert in practice: `planB` renders only inside AsuLayer/SrLayer's Plan-vs-Plan visuals and this blue only inside the CPASU/UCR Trend layer, so no single chart ever shows both, and no legend has to disambiguate them. It's recorded here and in tech_spec.md purely because a duplicated hex across two palettes is exactly the sort of thing that reads as an accident to whoever touches this next.
+
+The grey is worth keeping for a reason beyond the request: a neutral plan/baseline series with the actuals carrying all the color is standard practice in business charts, and it happens to fix a small wart in the previous scheme, where the plan bar was magenta and competed with the data for attention.
+
 ## Chart Export Data Is Derived From the Rendered Children, Not Passed In as a Prop (2026-10-11)
 
 **Decision:** `Visual` figures out what to export by walking its own `children` for the element carrying `data` and the `dataKey`/`name` props on the series inside it, rather than taking an `exportData={data}` prop supplied at each of the 26 call sites.

@@ -1192,3 +1192,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified with `npm run build` (clean, 1271 modules), 7 unit tests of the derivation against realistic chart trees (standard / conditional-series / horizontal / Sankey / 2 fail-closed cases) all correct, and a real `.xlsx` generated and unzipped to confirm valid OOXML, correct headers including apostrophes, numbers stored as numbers not text, and nulls handled. **That testing caught two genuine v4 API bugs before shipping**: `schema` was removed in favour of `columns` (throws), and the browser build returns `{toBlob, toFile}` rather than downloading, so the first implementation would have silently done nothing on click.
 - Not visually verified in a browser — no browser-automation tool in this session, and the download itself is the one path only a real browser exercises.
 - Updated `handoff.md`, `tech_spec.md` (new "Per-Graph Excel Export" reference section + `utils/chartExport.js` in the project-structure tree), `design_choice.md` (2 entries: why derive instead of a prop, and the library/lazy-load choice); committed and pushed to `main`.
+
+---
+
+## Prompt 94 — 2026-10-11
+**Input:** [reference image of a Blue/Orange/Grey stacked bar chart] use this color combination for UCR impact on SR graph
+
+**Action:**
+- Pinned "UCR Impact on SR" (`AsuSrTrendLayer.jsx` Visual2) to the requested combination, taken from the same palette swatch used earlier in this session: SR's = Blue `#1a80bb`, UCR Handled SR's = Orange `#ea801c`, SR Plan = Grey `#b8b8b8`.
+- Added `blue`/`grey` to `TSA_TREND_COLORS` in `tsa/TsaChartKit.jsx` rather than a chart-local const, so every HES Forecasting color still lives in one discoverable place; updated that export's comment, which previously described itself as a purely "warm gold/orange/magenta family", to stay honest about the exception.
+- Scoped to this one chart, as asked: grepped to confirm CPASU Trend, UCR Runrate with Target, and the CPASU/UCR card drill-downs all still use gold/orange/magenta unchanged.
+- Flagged (not silently fixed): `blue` is the same hex as `TSA_PLAN_COLORS.planB`. Kept as-is because the request named the color and a near-miss shade would deliver something other than what was asked; the overlap is inert since planB only renders in AsuLayer/SrLayer's Plan-vs-Plan visuals, so the two never share a chart. Recorded in tech_spec.md and design_choice.md so it doesn't read as an accident later.
+- Verified with `npm run build` (clean) and a grep showing only the three series in this chart changed.
+- Updated `handoff.md`, `tech_spec.md` (TSA_TREND_COLORS reference block), `design_choice.md`; committed and pushed to `main`.

@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Forecasting: "UCR Impact on SR" Recolored to Blue / Orange / Grey (2026-10-11)
+
+- Per a follow-up request with a reference image, that one chart is now pinned to a specific Blue / Orange / Grey combination from the same palette swatch used earlier: **SR's = Blue `#1a80bb`**, **UCR Handled SR's = Orange `#ea801c`**, **SR Plan = Grey `#b8b8b8`**.
+- Added `blue`/`grey` to `TSA_TREND_COLORS` (`tsa/TsaChartKit.jsx`). Scoped to this chart alone — every other CPASU/UCR Trend visual (CPASU Trend, UCR Runrate with Target) and the CPASU/UCR card drill-downs keep gold/orange/magenta, verified unchanged.
+- **One thing to know**: `blue` is the same hex as `TSA_PLAN_COLORS.planB`. That's intentional given the request named the color, and it's harmless in practice — `planB` only ever renders in AsuLayer/SrLayer's Plan-vs-Plan visuals, a different layer, so the two never appear in the same chart. Flagging it only because it's the kind of overlap that looks like a mistake later.
+- Grey for the plan series is a useful side effect worth keeping: a neutral grey baseline with the actuals carrying all the color is a long-standing business-chart convention, and reads instantly as "this is the reference line".
+- **Verified**: `npm run build` clean; grep confirms only the three series in this chart changed.
+
 ## All Pages: Excel Export on Every Graph (2026-10-11)
 
 - Per direct request ("give excel export for each and every graph - not tiles"), every chart wrapped in a `Visual` now carries a small download button inline next to its title. Clicking it writes a real `.xlsx` of that chart's underlying data. **26 graphs across all 4 pages.** KPI tiles and their drill-down pop-up charts deliberately have none, per "not tiles".

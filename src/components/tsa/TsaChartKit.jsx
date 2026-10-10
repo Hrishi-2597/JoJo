@@ -21,12 +21,26 @@ export * from '../ChartKit'
 // adapted for contrast (see design_choice.md).
 export const TSA_PLAN_COLORS = { planA: '#8cc5e3', planB: '#1a80bb', actual: '#298c8c' }
 
-// TSA_TREND_COLORS backs AsuSrTrendLayer's "CPASU/UCR Trend" layer (all 3 visuals)
-// and TsaMetricCards' CPASU/UCR-card drill-downs — none of these are Actuals-vs-Plan
-// charts, so per direct request they use a warm gold/orange/magenta family instead,
+// TSA_TREND_COLORS backs AsuSrTrendLayer's "CPASU/UCR Trend" layer and
+// TsaMetricCards' CPASU/UCR-card drill-downs — none of these are Actuals-vs-Plan
+// charts, so per direct request they use a warm gold/orange/magenta family,
 // deliberately distinct from the cool blue/teal family above so the two chart
 // families stay visually distinguishable from one another at a glance.
-export const TSA_TREND_COLORS = { gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef' }
+//
+// `blue`/`grey` (2026-10-11) are the exception, added for "UCR Impact on SR" alone
+// after a follow-up request pinned that one chart to a specific Blue/Orange/Grey
+// combination from the same reference swatch. Note `blue` is the same hex as
+// TSA_PLAN_COLORS.planB — intentional per that request, and harmless in practice
+// since the two never appear in the same chart (planB only shows in AsuLayer/
+// SrLayer's Plan-vs-Plan visuals, a different layer entirely).
+//
+// Grey for the plan series is a happy side effect worth keeping: neutral grey for
+// a plan/target/benchmark is a long-standing business-chart convention, since it
+// lets the actuals carry all the color and reads instantly as "the baseline".
+export const TSA_TREND_COLORS = {
+  gold: '#f1a226', orange: '#ea801c', magenta: '#d946ef',
+  blue: '#1a80bb', grey: '#b8b8b8',
+}
 
 // Color for the Nth selected "Plan" in AsuLayer/SrLayer's Visual1 (one open-ended
 // multi-select Plan Name dimension, no A/B split) — alternates Light Blue/Medium
