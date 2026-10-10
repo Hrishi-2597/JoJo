@@ -724,19 +724,12 @@ shared `C` object and `planSeriesColor`/`planVsPlanSeriesColor` (`ChartKit.jsx`,
 and both Capacity pages) are completely untouched.
 
 ```
-(TSA_PLAN_COLORS — REMOVED 2026-10-11: was { planA: '#8cc5e3', planB: '#1a80bb' }, one shared blue pair
-  used for the plan side of BOTH AsuLayer and SrLayer. That was the bug behind "in plan over plan for ASU
-  you used blue" — plan series ignored which metric they belonged to. Plan colors now come from the
-  metric's own ramp; grep-confirmed dead, and #8cc5e3 is absent from the shipped bundle.)
-TSA_METRIC_COLORS — { asu: {base '#298c8c' Med Teal, light '#9fc8c8' Light Teal},
-                      sr:  {base '#ea801c' Orange,   light '#f0bd8a' Light Orange, derived} }
-  METRIC IDENTITY RAMPS. Each metric owns a two-step ramp, not one hue: `base` is its actuals, `light`
-  its plan side. So an ASU chart is teal throughout and an SR chart orange throughout — Actuals-vs-Plan
-  AND Plan-vs-Plan. tsaPlanColor(metric, i) / tsaPlanSideColor(metric, side, i) take the metric as their
-  FIRST argument; before 2026-10-11 they took only an index and both layers' plan series fell back to one
-  shared blue pair. Plan B reuses `base` — safe because Visual2 has no Actuals series to collide with, and
-  a third ramp step would have to go darker (losing contrast on the dark panel) or lighter (merging with
-  `light`). Original single-hue form (metric identity colors)
+TSA_PLAN_COLORS — { planA: '#8cc5e3' (Light Blue), planB: '#1a80bb' (Medium Blue) } — backs the PLAN
+  side of AsuLayer.jsx/SrLayer.jsx's Actuals-vs-Plan charts: Visual1's single multi-select "Plan"
+  dimension and Visual2's Plan A side use `planA`; Visual2's Plan B side uses `planB`. Requested directly
+  ("Plan A Light Blue, Plan B Med Blue"). The `actual` key was removed 2026-10-11 — the Actuals bar now
+  takes its color from TSA_METRIC_COLORS instead, per metric. See below.
+TSA_METRIC_COLORS — { asu: '#298c8c' (teal), sr: '#ea801c' (orange) } — METRIC IDENTITY colors
   (2026-10-11). ASU is always teal and SR always orange in every chart that plots either as a whole
   metric: AsuLayer Visual1's Actuals bar, SrLayer Visual1's Actuals bar, CPASU Trend's ASU and SR bars,
   and TsaMetricCards' ASU-card drill-down line. Fixed a real defect — AsuLayer and SrLayer both used

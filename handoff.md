@@ -1,20 +1,14 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
-## HES Forecasting: ASU and SR Each Own a Full Colour Family, Plans Included (2026-10-11)
+## REVERTED: Per-Metric Plan Colour Ramps (2026-10-11)
 
-- Per follow-up request ("the plan over plan colours should be different for ASU and SR... you used mid teal for actuals, plan light teal, and then in plan over plan for ASU you used blue"), each metric now owns a **two-step sequential ramp** rather than a single hue, and every series in its layer draws from it:
-
-| | Actuals | Plan / Plan A | Plan B |
-|---|---|---|---|
-| **ASU** | Med Teal `#298c8c` | Light Teal `#9fc8c8` | Med Teal `#298c8c` |
-| **SR** | Orange `#ea801c` | Light Orange `#f0bd8a` | Orange `#ea801c` |
-
-- **Root cause of the complaint**: `tsaPlanColor`/`tsaPlanSideColor` took only an index, never the metric — so the plan side of *both* layers fell back to one shared blue pair (`TSA_PLAN_COLORS`), regardless of whether the chart was ASU or SR. Both helpers now take the metric as their first argument. An ASU chart is teal top to bottom and an SR chart orange top to bottom, Actuals-vs-Plan **and** Plan-vs-Plan.
-- Teal's two steps are the reference swatch's own sequential pair (Light Teal / Med Teal). The swatch supplied no light orange, so `sr.light` is derived the same way that pair is — same hue, roughly half saturation, higher lightness — keeping it a muted corporate tint rather than a bright pastel, per "choose your colour palette as needed... must be corporate standard".
-- **Removed `TSA_PLAN_COLORS` entirely** (the `planA`/`planB` blues) — grep-confirmed dead once plan colours became metric-derived. Verified against the built bundle: `#8cc5e3` no longer appears anywhere in the shipped JS.
-- **Side benefit**: this retires the duplicate-hex caveat flagged earlier today. `TSA_TREND_COLORS.blue` (`#1a80bb`) used to collide with `planB`; it now appears exactly once in the bundle, unique to "UCR Impact on SR".
-- Reusing `base` for Plan B is safe: Visual2 is a pure Plan A vs Plan B comparison with no Actuals series, so nothing collides inside that chart.
-- **Verified**: `npm run build` clean; bundle grep confirms all four family colours present, the retired blue absent, and `#1a80bb` down to a single occurrence.
+- The change shipped earlier today as "ASU and SR Each Own a Full Colour Family, Plans Included" was **reverted at the user's request** (`git revert` of `54cb437`, so the history is preserved rather than rewritten).
+- **Current state is therefore the one before that commit**: ASU actuals = Med Teal `#298c8c`, SR actuals = Orange `#ea801c` (the one-colour-per-metric work from `6b0209c` is still in place and unaffected), while the plan side of BOTH layers is back to the shared `TSA_PLAN_COLORS` pair — Plan / Plan A = Light Blue `#8cc5e3`, Plan B = Med Blue `#1a80bb`.
+- `tsaPlanColor(index)` and `tsaPlanSideColor(side, index)` are back to their index-only signatures; `TSA_METRIC_COLORS` is back to flat strings `{ asu, sr }` rather than `{base, light}` ramps.
+- Two consequences of reverting, noted so neither looks like a fresh bug:
+  - **Plan colours no longer distinguish ASU from SR** — both layers' plan series are the same blues again. That's the behaviour the reverted commit had set out to fix.
+  - **`TSA_TREND_COLORS.blue` once again shares its hex with `TSA_PLAN_COLORS.planB`** (`#1a80bb`). Harmless in practice — planB only renders in the Plan-vs-Plan visuals and that blue only in "UCR Impact on SR", so they never share a chart — but the duplicate is back.
+- **Verified**: `npm run build` clean; bundle grep confirms `#8cc5e3` is present again and the derived `#f0bd8a` light orange is gone.
 
 ## HES Forecasting: ASU and SR Now Have One Consistent Colour Each (2026-10-11)
 

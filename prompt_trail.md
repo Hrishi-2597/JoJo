@@ -1252,3 +1252,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Accepted Plan B reusing the metric's `base`: Visual2 has no Actuals series so nothing collides in-chart, and a third ramp step would have to go darker (losing contrast on dark panels) or lighter (merging with `light`). Two well-separated steps beat three unreliable ones.
 - Verified with `npm run build` (clean) plus a bundle grep confirming all four family colours present, the retired blue absent, and `#1a80bb` down to a single occurrence.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 98 — 2026-10-11
+**Input:** revert back please
+
+**Action:**
+- Asked which range to revert before acting, since "revert back" was ambiguous and the commits were already pushed and deployed. User chose: just the plan-colour ramps (the most recent commit).
+- Reverted `54cb437` ("Give ASU and SR their own plan colours, not a shared blue pair") via `git revert`, so the history is preserved rather than rewritten.
+- Current state is the one from `6b0209c`: ASU actuals teal / SR actuals orange (the one-colour-per-metric work **stands**, untouched by this revert), while the plan side of both layers is back to the shared `TSA_PLAN_COLORS` blues — Plan/Plan A `#8cc5e3`, Plan B `#1a80bb`. `tsaPlanColor`/`tsaPlanSideColor` are back to index-only signatures.
+- Deliberately did NOT let the revert erase `prompt_trail.md`'s Prompt 97 — restored that file so the log still records what was built, then appended this entry. An append-only decision log that silently drops a reverted change is worse than useless.
+- Added a short `design_choice.md` entry recording that per-metric plan ramps were built and reverted, including the approach and the derived `#f0bd8a` light orange, so the remaining gap (plan colours don't distinguish ASU from SR) reads as a known accepted state rather than an oversight — and so it's cheap to revisit.
+- Flagged two consequences of the revert in `handoff.md`: plan colours no longer distinguish ASU from SR, and `TSA_TREND_COLORS.blue` once again duplicates `TSA_PLAN_COLORS.planB`'s hex.
+- Verified with `npm run build` (clean) and a bundle grep confirming `#8cc5e3` is back and the derived `#f0bd8a` is gone.

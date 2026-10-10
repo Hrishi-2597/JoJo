@@ -12,15 +12,13 @@ A record of every significant design decision made, with the reasoning behind it
 
 The grey is worth keeping for a reason beyond the request: a neutral plan/baseline series with the actuals carrying all the color is standard practice in business charts, and it happens to fix a small wart in the previous scheme, where the plan bar was magenta and competed with the data for attention.
 
-## A Metric Owns a Colour RAMP, Not a Colour — Which Retired the Shared Plan Palette (2026-10-11)
+## Per-Metric Plan Colour Ramps Were Built, Then Reverted (2026-10-11)
 
-**Decision:** `TSA_METRIC_COLORS` went from `{asu, sr}` strings to `{asu: {base, light}, sr: {base, light}}`, and `tsaPlanColor`/`tsaPlanSideColor` now take the metric as their first argument. `TSA_PLAN_COLORS` — the shared Light Blue / Medium Blue plan pair — was deleted.
+**Decision:** Plan series keep using one shared blue pair (`TSA_PLAN_COLORS`) across both the ASU and SR layers, rather than each metric carrying its own light/base ramp through its plan series too.
 
-**Why:** Binding only the *actuals* bar to a metric colour solved half the problem and left the visible half. The plan helpers took just an index, so every plan series on both layers resolved to the same two blues no matter which metric the chart showed — which is precisely what "in plan over plan for ASU you used blue" was pointing at. A reader could identify ASU actuals but still had no way to tell an ASU plan chart from an SR one. Giving each metric a ramp and passing the metric down makes the whole layer legible as a unit: teal means ASU everywhere in it, orange means SR.
+**Why:** An implementation of per-metric ramps — ASU teal throughout, SR orange throughout, Plan-vs-Plan included — was built and shipped, then reverted at the user's request on sight. Recording it here so the open question doesn't read as an oversight to whoever looks next: plan colours genuinely do NOT distinguish ASU from SR right now, and that is a known, accepted state rather than a missed case. If it's revisited, the approach that worked was giving each metric a two-step ramp and passing the metric into `tsaPlanColor`/`tsaPlanSideColor` as their first argument; the derived light orange used for SR's plan step was `#f0bd8a`.
 
-Deleting the blue pair rather than keeping it for some third purpose follows the same rule applied throughout this codebase — once grep showed nothing referenced it, leaving it exported would be an orphan inviting accidental reuse and reintroducing exactly this bug. It also happened to clean up a caveat recorded only hours earlier: `TSA_TREND_COLORS.blue` had deliberately duplicated `planB`'s hex, which is no longer a duplicate of anything.
-
-Reusing a metric's `base` for Plan B (so `base` means "Actuals" in Visual1 and "Plan B" in Visual2) was accepted rather than inventing a third teal and a third orange. Visual2 contains no Actuals series, so nothing is ambiguous *within* a chart, and a third step on each ramp would have had to go darker — which loses contrast against the dark panel background — or lighter, where it would start merging with the `light` step. Two well-separated steps that read reliably beat three that don't.
+The one-colour-per-metric work for ACTUALS (teal ASU, orange SR) is unaffected by the revert and still stands — see the entry below.
 
 ## One Colour Per Metric Outranks Both the Palette-Family Split and "Actuals = Teal" (2026-10-11)
 

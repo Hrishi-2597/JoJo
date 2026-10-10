@@ -12,27 +12,32 @@ export * from '../ChartKit'
 // This file is imported exclusively by tsa/*.jsx (HES Forecasting), so anything
 // defined only here can never leak onto a page the request didn't ask to change.
 //
-// Across these palettes the reference swatch's hex values are used verbatim —
-// they're light-background corporate-report tones, but they read fine on dark. The
-// exceptions are TSA_TREND_COLORS.magenta (brightened from the reference's #800074
-// for legibility as a thin line stroke on dark panels) and TSA_METRIC_COLORS.sr.light
-// (the swatch supplied no light orange, so it's derived). See design_choice.md.
+// TSA_PLAN_COLORS backs the PLAN side of AsuLayer/SrLayer's Actuals-vs-Plan charts:
+// Plan A (or the single "Plan" dimension in Visual1) in Light Blue, Plan B in
+// Medium Blue — a provided 2-tone-blue combination, not an invented one.
+// (Its `actual: '#298c8c'` key was removed 2026-10-11: the Actuals bar is no longer
+// a plan-palette color at all, it's whichever metric the chart plots — see
+// TSA_METRIC_COLORS below. Nothing else referenced the key.)
 //
-// (Removed 2026-10-11: TSA_PLAN_COLORS = { planA: '#8cc5e3', planB: '#1a80bb' } —
-// one shared blue pair used for the plan side of BOTH AsuLayer and SrLayer. That
-// was the inconsistency behind "in plan over plan for ASU you used blue": plan
-// series ignored which metric they belonged to. Plan colors now come from the
-// metric's own ramp (TSA_METRIC_COLORS below), so nothing referenced these two any
-// more. A happy consequence: TSA_TREND_COLORS.blue no longer duplicates planB's hex,
-// so the deliberate-collision caveat recorded against it on 2026-10-11 is now moot.)
+// Across all three palettes here, the reference swatch's hex values are used
+// verbatim — they're light-background corporate-report tones, but they read fine on
+// dark. The single exception is TSA_TREND_COLORS.magenta, brightened from the
+// reference's #800074 for legibility as a thin line stroke against this dashboard's
+// dark panels — same hue family, adapted for contrast (see design_choice.md).
+export const TSA_PLAN_COLORS = { planA: '#8cc5e3', planB: '#1a80bb' }
 
 // TSA_TREND_COLORS backs AsuSrTrendLayer's "CPASU/UCR Trend" layer and
 // TsaMetricCards' CPASU/UCR-card drill-downs — none of these are Actuals-vs-Plan
-// charts, so per direct request they use a warm gold/orange/magenta family.
+// charts, so per direct request they use a warm gold/orange/magenta family,
+// deliberately distinct from the cool blue/teal family above so the two chart
+// families stay visually distinguishable from one another at a glance.
 //
-// `blue`/`grey` (2026-10-11) were added for "UCR Impact on SR" alone, after a
-// follow-up request pinned that one chart to a specific Blue/Orange/Grey combination
-// from the reference swatch. `blue` is now unique to that chart.
+// `blue`/`grey` (2026-10-11) are the exception, added for "UCR Impact on SR" alone
+// after a follow-up request pinned that one chart to a specific Blue/Orange/Grey
+// combination from the same reference swatch. Note `blue` is the same hex as
+// TSA_PLAN_COLORS.planB — intentional per that request, and harmless in practice
+// since the two never appear in the same chart (planB only shows in AsuLayer/
+// SrLayer's Plan-vs-Plan visuals, a different layer entirely).
 //
 // Grey for the plan series is a happy side effect worth keeping: neutral grey for
 // a plan/target/benchmark is a long-standing business-chart convention, since it
@@ -65,55 +70,26 @@ export const TSA_TREND_COLORS = {
 //   - "CPASU/UCR Trend: any palette apart from actuals-vs-plan colors" — that
 //     layer's ASU/SR bars now use these metric colors, since one color per metric
 //     everywhere is the stronger guarantee of the two.
-// Each metric owns a two-step SEQUENTIAL RAMP, not a single hue (extended 2026-10-11
-// from the flat {asu, sr} pair added earlier the same day, per the follow-up: "the
-// plan over plan colors should be different for ASU and SR... you used mid teal for
-// actuals, plan light teal, and then in plan over plan for ASU you used blue").
-//
-// `base` is the metric's actuals; `light` is its plan side. So an ASU chart is teal
-// top to bottom and an SR chart is orange top to bottom — Actuals vs Plan AND Plan
-// vs Plan — and you can tell which metric you're looking at from across the room
-// without reading the title. Previously only the actuals bar carried the metric
-// colour and every plan series fell back to the same two blues on both layers,
-// which is exactly the inconsistency being called out.
-//
-// Teal's two steps are the reference swatch's own sequential pair (Light Teal
-// #9fc8c8 / Med Teal #298c8c). The swatch never supplied a light orange, so
-// `sr.light` is derived the same way that pair is — same hue, roughly half the
-// saturation, substantially higher lightness — keeping it a muted corporate tint
-// rather than a bright pastel, per "choose your colour palette as needed... must be
-// corporate standard".
-export const TSA_METRIC_COLORS = {
-  asu: { base: '#298c8c', light: '#9fc8c8' }, // Med Teal / Light Teal
-  sr: { base: '#ea801c', light: '#f0bd8a' },  // Orange / Light Orange (derived)
-}
+export const TSA_METRIC_COLORS = { asu: '#298c8c', sr: '#ea801c' }
 
-// Both helpers now take the METRIC ('asu' | 'sr') as their first argument, so the
-// plan series stay inside their chart's own colour family instead of every layer
-// falling back to one shared blue pair.
-
-// Colour for the Nth selected "Plan" in AsuLayer/SrLayer's Visual1 (one open-ended
-// multi-select Plan Name dimension, no A/B split). Alternates the metric's light and
-// base steps, with the same opacity stepping as the shared planSeriesColor, so an
-// open-ended number of selected plans stays distinguishable without new hues. The
-// FIRST (and usually only) plan takes `light`, which keeps it clearly separate from
-// the Actuals bar beside it — that one is always `base`.
-export function tsaPlanColor(metric, index) {
-  const fam = TSA_METRIC_COLORS[metric] || TSA_METRIC_COLORS.asu
-  const hue = index % 2 === 0 ? fam.light : fam.base
+// Color for the Nth selected "Plan" in AsuLayer/SrLayer's Visual1 (one open-ended
+// multi-select Plan Name dimension, no A/B split) — alternates Light Blue/Medium
+// Blue with the same opacity-stepping convention as the shared planSeriesColor, so
+// an open-ended number of selected plans stays distinguishable without adding hues.
+export function tsaPlanColor(index) {
+  const hue = index % 2 === 0 ? TSA_PLAN_COLORS.planA : TSA_PLAN_COLORS.planB
   const opacity = Math.max(0.35, 1 - Math.floor(index / 2) * 0.25)
   return { color: hue, opacity }
 }
 
-// Colour for the Nth selected plan on ONE side (A or B) of a Plan A vs Plan B
-// comparison (AsuLayer/SrLayer's Visual2) — every Plan A bar is the metric's light
-// step and every Plan B bar its base step, no matter how many are selected on either
-// side (opacity steps down per extra selection). Keeps the firm "the colour tells you
-// which side" guarantee from before, now within the metric's own family. There's no
-// Actuals series in this chart, so reusing `base` for Plan B collides with nothing.
-export function tsaPlanSideColor(metric, side, index) {
-  const fam = TSA_METRIC_COLORS[metric] || TSA_METRIC_COLORS.asu
-  const hue = side === 'A' ? fam.light : fam.base
+// Color for the Nth selected plan on ONE side (A or B) of a Plan A vs Plan B
+// comparison (AsuLayer/SrLayer's Visual2) — every Plan A bar is Light Blue, every
+// Plan B bar is Medium Blue, no matter how many are selected on either side
+// (opacity steps down per extra selection on that side). A firmer "the color tells
+// you which side" guarantee than the shared planVsPlanSeriesColor's single
+// combined-index cycle, which this layer's explicit Plan A/Plan B request calls for.
+export function tsaPlanSideColor(side, index) {
+  const hue = side === 'A' ? TSA_PLAN_COLORS.planA : TSA_PLAN_COLORS.planB
   const opacity = Math.max(0.4, 1 - index * 0.2)
   return { color: hue, opacity }
 }
