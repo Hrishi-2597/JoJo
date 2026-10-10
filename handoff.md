@@ -1,5 +1,18 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## All Pages: Per-Point Data Labels on Graphs (2026-10-11)
+
+- Per direct request ("give data labels as well for all the graphs" + "wherever applicable"), chart series now carry value labels, added centrally in `src/utils/chartLabels.js` by cloning each series element with a `label` prop — same central approach as the Excel export, so all ~26 graphs are consistent in font, position and number format, and future charts get it automatically.
+- **"Wherever applicable" is enforced by two rules**, because labelling everything unconditionally would have undone the enterprise-grade pass right before it:
+  1. **Density gate** — vertical charts label only when `points ≤ 12` and `points × labelled-series ≤ 24`; horizontal bar charts when `points ≤ 12` (each bar owns its own row, so the label sits in empty space to its right). Month (36 pts), Week (156 pts) and the long ranked queue/LOB charts get none and keep their axis + tooltip.
+  2. **Combo charts label the bars only** — never the secondary-axis percentage line (Adherence %, Variance %, CPASU) riding over them. Those labels would float among the bar labels with nothing tying them to the right-hand axis, doubling density to restate what the line's shape already shows. Pure line charts have no such competition, so they *do* get labels.
+- Net effect worth knowing: **ASU Trend and SR Trend get labels at both their Year and their default Quarter views** (2 bars × 12 points = 24, right at the limit); they drop off at Month/Week.
+- Positioning adapts per chart type: `top` for vertical bars and lines, `right` for horizontal bars, `center` (in white) for stacked segments — a `top` label on a stacked segment would land on the segment above it.
+- Values are formatted compactly so they fit: `11500 → 12K`, `4200 → 4.2K`, `2400000 → 2.4M`; percentages and ratios (`93.3`, `0.54`) pass through with precision intact, since a chart's unit isn't readable from here.
+- A series that sets its own `label` explicitly keeps it — the helper only ever *adds* a prop, never restructures the tree.
+- **Verified**: `npm run build` clean; 7 unit tests across the real chart shapes (Year/Quarter/Month combo, stacked, pure line, 8-row and 36-row horizontal) all gate and position correctly. One real bug caught in testing: Recharts' `Line` declares `defaultProps.label = false`, which React merges into props, so an `=== undefined` guard silently skipped **every line series** while bars worked fine.
+- **Not visually verified in a browser** — no browser-automation tool in this session. The density thresholds are reasoned from layout width, so they're the thing most worth eyeballing.
+
 ## HES Forecasting: "UCR Impact on SR" Recolored to Blue / Orange / Grey (2026-10-11)
 
 - Per a follow-up request with a reference image, that one chart is now pinned to a specific Blue / Orange / Grey combination from the same palette swatch used earlier: **SR's = Blue `#1a80bb`**, **UCR Handled SR's = Orange `#ea801c`**, **SR Plan = Grey `#b8b8b8`**.

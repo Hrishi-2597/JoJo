@@ -640,6 +640,44 @@ there's no sub-year view of "which region," so the toggle doesn't apply to them 
 
 ---
 
+## Per-Point Data Labels (2026-10-11)
+
+`src/utils/chartLabels.js` -> `withDataLabels(children)`, applied by `Visual` (and the two legacy local
+`Visual` copies) to its children before rendering them. Clones each series element to add a `label` prop;
+only ever ADDS a prop, never restructures the tree, so Recharts' child-type expectations are untouched and
+a series that sets its own `label` keeps it.
+
+```
+Density gate (shouldLabel)
+  vertical charts    points <= 12 AND points * labelledSeries <= 24
+  horizontal bars    points <= 12          (each bar owns a row; label sits right of it)
+  Rationale: charts sit 2-3 up in a flex row, so one plot is ~450-650px. At 12 points that's ~45px per
+  category — room for two compact labels ("4.2K" is ~20px at 9px type), not three.
+  Consequence: ASU/SR Trend ARE labelled at Year (3pt) and at their default Quarter (12pt x 2 bars = 24)
+  views; Month (36pt), Week (156pt) and the long ranked queue/LOB charts are not, and keep axis + tooltip.
+
+Combo charts label BARS ONLY (labelledSeriesCount)
+  A secondary-axis percentage line (Adherence %, Variance %, CPASU) over bars is never labelled — its
+  labels would float among the bar labels with nothing tying them to the right-hand axis, and would double
+  density to restate what the line's shape already shows. A chart with NO bars (pure line) does get labels.
+
+Position by chart type (labelConfig)
+  vertical bar / line   position 'top',    fill var(--text-dim)
+  horizontal bar        position 'right',  fill var(--text-dim)
+  stacked bar segment   position 'center', fill #fff  (a 'top' label would land on the segment ABOVE it;
+                        white reads against every stack fill in use, all mid-to-dark)
+  all: fontSize 9
+
+formatValue — 2400000 -> '2.4M', 11500 -> '12K', 4200 -> '4.2K', 93.3 -> '93.3', 0.54 -> '0.54'.
+  Percentages/ratios pass through with precision intact: a chart's unit isn't readable from here.
+
+GOTCHA: Recharts' Line declares `defaultProps.label = false`, which React merges into props before this
+  code sees the element — so the "is it already labelled?" guard must treat `false` as unset, not just
+  `undefined`. An `=== undefined` check silently skips every line series while bars work fine.
+```
+
+---
+
 ## Per-Graph Excel Export (2026-10-11)
 
 `src/utils/chartExport.js` + `ChartExportButton` (`ChartKit.jsx`). Every `Visual`-wrapped graph gets a

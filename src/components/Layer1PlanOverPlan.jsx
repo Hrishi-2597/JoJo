@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { deriveChartData } from '../utils/chartExport'
+import { withDataLabels } from '../utils/chartLabels'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
@@ -42,6 +43,7 @@ const Tip = ({ active, payload, label }) => {
 function Visual({ title, subtitle, children, controls, rca, clca, table, info }) {
   // Local Visual copy — predates ChartKit.jsx; mirrors its export wiring (2026-10-11).
   const chartData = useMemo(() => deriveChartData(children), [children])
+  const labelled = useMemo(() => withDataLabels(children), [children])
   const [tableOpen, setTableOpen] = useState(false)
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
@@ -58,7 +60,7 @@ function Visual({ title, subtitle, children, controls, rca, clca, table, info })
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
-      {children}
+      {labelled}
       {table && tableOpen && (
         <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
           <ComingSoonOverlay><PopupTable table={table} /></ComingSoonOverlay>

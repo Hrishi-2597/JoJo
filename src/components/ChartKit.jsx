@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal } from './Modal'
 import MultiSelectField from './MultiSelectField'
 import { deriveChartData, exportChartToExcel } from '../utils/chartExport'
+import { withDataLabels } from '../utils/chartLabels'
 
 // Shared chart primitives used across every page (Forecasting, TSA Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
@@ -190,6 +191,9 @@ export function Visual({ title, subtitle, children, controls, cornerControls, rc
   // when its underlying data changes (filters/granularity/plan selections all flow
   // through props into a new element tree).
   const chartData = useMemo(() => deriveChartData(children), [children])
+  // Per-point value labels, added by cloning the series — density-gated, so charts
+  // too crowded to label legibly are returned untouched. See chartLabels.js.
+  const labelled = useMemo(() => withDataLabels(children), [children])
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
@@ -206,7 +210,7 @@ export function Visual({ title, subtitle, children, controls, cornerControls, rc
       </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
-      {children}
+      {labelled}
       {table && tableOpen && (
         <Modal title={table.title || title} onClose={() => setTableOpen(false)} width={560}>
           {comingSoon ? <ComingSoonOverlay><PopupTable table={table} /></ComingSoonOverlay> : <PopupTable table={table} />}

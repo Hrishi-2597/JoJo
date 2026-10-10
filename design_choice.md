@@ -12,6 +12,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 The grey is worth keeping for a reason beyond the request: a neutral plan/baseline series with the actuals carrying all the color is standard practice in business charts, and it happens to fix a small wart in the previous scheme, where the plan bar was magenta and competed with the data for attention.
 
+## Data Labels Are Density-Gated, and Combo Charts Label Only Their Bars (2026-10-11)
+
+**Decision:** "All the graphs" was implemented as "every graph where a label can actually be read" — a point-count gate — and within a combo chart only the bar series get labels, never the percentage line over them.
+
+**Why:** The request arrived with "wherever applicable" attached, and the two instructions pull in opposite directions without it. Unconditional labelling would have put 36 values on a Month-granularity trend and 36 more on a ranked queue chart, directly undoing the de-cluttering pass agreed one request earlier — the dashboard would have gone straight back to "funky", just in a new way. Gating on density keeps the labels where they add something (a reader stops having to trace a bar back to the axis) and omits them where they'd only add noise, which is exactly what an axis and tooltip are already there to cover.
+
+The bars-only rule in combo charts is the same judgement at series level rather than chart level. Those lines are always a secondary-axis percentage, so their labels would sit among the bar labels with no visual cue about which of the two axes they belong to — ambiguity added, information not. The line's shape already carries its own message.
+
+The thresholds themselves (12 points; 24 labels) are reasoned from layout: these plots render two or three across a flex row, so roughly 450-650px each, which is about 45px per category at 12 points — enough for two compact labels, not three. That's an estimate from geometry rather than measurement, and it's the part of this most worth checking against the real rendered page.
+
 ## Chart Export Data Is Derived From the Rendered Children, Not Passed In as a Prop (2026-10-11)
 
 **Decision:** `Visual` figures out what to export by walking its own `children` for the element carrying `data` and the `dataKey`/`name` props on the series inside it, rather than taking an `exportData={data}` prop supplied at each of the 26 call sites.

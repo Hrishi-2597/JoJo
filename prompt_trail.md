@@ -1205,3 +1205,19 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Flagged (not silently fixed): `blue` is the same hex as `TSA_PLAN_COLORS.planB`. Kept as-is because the request named the color and a near-miss shade would deliver something other than what was asked; the overlap is inert since planB only renders in AsuLayer/SrLayer's Plan-vs-Plan visuals, so the two never share a chart. Recorded in tech_spec.md and design_choice.md so it doesn't read as an accident later.
 - Verified with `npm run build` (clean) and a grep showing only the three series in this chart changed.
 - Updated `handoff.md`, `tech_spec.md` (TSA_TREND_COLORS reference block), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 95 — 2026-10-11
+**Input:** give data labels as well for all the graphs  /  wherever applicable
+
+**Action:**
+- Added per-point value labels to chart series via new `src/utils/chartLabels.js` (`withDataLabels`), applied centrally by `Visual` and the two legacy local `Visual` copies. Clones each series element to add a `label` prop — only ever adds a prop, never restructures the tree, and a series setting its own `label` keeps it. Same central approach as the Excel export: one consistent implementation across ~26 graphs, automatic for future charts.
+- Implemented "wherever applicable" as two concrete rules, since unconditional labelling would have undone the de-cluttering pass from the previous request:
+  1. **Density gate** — vertical: `points <= 12 && points * labelledSeries <= 24`; horizontal bars: `points <= 12`. Thresholds reasoned from layout (plots render 2-3 across a flex row, ~450-650px each, ~45px per category at 12 points = room for two compact labels, not three).
+  2. **Combo charts label bars only** — the secondary-axis percentage line (Adherence %, Variance %, CPASU) is skipped, since its labels would sit among the bar labels with no cue which axis they belong to. Pure line charts (no bars) do get labels.
+- Net effect: ASU/SR Trend are labelled at both Year and their default Quarter view; Month/Week views and the long ranked queue/LOB charts are not.
+- Position adapts per chart type: `top` (vertical bars/lines), `right` (horizontal bars), `center` in white (stacked segments — a `top` label would land on the segment above). Compact formatting: `2400000 -> 2.4M`, `11500 -> 12K`, `4200 -> 4.2K`; percentages/ratios keep their precision.
+- Verified with `npm run build` (clean) and 7 unit tests across the real chart shapes (Year/Quarter/Month combo, stacked, pure line, 8-row and 36-row horizontal) confirming both gating and positioning. **Caught a real bug in testing**: Recharts' `Line` declares `defaultProps.label = false`, which React merges into props, so an `=== undefined` guard silently skipped every line series while bars worked fine.
+- Not visually verified in a browser — no browser-automation tool in this session; flagged the density thresholds as the part most worth eyeballing since they're reasoned from geometry rather than measured.
+- Updated `handoff.md`, `tech_spec.md` (new "Per-Point Data Labels" reference section), `design_choice.md`; committed and pushed to `main`.
