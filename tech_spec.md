@@ -714,6 +714,39 @@ Also wired into the two pre-ChartKit local `Visual` copies (`Layer1PlanOverPlan.
 
 ---
 
+## HES Palette — Shared by Both HES Pages (`src/components/hesPalette.js`, 2026-10-12)
+
+The palette below was extracted out of `tsa/TsaChartKit.jsx` when HES Capacity Planning was asked to adopt
+the same scheme, so the two HES pages share one source of truth. `tsa/TsaChartKit.jsx` re-exports it
+(`export * from '../hesPalette'`), so every existing `from './TsaChartKit'` import still works unchanged;
+`tsaCapacity/*` imports from `'../hesPalette'` directly.
+
+Deliberately NOT merged into `ChartKit.jsx`'s shared `C` — that object and its planSeriesColor/
+planVsPlanSeriesColor helpers are also used by MSG Forecasting and MSG Capacity, which are out of scope
+(and currently hidden behind `SHOW_ESG = false`, but live code). See design_choice.md.
+
+```
+HES CAPACITY PLANNING mapping (2026-10-12) — tsaCapacity/*
+  Actuals (Actual FTE, Headcount, Cases/FTE, Avg Case Time)  TSA_PLAN_COLORS.actual  #298c8c Med Teal
+  Plan / Plan A                                              TSA_PLAN_COLORS.planA   #8cc5e3 Light Blue
+  Plan B                                                     TSA_PLAN_COLORS.planB   #1a80bb Med Blue
+  Multi-select plan cycling                                  tsaPlanColor / tsaPlanSideColor
+  Sankey source / target nodes                               actual / planB; links TSA_TREND_COLORS.grey
+  UNTOUCHED: Attrition % line and the diverging +/-variance bars keep C.ahead/C.behind (genuine status);
+  Staffing % / Variation % / Variance % lines keep violet C.trend, matching how HES Forecasting left its
+  Adherence %/Variance % lines; the Geo Map choropleth scale and Total Queues region donut keep their own.
+
+  Fixed in passing: "Cases/FTE" and "Avg Case Time" had been using C.behind — the reserved
+  "behind target" red — as a plain series identity color. Both are teal now, so red means one thing.
+
+TSA_PLAN_COLORS.actual was re-added 2026-10-12 (removed 2026-10-11 as dead). Capacity's measures are all
+  simply "the actual" with no second metric in the chart to distinguish from, unlike HES Forecasting's
+  ASU vs SR which must differ — so a single shared actuals color is correct there and the key has a real
+  consumer again.
+```
+
+---
+
 ## HES Forecasting Column-Chart Palette (2026-10-11)
 
 Per direct request with a reference swatch image ("make sure the colors for each metric are different...

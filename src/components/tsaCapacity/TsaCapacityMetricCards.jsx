@@ -9,6 +9,7 @@ import {
 } from '../../data/tsaCapacityData'
 import { TSA_ACTIVE_QUEUES, TSA_ACTIVE_QUEUE_NAMES } from '../../data/tsaData'
 import { C, Tip, InfoButton } from '../ChartKit'
+import { TSA_PLAN_COLORS } from '../hesPalette'
 import { Modal } from '../Modal'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
@@ -77,8 +78,8 @@ function FteTrendChart({ filters, granularity }) {
           <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
-          <Bar yAxisId="l" dataKey="plan" name="Plan FTE" fill={C.metric2} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="actual" name="Actual FTE" fill={TSA_PLAN_COLORS.actual} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="plan" name="Plan FTE" fill={TSA_PLAN_COLORS.planA} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="adherence" name="Staffing %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -98,7 +99,7 @@ function AttritionTrendChart({ filters, granularity }) {
           <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} radius={[2,2,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={TSA_PLAN_COLORS.actual} radius={[2,2,0,0]} maxBarSize={44} />
           <Line yAxisId="r" type="monotone" dataKey="attrition" name="Attrition %" stroke={C.behind} strokeWidth={2} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -117,8 +118,8 @@ function CasesPerFteTrendChart({ filters, granularity }) {
           <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Line type="monotone" dataKey="actual" name="Cases/FTE" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-          <Line type="monotone" dataKey="plan" name="Plan" stroke={C.metric2} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="actual" name="Cases/FTE" stroke={TSA_PLAN_COLORS.actual} strokeWidth={2.5} dot={{ r: 3, fill: TSA_PLAN_COLORS.actual, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="plan" name="Plan" stroke={TSA_PLAN_COLORS.planA} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: TSA_PLAN_COLORS.planA, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -140,7 +141,7 @@ function AvgCaseTimeTrendChart({ filters, granularity }) {
           <YAxis tick={{ fill: C.tick, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}h`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Line type="monotone" dataKey="actual" name="Avg Case Time (hrs)" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="actual" name="Avg Case Time (hrs)" stroke={TSA_PLAN_COLORS.actual} strokeWidth={2.5} dot={{ r: 3, fill: TSA_PLAN_COLORS.actual, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>

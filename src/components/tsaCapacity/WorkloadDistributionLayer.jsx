@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Sankey, Tooltip, ResponsiveContainer, Rectangle } from 'recharts'
 import { workloadSankey } from '../../data/tsaCapacityData'
 import { C, Visual, BinaryToggle } from '../ChartKit'
+import { TSA_PLAN_COLORS, TSA_TREND_COLORS } from '../hesPalette'
 
 // Recharts' default Sankey node renders as a plain unlabeled rect — this custom
 // node paints the real LOB/queue name next to it so the diagram is legible without
@@ -19,7 +20,7 @@ function SankeyNode({ x, y, width, height, index, payload }) {
   const isSource = payload.sourceLinks.length > 0
   return (
     <g>
-      <Rectangle x={x} y={y} width={width} height={height} fill={isSource ? C.metric1 : C.metric2} fillOpacity={0.85} />
+      <Rectangle x={x} y={y} width={width} height={height} fill={isSource ? TSA_PLAN_COLORS.actual : TSA_PLAN_COLORS.planB} fillOpacity={0.85} />
       <text
         textAnchor={isSource ? 'end' : 'start'}
         x={isSource ? x - 6 : x + width + 6}
@@ -123,7 +124,7 @@ function Visual1({ filters }) {
             node={<SankeyNode />}
             nodePadding={22}
             margin={{ top: 8, right: 90, bottom: 8, left: 90 }}
-            link={{ stroke: C.trend, strokeOpacity: 0.35 }}
+            link={{ stroke: TSA_TREND_COLORS.grey, strokeOpacity: 0.3 }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >

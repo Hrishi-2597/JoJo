@@ -1266,3 +1266,20 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Added a short `design_choice.md` entry recording that per-metric plan ramps were built and reverted, including the approach and the derived `#f0bd8a` light orange, so the remaining gap (plan colours don't distinguish ASU from SR) reads as a known accepted state rather than an oversight — and so it's cheap to revisit.
 - Flagged two consequences of the revert in `handoff.md`: plan colours no longer distinguish ASU from SR, and `TSA_TREND_COLORS.blue` once again duplicates `TSA_PLAN_COLORS.planB`'s hex.
 - Verified with `npm run build` (clean) and a bundle grep confirming `#8cc5e3` is back and the derived `#f0bd8a` is gone.
+
+---
+
+## Prompt 99 — 2026-10-12
+**Input:** use similar color scheme for capacity planning as well
+
+**Action:**
+- Confirmed scope before acting: `SHOW_ESG = false` hides the MSG/ESG tile from the landing page, so HES Capacity Planning (`tsaCapacity/*`) is the only live capacity page — unambiguous target.
+- Found it still on the old generic palette (`C.metric1` sky-blue `#38bdf8`, `C.metric2` orange, violet), never migrated when HES Forecasting moved to the corporate swatch.
+- **Extracted the palette to `src/components/hesPalette.js`** so both HES pages share one source of truth rather than a copy each; `tsa/TsaChartKit.jsx` re-exports it so no HES Forecasting component changed. Verified the extraction was behaviour-neutral by rebuilding and confirming all five Forecasting hexes still present in the bundle.
+- Applied across every HES Capacity chart: Actuals (Actual FTE / Headcount / Cases-per-FTE / Avg Case Time) → Med Teal `#298c8c`; Plan & Plan A → Light Blue `#8cc5e3`; Plan B → Med Blue `#1a80bb`; multi-select plans via `tsaPlanColor`/`tsaPlanSideColor`; Sankey source/target → teal/med-blue with neutral grey links.
+- Re-added `TSA_PLAN_COLORS.actual` (removed 2026-10-11 as dead) — Capacity's measures are all simply "the actual" with no second metric in-chart to distinguish from, unlike Forecasting's ASU vs SR, so it has a genuine consumer again.
+- **Fixed a latent misuse found on the way**: "Cases/FTE" and "Avg Case Time" were using `C.behind` — the reserved *behind target* red — as a plain series identity colour. Both are teal now, so red means one thing on that page again.
+- Deliberately untouched: genuine status colours (Attrition % line, diverging ±variance bars), the `%` trend lines (violet `C.trend`, matching Forecasting), the Geo Map choropleth scale and the Total Queues region donut.
+- Confirmed the shared `planSeriesColor`/`planVsPlanSeriesColor` are not orphaned — MSG Forecasting and MSG Capacity still consume them and were out of scope.
+- Verified with `npm run build` (clean) and greps showing zero generic-palette series colours left in `tsaCapacity/`, status colours intact, shared helpers still consumed.
+- Updated `handoff.md`, `tech_spec.md` (new "HES Palette — Shared by Both HES Pages" section), `design_choice.md`; committed and pushed to `main`.

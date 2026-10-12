@@ -1,5 +1,24 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Capacity Planning: Adopted the HES Forecasting Colour Scheme (2026-10-12)
+
+- Per direct request ("use similar color scheme for capacity planning as well"), HES Capacity Planning now draws from the same corporate swatch palette as HES Forecasting. It had still been on the old generic set — `C.metric1` sky-blue `#38bdf8`, `C.metric2` orange `#fb923c`, violet.
+- **Palette extracted to `src/components/hesPalette.js`** so the two HES pages share one source of truth instead of a copy each. `tsa/TsaChartKit.jsx` now re-exports it, so **no HES Forecasting component needed to change** — verified the extraction was behaviour-neutral by rebuilding and confirming all five Forecasting hexes still present.
+- Mapping applied across all of HES Capacity (metric-card drill-downs, Headcount & Attrition, Plan over Plan Variation, Workload Distribution):
+
+| Role | Colour |
+|---|---|
+| Actuals — Actual FTE, Headcount, Cases/FTE, Avg Case Time | Med Teal `#298c8c` |
+| Plan / Plan A | Light Blue `#8cc5e3` |
+| Plan B | Med Blue `#1a80bb` |
+| Sankey source / target nodes | Teal / Med Blue, links neutral grey |
+
+- `TSA_PLAN_COLORS.actual` was **re-added** (it had been removed on 2026-10-11 when HES Forecasting's actuals became metric-specific). It has a genuine consumer again: Capacity's measures are all "the actual" with no per-metric identity to carry, unlike Forecasting's ASU vs SR which must be distinguishable.
+- **Fixed a latent misuse found on the way**: "Cases/FTE" and "Avg Case Time" were using `C.behind` — the reserved red that means *behind target* — as a plain series identity colour. Both are now teal like every other actual, so red is back to meaning only one thing on that page.
+- **Deliberately untouched**: genuine status colours (the Attrition % line, the diverging ±variance bars and their labels) stay `C.ahead`/`C.behind`; the `%` trend lines (Staffing %, Variation %, Variance %) stay violet `C.trend`, matching how HES Forecasting left its Adherence %/Variance % lines; the Geo Map's choropleth scale and the Total Queues region donut keep their own palettes.
+- The shared `planSeriesColor`/`planVsPlanSeriesColor` in `ChartKit.jsx` are **not** orphaned — MSG Forecasting and MSG Capacity still use them, and those pages were not in scope.
+- **Verified**: `npm run build` clean; greps confirm zero generic-palette series colours left in `tsaCapacity/`, status colours intact, and the shared helpers still have consumers.
+
 ## REVERTED: Per-Metric Plan Colour Ramps (2026-10-11)
 
 - The change shipped earlier today as "ASU and SR Each Own a Full Colour Family, Plans Included" was **reverted at the user's request** (`git revert` of `54cb437`, so the history is preserved rather than rewritten).

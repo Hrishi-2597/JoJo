@@ -8,7 +8,8 @@ import {
 } from '../../data/tsaCapacityData'
 import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import { contributingFactors, FACTOR_TABLE_COLUMNS, varianceTier, varianceReason, VARIANCE_TABLE_COLUMNS } from '../../data/insightFactors'
-import { C, Visual, Tip, PlanDropdowns, BinaryToggle, PillButton, CategoryTick, planVsPlanSeriesColor } from '../ChartKit'
+import { C, Visual, Tip, PlanDropdowns, BinaryToggle, PillButton, CategoryTick } from '../ChartKit'
+import { tsaPlanSideColor } from '../hesPalette'
 
 // Local override of the shared VARIANCE_TABLE_COLUMNS' 'Queue' header — this page's
 // ranked-variance chart ranks LOBs, not queues (TSA has no per-queue dimension), so
@@ -121,12 +122,12 @@ function MainChart({ filters, granularity, plansA, plansB }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
           {aPlans.map((p, pi) => {
-            const { color, opacity } = planVsPlanSeriesColor(pi)
+            const { color, opacity } = tsaPlanSideColor('A', pi)
             return <Bar key={`a${pi}`} yAxisId="l" dataKey={`planA_${pi}`} name={p ? `Plan A (${p})` : 'Plan A'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={50}
               onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           })}
           {bPlans.map((p, pi) => {
-            const { color, opacity } = planVsPlanSeriesColor(aPlans.length + pi)
+            const { color, opacity } = tsaPlanSideColor('B', pi)
             return <Bar key={`b${pi}`} yAxisId="l" dataKey={`planB_${pi}`} name={p ? `Plan B (${p})` : 'Plan B'} fill={color} opacity={opacity} radius={[2,2,0,0]} maxBarSize={50}
               onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           })}

@@ -12,6 +12,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 The grey is worth keeping for a reason beyond the request: a neutral plan/baseline series with the actuals carrying all the color is standard practice in business charts, and it happens to fix a small wart in the previous scheme, where the plan bar was magenta and competed with the data for attention.
 
+## The HES Palette Moved to Its Own Module Rather Than Being Copied or Pushed Into `C` (2026-10-12)
+
+**Decision:** Extending the scheme to HES Capacity was done by extracting the palette from `tsa/TsaChartKit.jsx` into `src/components/hesPalette.js`, which both HES pages import. `TsaChartKit.jsx` re-exports it so no existing import changed, and `ChartKit.jsx`'s shared `C` was left alone.
+
+**Why:** There were three ways to do this and only one of them survives contact with the next change. Copying the hex values into the Capacity components guarantees the two pages drift the moment either is retuned — and this palette has already been retuned four times in two days, so that's not hypothetical. Pushing the values into `ChartKit.jsx`'s `C` would have restyled MSG Forecasting and MSG Capacity too, which nobody asked for; those pages are currently hidden behind `SHOW_ESG = false` but the code is live and would come back wrong. A dedicated module scoped to exactly the pages that share the scheme is the only option where "change the HES palette" stays a one-file edit and cannot leak.
+
+Re-exporting from `TsaChartKit.jsx` rather than repointing HES Forecasting's five components at the new path was chosen to keep the diff honest: this request was about Capacity, and rewriting Forecasting's imports would have put unrelated churn in the same commit for no behavioural gain.
+
+**On `TSA_PLAN_COLORS.actual` coming back:** it was deleted on 2026-10-11 as genuinely dead, when Forecasting's actuals became metric-specific (ASU teal, SR orange). Capacity is the opposite case — FTE, headcount, cases/FTE and case time are all simply "the actual", with no second metric in the same chart to distinguish from — so a single shared actuals colour is correct there, and the key has a real consumer again rather than being resurrected on spec.
+
 ## Per-Metric Plan Colour Ramps Were Built, Then Reverted (2026-10-11)
 
 **Decision:** Plan series keep using one shared blue pair (`TSA_PLAN_COLORS`) across both the ASU and SR layers, rather than each metric carrying its own light/base ramp through its plan series too.
