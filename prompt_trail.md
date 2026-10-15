@@ -1308,3 +1308,18 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Adopted pushing to **both** remotes on every change so Azure doesn't drift from the real work while it stays the system of record — GitHub was one commit behind at the swap (the migration-record commit had gone to Azure only), which is exactly the drift worth avoiding.
 - Marked the previous entry's "deployment is paused" subsection as superseded rather than deleting it — every trap it documents becomes live again the moment `origin` points back at Azure.
 - Updated `handoff.md`, `prompt_trail.md`; pushed to GitHub and Azure.
+
+---
+
+## Prompt 102 — 2026-10-15
+**Input:** Give me a downloadable html file for our SPOG.
+
+**Action:**
+- Asked which was meant — the marketing one-pager (already delivered) or the dashboard itself — since they're different deliverables and one is real build work. User chose the dashboard.
+- Added `npm run build:standalone`: a separate `vite.config.standalone.js` (base `'./'`, iife format, `inlineDynamicImports`, `cssCodeSplit: false` — each needed for `file://`, reasons documented inline) plus `scripts/inline-standalone.mjs` to fold CSS/JS into one file. Separate output dir, gitignored, so the GitHub Pages build is untouched.
+- Delivered `Downloads\ISG Single Pane of Glass (standalone).html` — ~1.12 MB, entire dashboard, opens by double-clicking with no server or deploy.
+- **Found and fixed two bugs in the process**, both of which fail silently:
+  1. `localStorage` was unguarded in `App.jsx`'s `useState` initializer. It *throws* (not returns null) when site data is blocked — private window, hardened profile, or `file://` — which would have white-screened the app. Now wrapped; also fixes the deployed app for private-window users.
+  2. The first inline implementation corrupted React: `String.replace()` reads `$$` in a string replacement as an escaped `$`, so interpolating the bundle ate one `$` from every `$$typeof`. Right size, parsed fine, React dead on open. Caught only by diffing against an independently-produced copy; fixed with a function replacer. Verified 33 `$$typeof` intact, 0 corrupted.
+- Verified statically: byte-identical to the known-good copy, no `import.meta`, no `type="module"`, no external JS/CSS refs, `node --check` passes. Flagged that the render itself is unverified — no browser tool in this environment.
+- Updated `handoff.md`, `prompt_trail.md`; pushed to GitHub and Azure.

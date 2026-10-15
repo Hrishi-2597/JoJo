@@ -1,5 +1,18 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Standalone Single-File Build of the Dashboard (2026-10-15)
+
+- `npm run build:standalone` now produces **one self-contained `.html` file** (~1.12 MB) containing the entire working dashboard — both pages, filters, charts, drill-downs, Excel export. It opens by double-clicking: no server, no install, no deploy. Useful while Azure deployment is still being set up.
+- Separate `vite.config.standalone.js` and output dir (`dist-standalone/`, gitignored) so the normal `npm run build` feeding GitHub Pages is untouched. Four settings are load-bearing for `file://`, each explained in that config: `base: './'`, `format: 'iife'` (Chrome refuses `<script type="module">` over file://), `inlineDynamicImports` (the Excel writer was a lazy chunk the page could no longer fetch), and `cssCodeSplit: false`.
+- `scripts/inline-standalone.mjs` folds the CSS and JS into the HTML and corrects the shipped `<title>`, which still read "ISG SPoG – ESG Forecasting" — stale since ESG was hidden behind `SHOW_ESG`, and wrong on a file that gets emailed to people.
+
+### Two bugs found and fixed while building this
+
+1. **`localStorage` was unguarded** (`App.jsx`). The accessor *throws* rather than returning null when a browser blocks site data — a private window, a hardened profile, or exactly this file opened over `file://`. It sat in a `useState` initializer, so the throw would have taken the whole app down to a white screen. Now wrapped; theme falls back to dark and simply doesn't persist. **This also fixes the deployed app**, where a private window could hit the same path.
+2. **The inline script silently corrupted React.** `String.replace()` treats `$$` in a *string* replacement as an escape for a literal `$`. Interpolating the bundle that way ate one `$` from every `$$typeof` — React's own element tag — yielding a file of the right size that parsed cleanly but in which React could not recognise a single element: a blank page, no error. Fixed by passing a replacer **function**, which does no `$` substitution. Verified: 33 `$$typeof` intact, 0 corrupted.
+
+**Verified:** output is byte-identical to an independently-produced known-good copy; no `import.meta`, no `type="module"`, no external JS/CSS references; `node --check` confirms it parses as a classic script. **Not opened in a browser** — there is no browser-automation tool in this environment — so the render itself is unconfirmed, though every known `file://` failure mode is ruled out statically. Google Fonts is the one external call and falls back to `system-ui, sans-serif` offline.
+
 ## Day-to-Day Work Moved Back to GitHub; Azure Kept as a Mirror (2026-10-15)
 
 - Per direct request ("let us make change on Github for now"), `origin` points at GitHub again and the Azure DevOps repo is configured as a remote named `azure`. This is the inverse of the arrangement set up earlier the same day.

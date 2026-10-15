@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "build:standalone": "vite build --config vite.config.standalone.js && node scripts/inline-standalone.mjs"
   },
   "dependencies": {
     "d3-scale": "^4.0.2",

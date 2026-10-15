@@ -101,15 +101,26 @@ export default function App() {
 
   // Reading + applying the saved theme inside the initializer (not a useEffect)
   // sets the data-theme attribute before first paint, avoiding a dark->light flash.
+  //
+  // Both localStorage calls are wrapped (2026-10-15): the accessor itself THROWS,
+  // not just returns null, when a browser blocks site data — a private window, a
+  // hardened profile, or the standalone single-file build opened over file://. An
+  // unguarded read in a useState initializer takes the whole app down to a white
+  // screen, so the theme silently falls back to dark rather than failing the render.
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'
+    let saved = 'dark'
+    try {
+      if (localStorage.getItem(THEME_KEY) === 'light') saved = 'light'
+    } catch { /* site data unavailable — keep the default */ }
     document.documentElement.setAttribute('data-theme', saved)
     return saved
   })
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem(THEME_KEY, theme)
+    try {
+      localStorage.setItem(THEME_KEY, theme)
+    } catch { /* theme just won't persist between sessions */ }
   }, [theme])
 
   const isBusiness = view === 'msg' || view === 'tsa'
