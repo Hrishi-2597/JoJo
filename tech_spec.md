@@ -237,6 +237,14 @@ SPoG/
 │   │       │                            below) — the one exception is Visual3's Target line, which stays the shared
 │   │       │                            status color C.behind (reserved for ahead/behind semantics app-wide, not a
 │   │       │                            per-metric identity color the request's palette change was meant to touch).
+│   │       ├── GlossaryPage.jsx        # (2026-10-15) HES metric glossary — a third entry in the HES
+│   │       │                            page toggle alongside Forecasting/Capacity Plan. 26 entries in
+│   │       │                            3 groups (shared mechanics, Forecasting, Capacity), each with a
+│   │       │                            definition, the real formula, which visuals use it, and the
+│   │       │                            source selector. Plain data arrays, NOT generated from the code —
+│   │       │                            if a selector changes this does not follow; the `source` field on
+│   │       │                            each entry is what to re-check. Formulae were verified against
+│   │       │                            the live selectors (16 assertions) rather than written from memory.
 │   │       ├── AsuSrPerformanceTable.jsx # (2026-07-29) No badge, sits above where the Geo Map used to sit — toggle
 │   │       │                               ASU/SR retitles "ASU Performance"/"SR Performance"; wraps
 │   │       │                               PerformanceMatrixTable.jsx + tsaData.js's asuSrPerformanceByLob() — no

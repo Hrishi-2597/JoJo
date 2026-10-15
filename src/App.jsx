@@ -4,6 +4,7 @@ import ForecastingPage from './components/ForecastingPage'
 import MsgCapacityPage from './components/msgCapacity/MsgCapacityPage'
 import TsaForecastingPage from './components/tsa/TsaForecastingPage'
 import TsaCapacityPage from './components/tsaCapacity/TsaCapacityPage'
+import GlossaryPage from './components/tsa/GlossaryPage'
 import PlanningSidebar from './components/PlanningSidebar'
 
 const THEME_KEY = 'tsg-spog-theme'
@@ -20,6 +21,10 @@ const SUB_PAGES = {
   tsa: [
     { key: 'forecasting', label: 'HES Forecasting' },
     { key: 'capacity', label: 'HES Capacity Plan' },
+    // Glossary (2026-10-15) sits in the same toggle as the two data pages rather than
+    // off in a separate menu, so a definition is one click from the chart that raised
+    // the question — the whole point of it being in the product and not a side doc.
+    { key: 'glossary', label: 'Glossary' },
   ],
 }
 
@@ -201,7 +206,9 @@ export default function App() {
         <div style={{ flex: 1, minWidth: 0 }}>
           {view === 'landing' && <LandingPage onSelect={setView} />}
           {view === 'msg' && (msgSubPage === 'forecasting' ? <ForecastingPage /> : <MsgCapacityPage />)}
-          {view === 'tsa' && (tsaSubPage === 'forecasting' ? <TsaForecastingPage /> : <TsaCapacityPage />)}
+          {view === 'tsa' && tsaSubPage === 'forecasting' && <TsaForecastingPage />}
+          {view === 'tsa' && tsaSubPage === 'capacity' && <TsaCapacityPage />}
+          {view === 'tsa' && tsaSubPage === 'glossary' && <GlossaryPage />}
 
           <footer style={{
             textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',

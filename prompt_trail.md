@@ -1323,3 +1323,17 @@ Chronological log of every user prompt and the corresponding actions taken.
   2. The first inline implementation corrupted React: `String.replace()` reads `$$` in a string replacement as an escaped `$`, so interpolating the bundle ate one `$` from every `$$typeof`. Right size, parsed fine, React dead on open. Caught only by diffing against an independently-produced copy; fixed with a function replacer. Verified 33 `$$typeof` intact, 0 corrupted.
 - Verified statically: byte-identical to the known-good copy, no `import.meta`, no `type="module"`, no external JS/CSS refs, `node --check` passes. Flagged that the render itself is unverified — no browser tool in this environment.
 - Updated `handoff.md`, `prompt_trail.md`; pushed to GitHub and Azure.
+
+---
+
+## Prompt 103 — 2026-10-15
+**Input:** Do one thing - create a glossary for our HES SPOG- like what formulae we used for our current visuals.
+
+**Action:**
+- Asked where it should live (shareable document vs in-app page) since the work differs a lot; user chose a page inside the app.
+- Read the actual selectors in `tsaData.js` and `tsaCapacityData.js` rather than writing formulae from memory, and built `src/components/tsa/GlossaryPage.jsx` — 26 entries in 3 groups (shared mechanics / HES Forecasting / HES Capacity Planning), each with a plain-English definition, the real formula, the visuals that use it, and the source selector. Added a live search.
+- Wired it as a third entry in the HES page toggle beside Forecasting and Capacity Plan, so a definition sits one click from the chart that raised the question.
+- **Verified the formulae numerically against the live selectors — 16 assertions, all passing**, rather than trusting the transcription. Confirmed the non-obvious ones: Avg Case Time adherence really is inverted (`Plan ÷ Actual`, not the reverse); volumes are divided by View By while rates hold their level; DB+OSP and human+bot SR each sum exactly back to the SR actual.
+- Flagged the real tradeoff in `design_choice.md`: the glossary is hand-written data, so it will not follow a selector change on its own. Each entry names its `source` function, and the assertion run is the thing to repeat whenever the data layer moves.
+- Verified with `npm run build` (clean). Flagged that the page's rendering is unverified — no browser tool in this environment — though it reuses existing app components and CSS classes throughout.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`, `prompt_trail.md`; pushed to GitHub and Azure.

@@ -72,6 +72,16 @@ The tradeoff accepted is that the walker can misread an unusual tree. That's han
 
 The removal did make real code dead, though, and that follows this project's other standing rule: `tsaTrendPlanColor` existed only to cycle colors across multiple selected plans on this one chart, so with exactly one fixed plan it had no remaining purpose or consumer and was deleted alongside the picker, rather than left as an orphaned export.
 
+## The Glossary Is Hand-Written Data, Not Generated From the Selectors (2026-10-15)
+
+**Decision:** `GlossaryPage.jsx` holds its 26 entries as plain arrays that a human wrote, rather than deriving formulae automatically from `tsaData.js` / `tsaCapacityData.js`.
+
+**Why:** Generation would guarantee the formula half stays in sync and produce the wrong artefact anyway. The value of a glossary to the business reader is the *plain-English* half — "shorter is better, which is why this adherence is inverted", "this is a split of one number, not two measures" — and none of that is recoverable from an expression tree. A generator would emit `+(this.plan / this.actual * 100).toFixed(1)`, which the reader could already have gotten by opening the file.
+
+The real risk this accepts is drift: change a selector and the glossary silently becomes wrong. Two things mitigate it rather than pretending it away — every entry names the `source` function so there is an obvious thing to check, and the formulae were verified against the live selectors with 16 numeric assertions rather than transcribed by eye. That verification is the part worth repeating whenever the data layer moves.
+
+**On placement:** it went into the HES page toggle beside Forecasting and Capacity Plan, not a separate menu or a side document. A definition is only useful at the moment someone doubts a number, which is while they are looking at the chart — one click away, not one navigation away.
+
 ## The Chart "Grey Background" Was an Inverted-Elevation Bug, Fixed by Transparency Rather Than a New Grey (2026-10-11)
 
 **Decision:** `.chart-panel` went to `background: transparent` instead of being re-tinted to some better grey, and `--bg-inset` itself was left exactly as it is.

@@ -1,5 +1,18 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## HES Metric Glossary Added as an In-App Page (2026-10-15)
+
+- Per direct request, there is now a **Glossary** page inside the app, reachable from the same header toggle as HES Forecasting and HES Capacity Plan (`src/components/tsa/GlossaryPage.jsx`). Putting it in that toggle rather than a side menu means a definition is one click from the chart that raised the question.
+- Covers **26 entries in three groups**: shared mechanics (in-scope LOB ratio, fiscal-year precedence, how View By treats volumes vs rates, period-over-period change, Plan Name scaling), then every KPI and chart series on HES Forecasting, then the same for HES Capacity Planning. Each entry carries a plain-English definition, the actual formula, which visuals use it, and the selector it comes from so a number can be traced from chart to code.
+- Includes a live search across term, definition, formula and chart name.
+- **Every formula was read off the real selectors in `tsaData.js` / `tsaCapacityData.js`, then verified numerically** — 16 assertions run against the live functions, all passing. Highlights worth knowing because they surprise people:
+  - **Avg Case Time adherence is deliberately inverted** — `Plan ÷ Actual × 100`, not actual over plan, because shorter is better. Confirmed it is *not* the usual direction.
+  - **Volumes are divided by View By; rates are not.** ASU at Quarter is roughly a quarter of the year; attrition % and avg case time hold their level. Both directions asserted.
+  - DB + OSP and human + bot SR each sum exactly back to the SR actual — they are splits of one number, not independent measures.
+- The page states plainly that names are real business-supplied ones while the numeric values are illustrative until live feeds are connected, and that the formulae are what will run against the real data.
+- **Maintenance note:** the glossary is hand-written data, not generated from the code. If a selector changes, this file does **not** update itself — each entry names its `source` function, which is the thing to re-check.
+- **Verified:** `npm run build` clean; 16/16 formula assertions pass. **Not opened in a browser** — no browser-automation tool in this environment — so the page's rendering is unverified, though it reuses existing app components and CSS classes throughout.
+
 ## Standalone Single-File Build of the Dashboard (2026-10-15)
 
 - `npm run build:standalone` now produces **one self-contained `.html` file** (~1.12 MB) containing the entire working dashboard — both pages, filters, charts, drill-downs, Excel export. It opens by double-clicking: no server, no install, no deploy. Useful while Azure deployment is still being set up.
