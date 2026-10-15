@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Day-to-Day Work Moved Back to GitHub; Azure Kept as a Mirror (2026-10-15)
+
+- Per direct request ("let us make change on Github for now"), `origin` points at GitHub again and the Azure DevOps repo is configured as a remote named `azure`. This is the inverse of the arrangement set up earlier the same day.
+- **Why this is the right way round for now:** GitHub is where deployment actually works. With `origin` back on GitHub, pushing to `main` re-triggers `.github/workflows/deploy.yml`, which rebuilds and publishes to `gh-pages`, so https://hrishi-2597.github.io/JoJo/ updates again — and `npm run deploy` resolves to GitHub too, so it stops silently publishing nowhere.
+- **Both remotes are pushed on every change**, so Azure doesn't quietly drift away from the real work while it remains the system of record. `git push origin main && git push azure main`. If that turns out to be unwanted, dropping the second push is the only change needed.
+- Nothing about the code or build changed here — this is purely which remote the work lands on.
+
 ## Repo Migrated From GitHub to Azure DevOps (2026-10-15)
 
 - The project now lives at `https://alignedautomation@dev.azure.com/alignedautomation/WFO%20Agentic%20AI%20Automation/_git/WFO_ISG_HES_SPOG` — org `alignedautomation`, project "WFO Agentic AI Automation", repo `WFO_ISG_HES_SPOG`. `origin` points there, and `git push` / `git pull` now go to Azure by default.
@@ -7,6 +14,10 @@
 - Migration verified clean: at handover both remotes and the local clone all sat on the same commit (`b99104db`), with full history carried across. Read and write to Azure both authenticate without prompting from this machine.
 
 ### Deployment is paused — this is expected, not broken
+
+**(Superseded same day — see the entry above. Day-to-day work moved back to GitHub precisely so
+this deployment gap stops applying. Kept here because every trap below becomes live again the
+moment `origin` points at Azure.)**
 
 The old route was GitHub-only and does not run on Azure DevOps:
 

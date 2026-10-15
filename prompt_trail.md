@@ -1296,3 +1296,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Flagged two deployment traps in `handoff.md`, both of which fail quietly: `.github/workflows/deploy.yml` is GitHub Actions and simply never runs on Azure; and `npm run deploy` follows `origin`, so it would now push `dist/` to an Azure `gh-pages` branch that nothing serves — appearing to succeed while publishing nowhere. Until an Azure Pipeline exists, a push means "committed", not "live".
 - Updated the saved project memory, which still described this as a GitHub repo with auto-deploy. Also corrected a stale claim in it that the app has 4 pages — ESG/MSG has been hidden behind `SHOW_ESG = false` for some time, so only HES Forecasting and HES Capacity Planning are live.
 - Updated `handoff.md`, `prompt_trail.md`; committed and pushed to Azure.
+
+---
+
+## Prompt 101 — 2026-10-15
+**Input:** let us make change on Github for now
+
+**Action:**
+- Swapped the remotes back: `origin` → GitHub, Azure DevOps kept as a remote named `azure`. Branch tracking retargeted to `origin/main`.
+- This restores working deployment: a push to `main` triggers `.github/workflows/deploy.yml` again, so the live demo updates, and `npm run deploy` resolves to GitHub rather than silently publishing to an Azure branch nothing serves.
+- Adopted pushing to **both** remotes on every change so Azure doesn't drift from the real work while it stays the system of record — GitHub was one commit behind at the swap (the migration-record commit had gone to Azure only), which is exactly the drift worth avoiding.
+- Marked the previous entry's "deployment is paused" subsection as superseded rather than deleting it — every trap it documents becomes live again the moment `origin` points back at Azure.
+- Updated `handoff.md`, `prompt_trail.md`; pushed to GitHub and Azure.
