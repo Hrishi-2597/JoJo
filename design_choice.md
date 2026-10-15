@@ -72,6 +72,14 @@ The tradeoff accepted is that the walker can misread an unusual tree. That's han
 
 The removal did make real code dead, though, and that follows this project's other standing rule: `tsaTrendPlanColor` existed only to cycle colors across multiple selected plans on this one chart, so with exactly one fixed plan it had no remaining purpose or consumer and was deleted alongside the picker, rather than left as an orphaned export.
 
+## The Standalone Build Is Gated on Executing It, Not Inspecting It (2026-10-15)
+
+**Decision:** `npm run build:standalone` ends by loading the produced file into jsdom, running its scripts, and failing the build unless `#root` actually has children.
+
+**Why:** Two separate bugs shipped in that one inlining script, and *neither* was reachable by inspection. The first ate a `$` from every `$$typeof` because `String.replace` treats `$$` as an escape; the second left a non-deferred inline script in `<head>` so it ran before its own mount point existed. In both cases the output was the right size, parsed cleanly under `node --check`, contained no external references, and opened to a blank page.
+
+The lesson is narrow and worth stating: for a generated artefact, static checks confirm the file is *well-formed*, not that it *works*. The only check with real authority is running the thing. A 20-line jsdom harness closes a gap that five static assertions could not, and it is the reason this build can now be trusted without a browser in the loop — which matters because this environment has no browser-automation tool at all.
+
 ## The Glossary Is Hand-Written Data, Not Generated From the Selectors (2026-10-15)
 
 **Decision:** `GlossaryPage.jsx` holds its 26 entries as plain arrays that a human wrote, rather than deriving formulae automatically from `tsaData.js` / `tsaCapacityData.js`.

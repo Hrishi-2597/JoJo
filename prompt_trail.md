@@ -1337,3 +1337,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Flagged the real tradeoff in `design_choice.md`: the glossary is hand-written data, so it will not follow a selector change on its own. Each entry names its `source` function, and the assertion run is the thing to repeat whenever the data layer moves.
 - Verified with `npm run build` (clean). Flagged that the page's rendering is unverified — no browser tool in this environment — though it reuses existing app components and CSS classes throughout.
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md`, `prompt_trail.md`; pushed to GitHub and Azure.
+
+---
+
+## Prompt 104 — 2026-10-15
+**Input:** [screenshot of the standalone file open in Edge showing a blank dark page] not working
+
+**Action:**
+- Diagnosed from the symptom before touching anything: the dark background meant the CSS had applied, so the stylesheet was fine and the JS had thrown. Confirmed by character offsets that the inline `<script>` sat at char 645 while `#root` was at char 1,184,199 — the script ran before its own mount point existed.
+- **Root cause:** Vite emits `<script type="module">`, which is deferred by default and therefore safe in `<head>`. Replacing it with a plain inline `<script>` removed that deferral — inline scripts ignore `defer`, so the only fix is position. It now goes immediately before `</body>`.
+- **Fixed the verification gap, which was the real failure.** The broken file had passed every static check I ran: correct size, `node --check` clean, no `import.meta`, no module script, no external refs, all 33 `$$typeof` intact. None of that can detect React throwing on boot.
+- Added `scripts/verify-standalone.mjs` — loads the built file into jsdom, runs its scripts, asserts `#root` has children — and wired it as the final step of `npm run build:standalone`, so the build fails rather than shipping a blank page.
+- **Proved the check is meaningful** by running it against the broken copy still in Downloads: it failed with React error #299 ("target container is not a DOM element") and exited non-zero, then passed on the fixed build.
+- Refreshed the delivered file (1.13 MB, Glossary included, verified mounting) and told the user to hard-refresh, since the browser may have cached the broken version.
+- Updated `handoff.md`, `design_choice.md`, `prompt_trail.md`; pushed to GitHub and Azure.

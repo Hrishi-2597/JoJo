@@ -16,15 +16,22 @@ const css = fs.readFileSync(path.join(dir, 'app.css'), 'utf8')
 // looks like a closing tag to the HTML parser.
 js = js.replaceAll('</script', '<\/script')
 
-// The replacements MUST pass a function, not a string. String.replace treats `$$`
-// in a replacement as an escape for a literal `$` — and the React bundle is full of
-// `$$typeof`, React's own element tag. With a string replacement every one of them
-// silently becomes `$typeof`, producing a file that is the right size and parses
-// cleanly but in which React cannot recognise a single element: a blank page. A
-// function replacer returns the string verbatim with no `$` substitution.
+// Two things here are easy to get wrong and both produce a blank page with no error.
+//
+// 1. The replacements MUST pass a function, not a string. String.replace treats `$$`
+//    in a replacement as an escape for a literal `$` — and the React bundle is full
+//    of `$$typeof`, React's own element tag. With a string replacement every one of
+//    them silently becomes `$typeof`, and React cannot recognise a single element.
+//
+// 2. The script MUST move to the end of <body>, not stay where Vite put it. Vite
+//    emits `type="module"`, which is deferred by default and therefore safe in
+//    <head>. A plain inline <script> is NOT deferred — it runs during head parsing,
+//    before <div id="root"> exists, so createRoot(null) throws on the first line.
+//    `defer` is ignored on inline scripts, so position is the only fix.
 html = html
-  .replace('<script type="module" crossorigin src="./app.js"></script>', () => `<script>\n${js}\n</script>`)
+  .replace('<script type="module" crossorigin src="./app.js"></script>', '')
   .replace('<link rel="stylesheet" crossorigin href="./app.css">', () => `<style>\n${css}\n</style>`)
+  .replace('</body>', () => `<script>\n${js}\n</script>\n</body>`)
   // the committed index.html title still says "ESG Forecasting", stale since ESG was
   // hidden behind SHOW_ESG — don't ship that on a file someone gets sent
   .replace('<title>ISG SPoG – ESG Forecasting</title>', '<title>ISG Single Pane of Glass</title>')

@@ -1,5 +1,13 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Standalone File Opened Blank — Fixed, and the Build Now Catches It (2026-10-15)
+
+- **The bug:** the single-file build rendered a blank dark page. Vite emits `<script type="module">`, which is **deferred by default** and therefore safe sitting in `<head>`. The inliner replaced it with a plain inline `<script>`, which is **not** deferred — it executed during head parsing, before `<div id="root">` existed, so `createRoot(null)` threw React error #299 on the first line. CSS had already applied, which is why the page was dark rather than white. `defer` is ignored on inline scripts, so position is the only fix: the script now goes immediately before `</body>`.
+- **The deeper problem was the verification, not the bug.** The file passed every static check — right size, valid syntax under `node --check`, no `import.meta`, no module script, no external references, `$$typeof` intact — and was still completely broken. Static analysis cannot detect "React threw on boot".
+- **`scripts/verify-standalone.mjs` now executes the built file in a real DOM (jsdom) and asserts the app actually mounted**, and `npm run build:standalone` fails if it didn't. Confirmed the check is meaningful by running it against the broken copy: it fails with the exact React #299 error, exits non-zero, and passes on the fix. A standalone build can no longer ship blank.
+- This is the second bug in this one small script (the first silently ate a `$` from every `$$typeof`). Both were invisible to inspection and both produced a plausible-looking file. The executing smoke test is the thing that makes the output trustworthy; the static checks were necessary but nowhere near sufficient.
+- Delivered copy refreshed at `Downloads\ISG Single Pane of Glass (standalone).html` — 1.13 MB, includes the Glossary, verified mounting.
+
 ## HES Metric Glossary Added as an In-App Page (2026-10-15)
 
 - Per direct request, there is now a **Glossary** page inside the app, reachable from the same header toggle as HES Forecasting and HES Capacity Plan (`src/components/tsa/GlossaryPage.jsx`). Putting it in that toggle rather than a side menu means a definition is one click from the chart that raised the question.
