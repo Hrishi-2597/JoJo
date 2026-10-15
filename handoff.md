@@ -1,5 +1,21 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Repo Migrated From GitHub to Azure DevOps (2026-10-15)
+
+- The project now lives at `https://alignedautomation@dev.azure.com/alignedautomation/WFO%20Agentic%20AI%20Automation/_git/WFO_ISG_HES_SPOG` — org `alignedautomation`, project "WFO Agentic AI Automation", repo `WFO_ISG_HES_SPOG`. `origin` points there, and `git push` / `git pull` now go to Azure by default.
+- **The old GitHub remote was kept, not deleted** — it's still configured under the name `github`. Nothing is lost, and the old live demo can still be refreshed deliberately with `git push github main` during the transition.
+- Migration verified clean: at handover both remotes and the local clone all sat on the same commit (`b99104db`), with full history carried across. Read and write to Azure both authenticate without prompting from this machine.
+
+### Deployment is paused — this is expected, not broken
+
+The old route was GitHub-only and does not run on Azure DevOps:
+
+- `.github/workflows/deploy.yml` is a **GitHub Actions** workflow. Azure DevOps ignores it. It has been left in place rather than deleted, since the GitHub remote still exists and the file costs nothing.
+- `npm run deploy` uses the `gh-pages` npm package, which follows **`origin`**. Now that `origin` is Azure, running it would push the built `dist/` to a `gh-pages` branch on Azure that nothing serves — **it would appear to succeed and silently publish nowhere.** Worth knowing before anyone runs it out of habit.
+- The existing live demo at https://hrishi-2597.github.io/JoJo/ still serves the last GitHub deploy and will go stale as soon as work stops reaching the GitHub remote.
+
+Until an Azure Pipeline exists, the honest status after a push is "committed", not "live". Two options when that's set up: an Azure Pipeline publishing to Azure Static Web Apps, or — if the GitHub Pages demo is still wanted — pointing the deploy script explicitly at the `github` remote so it keeps updating independently of where the source lives.
+
 ## HES Capacity Planning: Adopted the HES Forecasting Colour Scheme (2026-10-12)
 
 - Per direct request ("use similar color scheme for capacity planning as well"), HES Capacity Planning now draws from the same corporate swatch palette as HES Forecasting. It had still been on the old generic set — `C.metric1` sky-blue `#38bdf8`, `C.metric2` orange `#fb923c`, violet.

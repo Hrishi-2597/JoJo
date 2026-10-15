@@ -1283,3 +1283,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Confirmed the shared `planSeriesColor`/`planVsPlanSeriesColor` are not orphaned — MSG Forecasting and MSG Capacity still consume them and were out of scope.
 - Verified with `npm run build` (clean) and greps showing zero generic-palette series colours left in `tsaCapacity/`, status colours intact, shared helpers still consumed.
 - Updated `handoff.md`, `tech_spec.md` (new "HES Palette — Shared by Both HES Pages" section), `design_choice.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 100 — 2026-10-15
+**Input:** so we have migrated my project from github to azure now we will work on azure now deployment will take time ,use this updated azure link https://alignedautomation@dev.azure.com/alignedautomation/WFO%20Agentic%20AI%20Automation/_git/WFO_ISG_HES_SPOG
+
+**Action:**
+- Checked state before touching anything: working tree clean, everything already pushed, HEAD at `b99104db`.
+- Repointed `origin` at the Azure DevOps repo. **Renamed the old GitHub remote to `github` instead of deleting it** — the migration is reversible, nothing is lost, and the existing live demo can still be refreshed deliberately via `git push github main` while Azure deployment is being set up.
+- Verified the move rather than assuming it: `git ls-remote` showed Azure already carrying both `main` and `gh-pages`, with `main` at exactly the local HEAD (`b99104db`); confirmed write access with `git push --dry-run`; retargeted branch tracking to `origin/main`. Local, Azure and GitHub are all on the same commit.
+- Flagged two deployment traps in `handoff.md`, both of which fail quietly: `.github/workflows/deploy.yml` is GitHub Actions and simply never runs on Azure; and `npm run deploy` follows `origin`, so it would now push `dist/` to an Azure `gh-pages` branch that nothing serves — appearing to succeed while publishing nowhere. Until an Azure Pipeline exists, a push means "committed", not "live".
+- Updated the saved project memory, which still described this as a GitHub repo with auto-deploy. Also corrected a stale claim in it that the app has 4 pages — ESG/MSG has been hidden behind `SHOW_ESG = false` for some time, so only HES Forecasting and HES Capacity Planning are live.
+- Updated `handoff.md`, `prompt_trail.md`; committed and pushed to Azure.
